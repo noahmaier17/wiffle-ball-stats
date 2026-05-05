@@ -11,6 +11,20 @@ type HomeProps = {
     onStartGame: (gameData: any) => void;
 };
 
+/**
+ * Home Component
+ *
+ * This component acts as the pre-game setup screen for the application.
+ * It is primarily responsible for:
+ * 1. Fetching the master list of players from the Supabase database.
+ * 2. Allowing users to construct "Away" and "Home" batting lineups using a drag-and-drop interface.
+ * 3. Enforcing game rules:
+ *    - Players cannot be on both teams
+ *    - Starting pitchers must be active in the lineup
+ *    - ...
+ * 4. Packaging the finalized lineups and game configuration, and passing them to the parent component
+ *    via the `onStartGame` prop to initiate the game state (transitioning to the `AtBat` screen).
+ */
 function Home({ onStartGame }: HomeProps) {
     const [players, setPlayers] = useState<Player[]>([]);
     const [showPopup, setShowPopup] = useState(false);
@@ -28,8 +42,18 @@ function Home({ onStartGame }: HomeProps) {
         fetchPlayers();
     }, []);
 
+    /**
+     * Fetches the list of players from the Supabase database.
+     * 
+     * @remarks
+     * - Queries the 'players' table in Supabase.
+     * - Maps the database records to the local `Player` type.
+     * - Updates the `players` state with the fetched data.
+     * - Handles loading and error states, updating the `loading` and `lineupError` states accordingly.
+     */
     const fetchPlayers = async () => {
         setLoading(true);
+
         // Fetch from supabase 'players' table
         const { data, error } = await supabase.from('players').select('id, first_name, last_name');
 
@@ -46,10 +70,28 @@ function Home({ onStartGame }: HomeProps) {
         setLoading(false);
     };
 
+    /**
+     * Initiates the game setup process.
+     * 
+     * @remarks
+     * - Displays the game setup modal/popup, allowing the user to configure lineups.
+     * - This function is typically triggered by a user action, such as clicking a "Start Game" button.
+     */
     const startGame = () => {
         setShowPopup(true);
     };
 
+    /**
+     * Handles the submission of the start game form.
+     * 
+     * @param e - The synthetic event from the form submission.
+     * 
+     * @remarks
+     * - Prevents the default form submission behavior.
+     * - Calls the `onStartGame` callback passed from the parent component, providing 
+     *   the current game configuration (lineups and pitchers).
+     * - This action effectively transitions the application from the setup screen to the game state.
+     */
     const handleStartGameSubmit = (e: React.SyntheticEvent) => {
         e.preventDefault();
         onStartGame({
@@ -61,6 +103,17 @@ function Home({ onStartGame }: HomeProps) {
         });
     };
 
+    /**
+     * Adds a player to a specified team's lineup.
+     * 
+     * @param team - The team to add the player to ('away' or 'home').
+     * @param playerId - The ID of the player to add.
+     * 
+     * @remarks
+     * - Checks if the player is already in the opposing team's lineup and prevents duplicates.
+     * - Updates the state of the relevant team's lineup.
+     * - Clears any existing lineup errors.
+     */
     const addPlayerToLineup = (team: 'away' | 'home', playerId: number) => {
         setLineupError(null);
         if (team === 'away') {
@@ -80,6 +133,16 @@ function Home({ onStartGame }: HomeProps) {
         }
     };
 
+    /**
+     * Removes a player from a specified team's lineup.
+     * 
+     * @param team - The team to remove the player from ('away' or 'home').
+     * @param index - The index of the player to remove from the lineup array.
+     * 
+     * @remarks
+     * - If the removed player is the current starting pitcher for that team, the pitcher state is reset to empty ('').
+     * - Updates the state of the relevant team's lineup by filtering out the specified index.
+     */
     const removePlayerFromLineup = (team: 'away' | 'home', index: number) => {
         if (team === 'away') {
             const removedPlayerId = awayTeamLineup[index];
@@ -92,15 +155,50 @@ function Home({ onStartGame }: HomeProps) {
         }
     };
 
+    /**
+     * Handles the start of a drag operation.
+     * 
+     * @param e - The drag event.
+     * @param team - The team the dragged player belongs to ('away' or 'home').
+     * @param index - The index of the dragged player in the lineup array.
+     * 
+     * @remarks
+     * - Stores the `team` and `index` in the event's data transfer object, which will be used 
+     *   in the `handleDrop` event to identify the dragged item.
+     */
     const handleDragStart = (e: React.DragEvent, team: 'away' | 'home', index: number) => {
         e.dataTransfer.setData('team', team);
         e.dataTransfer.setData('index', index.toString());
     };
 
+    /**
+     * Handles the drag over event.
+     * 
+     * @param e - The drag event.
+     * 
+     * @remarks
+     * - Prevents the default behavior of the drag over event, which is necessary to allow
+     *   dropping the dragged item in the drop zone.
+     */
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault(); // Necessary to allow dropping
     };
 
+    /**
+     * Handles the drop event.
+     * 
+     * @param e - The drag event.
+     * @param team - The team the item is being dropped onto ('away' or 'home').
+     * @param dropIndex - The index in the lineup where the item is being dropped.
+     * 
+     * @remarks
+     * - Prevents the default form submission behavior.
+     * - Retrieves the `team` and `index` from the event's data transfer object.
+     * - If the dragged item is from a different team, it does nothing.
+     * - If the dragged item is dropped on itself (same index), it does nothing.
+     * - Otherwise, it swaps the position of the dragged player in the lineup.
+     * - Updates the state of the relevant team's lineup.
+     */
     const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
         e.preventDefault();
         const draggedTeam = e.dataTransfer.getData('team');
