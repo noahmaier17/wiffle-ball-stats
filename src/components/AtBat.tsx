@@ -14,8 +14,18 @@ function AtBat() {
     const [log, setLog] = useState<AtBatLogList[]>([]);
 
     const logAtBat = () => {
-        setLog(prev => [...prev, {batter: batter, pitcher: pitcher, rbis: rbis, outcomeSign: outcomeSign, extraComments: extraComments}])
+        // Appends the logged at bat
+        setLog(prev => [
+            ...prev, {
+                batter: batter, 
+                pitcher: pitcher, 
+                rbis: rbis, 
+                outcomeSign: outcomeSign, 
+                extraComments: extraComments
+            }
+        ])
 
+        // Resets values
         setBatter(PLAYERS[0].name);
         setPitcher(PLAYERS[0].name);
         setRbis(0);
