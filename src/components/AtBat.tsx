@@ -37,7 +37,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     const logAtBat = () => {
         // Updates our log
         onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, outcomeSign, extraComments });
-        
+
         // Resets the values for the form
         setRbis(0);
         setOutcomeSign("K");
@@ -47,14 +47,14 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     return (<>
         <div>
             <h1>Log At Bat</h1>
-            <form 
+            <form
                 className="at-bat-form"
                 onSubmit={(e) => e.preventDefault()}
             >
                 <div>
                     <label>Batter: </label>
-                    <select 
-                        value={batterName} 
+                    <select
+                        value={batterName}
                         onChange={(e) => setBatterName(e.target.value)}
                     >
                         {battingLineup.map(p => (
@@ -62,7 +62,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                         ))}
                     </select>
                 </div>
-                
+
                 <div>
                     <label>Pitcher: </label>
                     {pitcherName}
@@ -99,7 +99,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                         </label>
                     ))}
                 </div>
-            
+
                 <div>
                     <textarea
                         value={extraComments}
