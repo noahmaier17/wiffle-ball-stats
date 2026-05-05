@@ -1,0 +1,3 @@
+import type { AT_BAT_OUTCOMES } from "./constants";
+
+export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
