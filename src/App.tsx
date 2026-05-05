@@ -1,11 +1,22 @@
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import './App.css'
+import Home from './components/Home.tsx'
+
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
 import AtBat from './components/AtBat.tsx'
 
 function App() {
+  const [gameState, setGameState] = useState<any>(null);
+
+  if (gameState) {
+    return <AtBat gameState={gameState} />
+  }
 
   return (
-    <AtBat></AtBat>
-  )
+    <Home onStartGame={setGameState} />
+  );
 }
 
 export default App
