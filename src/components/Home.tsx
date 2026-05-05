@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase-client';
-
-type Player = {
-    id: number;
-    firstName: string;
-    lastName: string;
-};
+import type { Player, GameData } from '../types';
 
 type HomeProps = {
-    onStartGame: (gameData: any) => void;
+    onStartGame: (gameData: GameData) => void;
 };
 
 /**
@@ -31,10 +26,10 @@ function Home({ onStartGame }: HomeProps) {
     const [loading, setLoading] = useState(true);
 
     // Lineup state
-    const [awayTeamLineup, setAwayTeamLineup] = useState<number[]>([]);
-    const [homeTeamLineup, setHomeTeamLineup] = useState<number[]>([]);
-    const [awayPitcher, setAwayPitcher] = useState<number | ''>('');
-    const [homePitcher, setHomePitcher] = useState<number | ''>('');
+    const [awayTeamLineup, setAwayTeamLineup] = useState<Player[]>([]);
+    const [homeTeamLineup, setHomeTeamLineup] = useState<Player[]>([]);
+    const [awayPitcher, setAwayPitcher] = useState<Player | null>(null);
+    const [homePitcher, setHomePitcher] = useState<Player | null>(null);
 
     const [lineupError, setLineupError] = useState<string | null>(null);
 
@@ -94,12 +89,25 @@ function Home({ onStartGame }: HomeProps) {
      */
     const handleStartGameSubmit = (e: React.SyntheticEvent) => {
         e.preventDefault();
+        if (awayPitcher === null || homePitcher === null) {
+            setLineupError('Both teams must have a starting pitcher selected.');
+            return;
+        }
         onStartGame({
             awayTeamLineup,
             homeTeamLineup,
             awayPitcher,
             homePitcher,
-            players
+            
+            awayTeamBatting: true,
+            inning: 1,
+            numberOfOuts: 0,
+
+            awayRuns: 0,
+            homeRuns: 0,
+
+            currAwayTeamBatter: 0,
+            currHomeTeamBatter: 0,
         });
     };
 
@@ -114,22 +122,20 @@ function Home({ onStartGame }: HomeProps) {
      * - Updates the state of the relevant team's lineup.
      * - Clears any existing lineup errors.
      */
-    const addPlayerToLineup = (team: 'away' | 'home', playerId: number) => {
+    const addPlayerToLineup = (team: 'away' | 'home', player: Player) => {
         setLineupError(null);
         if (team === 'away') {
-            if (homeTeamLineup.includes(playerId)) {
-                const player = players.find(p => p.id === playerId);
-                setLineupError(`${player?.firstName} ${player?.lastName} is already in the Home lineup.`);
+            if (homeTeamLineup.some(p => p.id === player.id)) {
+                setLineupError(`${player.firstName} ${player.lastName} is already in the Home lineup.`);
                 return;
             }
-            if (!awayTeamLineup.includes(playerId)) setAwayTeamLineup([...awayTeamLineup, playerId]);
+            if (!awayTeamLineup.some(p => p.id === player.id)) setAwayTeamLineup([...awayTeamLineup, player]);
         } else {
-            if (awayTeamLineup.includes(playerId)) {
-                const player = players.find(p => p.id === playerId);
-                setLineupError(`${player?.firstName} ${player?.lastName} is already in the Away lineup.`);
+            if (awayTeamLineup.some(p => p.id === player.id)) {
+                setLineupError(`${player.firstName} ${player.lastName} is already in the Away lineup.`);
                 return;
             }
-            if (!homeTeamLineup.includes(playerId)) setHomeTeamLineup([...homeTeamLineup, playerId]);
+            if (!homeTeamLineup.some(p => p.id === player.id)) setHomeTeamLineup([...homeTeamLineup, player]);
         }
     };
 
@@ -145,12 +151,12 @@ function Home({ onStartGame }: HomeProps) {
      */
     const removePlayerFromLineup = (team: 'away' | 'home', index: number) => {
         if (team === 'away') {
-            const removedPlayerId = awayTeamLineup[index];
-            if (awayPitcher === removedPlayerId) setAwayPitcher('');
+            const removedPlayer = awayTeamLineup[index];
+            if (awayPitcher?.id === removedPlayer.id) setAwayPitcher(null);
             setAwayTeamLineup(prev => prev.filter((_, i) => i !== index));
         } else {
-            const removedPlayerId = homeTeamLineup[index];
-            if (homePitcher === removedPlayerId) setHomePitcher('');
+            const removedPlayer = homeTeamLineup[index];
+            if (homePitcher?.id === removedPlayer.id) setHomePitcher(null);
             setHomeTeamLineup(prev => prev.filter((_, i) => i !== index));
         }
     };
@@ -276,11 +282,10 @@ function Home({ onStartGame }: HomeProps) {
                                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
                                         <div style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}>
                                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                                {awayTeamLineup.map((playerId, index) => {
-                                                    const player = players.find(p => p.id === playerId);
+                                                {awayTeamLineup.map((player, index) => {
                                                     return (
                                                         <li
-                                                            key={playerId}
+                                                            key={player.id}
                                                             draggable
                                                             onDragStart={(e) => handleDragStart(e, 'away', index)}
                                                             onDragOver={handleDragOver}
@@ -299,7 +304,7 @@ function Home({ onStartGame }: HomeProps) {
                                                             <span style={{ display: 'flex', alignItems: 'center' }}>
                                                                 <span style={{ color: '#9ca3af', marginRight: '8px', userSelect: 'none' }}>⋮⋮</span>
                                                                 <span style={{ color: '#9ca3af', marginRight: '10px', width: '20px', display: 'inline-block' }}>{index + 1}.</span>
-                                                                {player ? `${player.firstName} ${player.lastName}` : 'Unknown'}
+                                                                {`${player.firstName} ${player.lastName}`}
                                                             </span>
                                                             <button
                                                                 type="button"
@@ -320,14 +325,13 @@ function Home({ onStartGame }: HomeProps) {
                                                 <select
                                                     value=""
                                                     onChange={(e) => {
-                                                        if (e.target.value) {
-                                                            addPlayerToLineup('away', Number(e.target.value));
-                                                        }
+                                                        const player = players.find(p => p.id === Number(e.target.value));
+                                                        if (player) addPlayerToLineup('away', player);
                                                     }}
                                                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                                                 >
                                                     <option value="" disabled>Select Player...</option>
-                                                    {players.filter(p => !awayTeamLineup.includes(p.id)).map(p => (
+                                                    {players.filter(p => !awayTeamLineup.some(lp => lp.id === p.id)).map(p => (
                                                         <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                                                     ))}
                                                 </select>
@@ -338,13 +342,16 @@ function Home({ onStartGame }: HomeProps) {
                                     <div style={{ marginBottom: '20px' }}>
                                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher</label>
                                         <select
-                                            value={awayPitcher}
-                                            onChange={(e) => setAwayPitcher(Number(e.target.value))}
+                                            value={awayPitcher?.id ?? ''}
+                                            onChange={(e) => {
+                                                const player = awayTeamLineup.find(p => p.id === Number(e.target.value));
+                                                if (player) setAwayPitcher(player);
+                                            }}
                                             required
                                             style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#374151', color: 'white', border: '1px solid #4b5563' }}
                                         >
                                             <option value="" disabled>Select Pitcher</option>
-                                            {players.filter(p => awayTeamLineup.includes(p.id)).map(p => (
+                                            {awayTeamLineup.map(p => (
                                                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                                             ))}
                                         </select>
@@ -359,11 +366,10 @@ function Home({ onStartGame }: HomeProps) {
                                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
                                         <div style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}>
                                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                                {homeTeamLineup.map((playerId, index) => {
-                                                    const player = players.find(p => p.id === playerId);
+                                                {homeTeamLineup.map((player, index) => {
                                                     return (
                                                         <li
-                                                            key={playerId}
+                                                            key={player.id}
                                                             draggable
                                                             onDragStart={(e) => handleDragStart(e, 'home', index)}
                                                             onDragOver={handleDragOver}
@@ -382,7 +388,7 @@ function Home({ onStartGame }: HomeProps) {
                                                             <span style={{ display: 'flex', alignItems: 'center' }}>
                                                                 <span style={{ color: '#9ca3af', marginRight: '8px', userSelect: 'none' }}>⋮⋮</span>
                                                                 <span style={{ color: '#9ca3af', marginRight: '10px', width: '20px', display: 'inline-block' }}>{index + 1}.</span>
-                                                                {player ? `${player.firstName} ${player.lastName}` : 'Unknown'}
+                                                                {`${player.firstName} ${player.lastName}`}
                                                             </span>
                                                             <button
                                                                 type="button"
@@ -407,14 +413,13 @@ function Home({ onStartGame }: HomeProps) {
                                                 <select
                                                     value=""
                                                     onChange={(e) => {
-                                                        if (e.target.value) {
-                                                            addPlayerToLineup('home', Number(e.target.value));
-                                                        }
+                                                        const player = players.find(p => p.id === Number(e.target.value));
+                                                        if (player) addPlayerToLineup('home', player);
                                                     }}
                                                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
                                                 >
                                                     <option value="" disabled>Select Player...</option>
-                                                    {players.filter(p => !homeTeamLineup.includes(p.id)).map(p => (
+                                                    {players.filter(p => !homeTeamLineup.some(lp => lp.id === p.id)).map(p => (
                                                         <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                                                     ))}
                                                 </select>
@@ -425,13 +430,16 @@ function Home({ onStartGame }: HomeProps) {
                                     <div style={{ marginBottom: '20px' }}>
                                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher</label>
                                         <select
-                                            value={homePitcher}
-                                            onChange={(e) => setHomePitcher(Number(e.target.value))}
+                                            value={homePitcher?.id ?? ''}
+                                            onChange={(e) => {
+                                                const player = homeTeamLineup.find(p => p.id === Number(e.target.value));
+                                                if (player) setHomePitcher(player);
+                                            }}
                                             required
                                             style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#374151', color: 'white', border: '1px solid #4b5563' }}
                                         >
                                             <option value="" disabled>Select Pitcher</option>
-                                            {players.filter(p => homeTeamLineup.includes(p.id)).map(p => (
+                                            {homeTeamLineup.map(p => (
                                                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                                             ))}
                                         </select>

@@ -1,3 +1,5 @@
+
+
 export const AT_BAT_OUTCOMES = [
     { name: 'Strikeout Swinging', sign: 'K' },
     { name: 'Strikeout Looking', sign: 'KI' },

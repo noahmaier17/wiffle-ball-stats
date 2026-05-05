@@ -1,33 +1,44 @@
-import { useState } from 'react'
-import { PLAYERS } from '../wip_data/batters'
+﻿import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOMES } from '../constants'
-import type { AtBatOutcomeSign, AtBatLogList } from '../types'
+import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName } from '../types'
 import BatterOutcomeText from './BattingOutcomeText'
 
-function AtBat() {
-    const [batter, setBatter] = useState<string>(PLAYERS[0].name)
-    const [pitcher, setPitcher] = useState<string>(PLAYERS[0].name)
+type AtBatProps = {
+    gameData: GameData;
+    onLogAtBat: (atBat: AtBatLog) => void;
+}
+
+function AtBat({ gameData, onLogAtBat }: AtBatProps) {
+    const {
+        awayTeamLineup,
+        homeTeamLineup,
+        awayPitcher,
+        homePitcher,
+        awayTeamBatting,
+        currAwayTeamBatter,
+        currHomeTeamBatter
+    } = gameData;
+
+    const battingLineup = awayTeamBatting ? awayTeamLineup : homeTeamLineup;
+    const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
+    const pitcherName = playerName(awayTeamBatting ? homePitcher : awayPitcher);
+
+    const [batterName, setBatterName] = useState<string>(playerName(currentBatter));
+    useEffect(() => {
+        setBatterName(playerName(currentBatter));
+    }, [currentBatter]);
+
+    // Parameters for the logged occurance
     const [rbis, setRbis] = useState<number>(0)
     const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign>("K")
     const [extraComments, setExtraComments] = useState<string>("")
 
-    const [log, setLog] = useState<AtBatLogList[]>([]);
-
+    // Function to log an at bat
     const logAtBat = () => {
-        // Appends the logged at bat
-        setLog(prev => [
-            ...prev, {
-                batter: batter, 
-                pitcher: pitcher, 
-                rbis: rbis, 
-                outcomeSign: outcomeSign, 
-                extraComments: extraComments
-            }
-        ])
-
-        // Resets values
-        setBatter(PLAYERS[0].name);
-        setPitcher(PLAYERS[0].name);
+        // Updates our log
+        onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, outcomeSign, extraComments });
+        
+        // Resets the values for the form
         setRbis(0);
         setOutcomeSign("K");
         setExtraComments("");
@@ -35,7 +46,7 @@ function AtBat() {
 
     return (<>
         <div>
-            <h2>At Bat Outcome</h2>
+            <h1>Log At Bat</h1>
             <form 
                 className="at-bat-form"
                 onSubmit={(e) => e.preventDefault()}
@@ -43,25 +54,18 @@ function AtBat() {
                 <div>
                     <label>Batter: </label>
                     <select 
-                        value={batter} 
-                        onChange={(e) => setBatter(e.target.value)}
+                        value={batterName} 
+                        onChange={(e) => setBatterName(e.target.value)}
                     >
-                        {PLAYERS.map(p => (
-                            <option key={p.id} value={p.name}>{p.name}</option>
+                        {battingLineup.map(p => (
+                            <option key={p.id} value={playerName(p)}>{playerName(p)}</option>
                         ))}
                     </select>
                 </div>
                 
                 <div>
                     <label>Pitcher: </label>
-                    <select 
-                        value={pitcher} 
-                        onChange={(e) => setPitcher(e.target.value)}
-                    >
-                        {PLAYERS.map(p => (
-                            <option key={p.id} value={p.name}>{p.name}</option>
-                        ))}
-                    </select>
+                    {pitcherName}
                 </div>
 
                 <div>
@@ -108,8 +112,8 @@ function AtBat() {
 
                 <div>
                     <BatterOutcomeText
-                        batter={batter}
-                        pitcher={pitcher}
+                        batter={batterName}
+                        pitcher={pitcherName}
                         rbis={rbis}
                         outcomeSign={outcomeSign}
                     />
@@ -120,14 +124,6 @@ function AtBat() {
                     onClick={() => logAtBat()}
                 >Log at bat</button>
             </form>
-        </div>
-
-        <div>
-            <ul>
-                {log.map((l, index) => (
-                    <li key={index}>{l['batter']}: {l['rbis']}-run {l['outcomeSign']}</li>
-                ))}
-            </ul>
         </div>
     </>)
 }
