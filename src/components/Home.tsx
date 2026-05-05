@@ -193,41 +193,61 @@ function Home({ onStartGame }: HomeProps) {
         e.preventDefault(); // Necessary to allow dropping
     };
 
-    /**
-     * Handles the drop event.
-     * 
-     * @param e - The drag event.
-     * @param team - The team the item is being dropped onto ('away' or 'home').
-     * @param dropIndex - The index in the lineup where the item is being dropped.
-     * 
-     * @remarks
-     * - Prevents the default form submission behavior.
-     * - Retrieves the `team` and `index` from the event's data transfer object.
-     * - If the dragged item is from a different team, it does nothing.
-     * - If the dragged item is dropped on itself (same index), it does nothing.
-     * - Otherwise, it swaps the position of the dragged player in the lineup.
-     * - Updates the state of the relevant team's lineup.
-     */
     const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
         e.preventDefault();
-        const draggedTeam = e.dataTransfer.getData('team');
-        if (draggedTeam !== team) return;
-
+        e.stopPropagation();
+        const draggedTeam = e.dataTransfer.getData('team') as 'away' | 'home';
         const dragIndex = parseInt(e.dataTransfer.getData('index'), 10);
-        if (dragIndex === dropIndex) return;
 
-        if (team === 'away') {
-            const newLineup = [...awayTeamLineup];
-            const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-            newLineup.splice(dropIndex, 0, draggedPlayer);
-            setAwayTeamLineup(newLineup);
+        if (draggedTeam === team) {
+            if (dragIndex === dropIndex) return;
+
+            if (team === 'away') {
+                const newLineup = [...awayTeamLineup];
+                const [draggedPlayer] = newLineup.splice(dragIndex, 1);
+                newLineup.splice(dropIndex, 0, draggedPlayer);
+                setAwayTeamLineup(newLineup);
+            } else {
+                const newLineup = [...homeTeamLineup];
+                const [draggedPlayer] = newLineup.splice(dragIndex, 1);
+                newLineup.splice(dropIndex, 0, draggedPlayer);
+                setHomeTeamLineup(newLineup);
+            }
         } else {
-            const newLineup = [...homeTeamLineup];
-            const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-            newLineup.splice(dropIndex, 0, draggedPlayer);
-            setHomeTeamLineup(newLineup);
+            // Cross-team drag
+            if (draggedTeam === 'away') {
+                const newAwayLineup = [...awayTeamLineup];
+                const [draggedPlayer] = newAwayLineup.splice(dragIndex, 1);
+                
+                // Clear pitcher if necessary
+                if (awayPitcher?.id === draggedPlayer.id) setAwayPitcher(null);
+                
+                const newHomeLineup = [...homeTeamLineup];
+                newHomeLineup.splice(dropIndex, 0, draggedPlayer);
+                
+                setAwayTeamLineup(newAwayLineup);
+                setHomeTeamLineup(newHomeLineup);
+            } else {
+                const newHomeLineup = [...homeTeamLineup];
+                const [draggedPlayer] = newHomeLineup.splice(dragIndex, 1);
+                
+                // Clear pitcher if necessary
+                if (homePitcher?.id === draggedPlayer.id) setHomePitcher(null);
+                
+                const newAwayLineup = [...awayTeamLineup];
+                newAwayLineup.splice(dropIndex, 0, draggedPlayer);
+                
+                setHomeTeamLineup(newHomeLineup);
+                setAwayTeamLineup(newAwayLineup);
+            }
         }
     };
+
+    // Calculate available players dynamically by filtering out anyone already in a lineup
+    const availablePlayers = players.filter(p => 
+        !awayTeamLineup.some(lp => lp.id === p.id) && 
+        !homeTeamLineup.some(lp => lp.id === p.id)
+    );
 
     const renderTeamSection = (
         title: string,
@@ -240,177 +260,182 @@ function Home({ onStartGame }: HomeProps) {
         const setIsAdding = team === 'away' ? setIsAddingAway : setIsAddingHome;
 
         return (
-        <div style={{ flex: 1 }}>
-            <h3 style={{ color: '#9ca3af' }}>{title}</h3>
+            <div style={{ flex: 1 }}>
+                <h3 style={{ color: '#9ca3af' }}>{title}</h3>
 
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
-                <div style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {lineup.map((player, index) => {
-                            return (
-                                <li
-                                    key={player.id}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, team, index)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, team, index)}
-                                    style={{
-                                        padding: '8px',
-                                        marginBottom: '5px',
-                                        backgroundColor: '#4b5563',
-                                        borderRadius: '4px',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        cursor: 'grab'
-                                    }}
-                                >
-                                    <span style={{ display: 'flex', alignItems: 'center' }}>
-                                        <span style={{ color: '#9ca3af', marginRight: '8px', userSelect: 'none' }}>⋮⋮</span>
-                                        <span style={{ color: '#9ca3af', marginRight: '10px', width: '20px', display: 'inline-block' }}>{index + 1}.</span>
-                                        {`${player.firstName} ${player.lastName}`}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removePlayerFromLineup(team, index)}
-                                        style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontWeight: 'bold' }}
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
+                    <div 
+                        style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, team, lineup.length)}
+                    >
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                            {lineup.map((player, index) => {
+                                return (
+                                    <li
+                                        key={player.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, team, index)}
+                                        onDragOver={handleDragOver}
+                                        onDrop={(e) => handleDrop(e, team, index)}
+                                        style={{
+                                            padding: '8px',
+                                            marginBottom: '5px',
+                                            backgroundColor: '#4b5563',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            cursor: 'grab'
+                                        }}
                                     >
-                                        X
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                                            <span style={{ color: '#9ca3af', marginRight: '8px', userSelect: 'none' }}>⋮⋮</span>
+                                            <span style={{ color: '#9ca3af', marginRight: '10px', width: '20px', display: 'inline-block' }}>{index + 1}.</span>
+                                            {`${player.firstName} ${player.lastName}`}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removePlayerFromLineup(team, index)}
+                                            style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontWeight: 'bold' }}
+                                        >
+                                            X
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
 
-                    {!isAdding ? (
-                        <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
-                            <div 
-                                onClick={() => setIsAdding(true)}
-                                style={{
-                                    textAlign: 'center', color: '#9ca3af', fontSize: lineup.length === 0
-                                        ? '2.5rem' : '1.2rem', padding: '5px', borderRadius: '4px', transition: 'background-color 0.2s',
-                                    cursor: 'pointer',
-                                    ...(lineup.length > 0 ? { border: '1px dashed #4b5563' } : {})
-                                }}>
-                                + {lineup.length > 0 && <span style={{ fontSize: '1rem' }}></span>}
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
-                            <Select
-                                autoFocus
-                                menuIsOpen={true}
-                                placeholder="Search Player..."
-                                options={players.filter(p => !lineup.some(lp => lp.id === p.id)).map(p => ({
-                                    value: p.id,
-                                    label: `${p.firstName} ${p.lastName}`
-                                }))}
-                                onChange={(selectedOption: any) => {
-                                    if (selectedOption) {
-                                        const player = players.find(p => p.id === selectedOption.value);
-                                        if (player) addPlayerToLineup(team, player);
-                                        setIsAdding(false);
-                                    }
-                                }}
-                                onBlur={() => setIsAdding(false)}
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        backgroundColor: '#4b5563',
-                                        borderColor: '#6b7280',
-                                        color: 'white',
-                                        boxShadow: 'none',
-                                        '&:hover': {
-                                            borderColor: '#9ca3af'
-                                        }
-                                    }),
-                                    menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: '#374151',
-                                        color: 'white',
-                                        zIndex: 9999
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isFocused ? '#4b5563' : '#374151',
-                                        color: 'white',
+                        {!isAdding ? (
+                            <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
+                                <div
+                                    onClick={() => setIsAdding(true)}
+                                    style={{
+                                        textAlign: 'center', color: '#9ca3af', fontSize: lineup.length === 0
+                                            ? '2.5rem' : '1.2rem', padding: '5px', borderRadius: '4px', transition: 'background-color 0.2s',
                                         cursor: 'pointer',
-                                        ':active': {
-                                            backgroundColor: '#4b5563'
+                                        ...(lineup.length > 0 ? { border: '1px dashed #4b5563' } : {})
+                                    }}>
+                                    + {lineup.length > 0 && <span style={{ fontSize: '1rem' }}></span>}
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
+                                <Select
+                                    autoFocus
+                                    menuIsOpen={true}
+                                    placeholder="Search Player..."
+                                    options={availablePlayers.map(p => ({
+                                        value: p.id,
+                                        label: `${p.firstName} ${p.lastName}`
+                                    }))}
+                                    onChange={(selectedOption: any) => {
+                                        if (selectedOption) {
+                                            const player = players.find(p => p.id === selectedOption.value);
+                                            if (player) addPlayerToLineup(team, player);
+                                            setIsAdding(false);
                                         }
-                                    }),
-                                    singleValue: (base) => ({
-                                        ...base,
-                                        color: 'white'
-                                    }),
-                                    input: (base) => ({
-                                        ...base,
-                                        color: 'white'
-                                    })
-                                }}
-                            />
-                        </div>
-                    )}
+                                    }}
+                                    onBlur={() => setIsAdding(false)}
+                                    styles={{
+                                        control: (base) => ({
+                                            ...base,
+                                            backgroundColor: '#4b5563',
+                                            borderColor: '#6b7280',
+                                            color: 'white',
+                                            boxShadow: 'none',
+                                            '&:hover': {
+                                                borderColor: '#9ca3af'
+                                            }
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            backgroundColor: '#374151',
+                                            color: 'white',
+                                            zIndex: 9999
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isFocused ? '#4b5563' : '#374151',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            ':active': {
+                                                backgroundColor: '#4b5563'
+                                            }
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: 'white'
+                                        }),
+                                        input: (base) => ({
+                                            ...base,
+                                            color: 'white'
+                                        })
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher</label>
+                    <Select
+                        placeholder="Select Pitcher"
+                        value={pitcher ? {
+                            value: pitcher.id,
+                            label: `${pitcher.firstName} ${pitcher.lastName}`
+                        } : null}
+                        onChange={(selectedOption: any) => {
+                            const player = lineup.find(p => p.id === selectedOption?.value);
+                            setPitcher(player || null);
+                        }}
+                        options={lineup.map(p => ({
+                            value: p.id,
+                            label: `${p.firstName} ${p.lastName}`
+                        }))}
+                        isSearchable={true}
+                        styles={{
+                            control: (base) => ({
+                                ...base,
+                                backgroundColor: '#374151',
+                                borderColor: '#4b5563',
+                                color: 'white',
+                                boxShadow: 'none',
+                                '&:hover': {
+                                    borderColor: '#9ca3af'
+                                }
+                            }),
+                            menu: (base) => ({
+                                ...base,
+                                backgroundColor: '#374151',
+                                color: 'white',
+                                zIndex: 9999
+                            }),
+                            option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isFocused ? '#4b5563' : '#374151',
+                                color: 'white',
+                                cursor: 'pointer',
+                                ':active': {
+                                    backgroundColor: '#4b5563'
+                                }
+                            }),
+                            singleValue: (base) => ({
+                                ...base,
+                                color: 'white'
+                            }),
+                            input: (base) => ({
+                                ...base,
+                                color: 'white'
+                            })
+                        }}
+                    />
                 </div>
             </div>
-
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher</label>
-                <Select
-                    placeholder="Select Pitcher"
-                    value={pitcher ? {
-                        value: pitcher.id,
-                        label: `${pitcher.firstName} ${pitcher.lastName}`
-                    } : null}
-                    onChange={(selectedOption: any) => {
-                        const player = lineup.find(p => p.id === selectedOption?.value);
-                        setPitcher(player || null);
-                    }}
-                    options={lineup.map(p => ({
-                        value: p.id,
-                        label: `${p.firstName} ${p.lastName}`
-                    }))}
-                    isSearchable={true}
-                    styles={{
-                        control: (base) => ({
-                            ...base,
-                            backgroundColor: '#374151',
-                            borderColor: '#4b5563',
-                            color: 'white',
-                            boxShadow: 'none',
-                            '&:hover': {
-                                borderColor: '#9ca3af'
-                            }
-                        }),
-                        menu: (base) => ({
-                            ...base,
-                            backgroundColor: '#374151',
-                            color: 'white',
-                            zIndex: 9999
-                        }),
-                        option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? '#4b5563' : '#374151',
-                            color: 'white',
-                            cursor: 'pointer',
-                            ':active': {
-                                backgroundColor: '#4b5563'
-                            }
-                        }),
-                        singleValue: (base) => ({
-                            ...base,
-                            color: 'white'
-                        }),
-                        input: (base) => ({
-                            ...base,
-                            color: 'white'
-                        })
-                    }}
-                />
-            </div>
-        </div>
-    )};
+        )
+    };
 
     return (
         <div className="home-container" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -471,7 +496,7 @@ function Home({ onStartGame }: HomeProps) {
                                     onClick={() => setShowPopup(false)}
                                     style={{ padding: '10px 20px', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
                                 >
-                                    Cancel
+                                    Go Back
                                 </button>
                                 <button
                                     type="submit"

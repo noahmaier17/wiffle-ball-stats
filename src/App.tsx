@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import './App.css'
 import Home from './components/Home.tsx'
 import GameLogger from './components/GameLogger.tsx'
 import type { GameData, AtBatLog } from './types'
-
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 function App() {
 
