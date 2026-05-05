@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PLAYERS } from '../wip_data/batters'
 import { AT_BAT_OUTCOMES } from '../constants'
-import type { AtBatOutcomeSign } from '../types'
+import type { AtBatOutcomeSign, AtBatLogList } from '../types'
 import BatterOutcomeText from './BattingOutcomeText'
 
 function AtBat() {
@@ -11,7 +11,7 @@ function AtBat() {
     const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign>("K")
     const [extraComments, setExtraComments] = useState<string>("")
 
-    const [log, setLog] = useState<object[]>([]);
+    const [log, setLog] = useState<AtBatLogList[]>([]);
 
     const logAtBat = () => {
         setLog(prev => [...prev, {batter: batter, pitcher: pitcher, rbis: rbis, outcomeSign: outcomeSign, extraComments: extraComments}])
@@ -90,6 +90,7 @@ function AtBat() {
                     <textarea
                         value={extraComments}
                         onChange={(e) => setExtraComments(e.target.value)}
+                        placeholder='Extra comments'
                     >
                         {extraComments}
                     </textarea>
@@ -114,7 +115,7 @@ function AtBat() {
         <div>
             <ul>
                 {log.map((l, index) => (
-                    <li key={index}>{l['batter']}; {l['extraComments']}</li>
+                    <li key={index}>{l['batter']}: {l['rbis']}-run {l['outcomeSign']}</li>
                 ))}
             </ul>
         </div>
