@@ -65,24 +65,6 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 </div>
 
                 <div>
-                    <label>RBIs: </label>
-                    <div className="radio-group radio-group--fill">
-                        {[0, 1, 2, 3, 4].map(n => (
-                            <label key={n}>
-                                <input
-                                    type="radio"
-                                    name="rbis"
-                                    value={n}
-                                    checked={rbis === n}
-                                    onChange={() => setRbis(n)}
-                                />
-                                {n}
-                            </label>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
                     <label>Outcome: </label>
                     <div className="radio-group  radio-group--fill">
                         {AT_BAT_OUTCOMES_BASE_HITS.map(abo => (
@@ -99,7 +81,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                         ))}
                     </div>
                     <div className="radio-group  radio-group--fill">
-                        {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
+                        {AT_BAT_OUTCOMES_OTHER.map(abo => (
                             <label key={abo.sign}>
                                 <input
                                     type="radio"
@@ -111,7 +93,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                 {abo.sign}
                             </label>
                         ))}
-                        {AT_BAT_OUTCOMES_OTHER.map(abo => (
+                        {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
                             <label key={abo.sign}>
                                 <input
                                     type="radio"
@@ -126,6 +108,24 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     </div>
                 </div>
 
+                <div>
+                    <label>RBIs: </label>
+                    <div className="radio-group radio-group--fill">
+                        {[0, 1, 2, 3, 4].map(n => (
+                            <label key={n}>
+                                <input
+                                    type="radio"
+                                    name="rbis"
+                                    value={n}
+                                    checked={rbis === n}
+                                    onChange={() => setRbis(n)}
+                                />
+                                {n}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+                
                 <div>
                     <textarea
                         value={extraComments}

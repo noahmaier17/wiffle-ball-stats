@@ -192,9 +192,12 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             <Jumbotron
                 gameData={gameData}
             />
-            <div>
-                <label>Types of logs: </label>
-                <div className="radio-group">
+
+            <hr></hr>
+
+            <div style={{ paddingBottom: "1em" }}>
+                <h3>Types of logs: </h3>
+                <div className="radio-group radio-group--fill">
                     <label>
                         <input
                             type="radio"
@@ -227,6 +230,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     </label>
                 </div>
             </div>
+
+            <hr></hr>
 
             {logType === 'atbat' && (
                 <AtBat
