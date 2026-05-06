@@ -35,6 +35,7 @@ function Home({ onStartGame }: HomeProps) {
     const [lineupError, setLineupError] = useState<string | null>(null);
     const [isAddingAway, setIsAddingAway] = useState(false);
     const [isAddingHome, setIsAddingHome] = useState(false);
+    const [isStartingGame, setIsStartingGame] = useState(false);
 
     useEffect(() => {
         fetchPlayers();
@@ -90,28 +91,64 @@ function Home({ onStartGame }: HomeProps) {
      *   the current game configuration (lineups and pitchers).
      * - This action effectively transitions the application from the setup screen to the game state.
      */
-    const handleStartGameSubmit = (e: React.SyntheticEvent) => {
+    const handleStartGameSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
         if (awayPitcher === null || homePitcher === null) {
             setLineupError('Both teams must have a starting pitcher selected.');
             return;
         }
-        onStartGame({
-            awayTeamLineup,
-            homeTeamLineup,
-            awayPitcher,
-            homePitcher,
 
-            awayTeamBatting: true,
-            inning: 1,
-            numberOfOuts: 0,
+        setIsStartingGame(true);
+        setLineupError(null);
 
-            awayRuns: 0,
-            homeRuns: 0,
+        try {
+            // 1. Create a new game row
+            const { data: gameData, error: gameError } = await supabase
+                .from('games')
+                .insert([{ date: new Date().toISOString().split('T')[0] }])
+                .select()
+                .single();
 
-            currAwayTeamBatter: 0,
-            currHomeTeamBatter: 0,
-        });
+            if (gameError) throw gameError;
+
+            const gameId = gameData.id;
+
+            // 2. Create player_game_stats rows for all players in both lineups
+            const statsToInsert = [
+                ...awayTeamLineup.map(p => ({ player_id: p.id, game_id: gameId })),
+                ...homeTeamLineup.map(p => ({ player_id: p.id, game_id: gameId }))
+            ];
+
+            const { error: statsError } = await supabase
+                .from('player_game_stats')
+                .insert(statsToInsert);
+
+            if (statsError) throw statsError;
+
+            // 3. Start the game locally!
+            onStartGame({
+                gameId,
+                awayTeamLineup,
+                homeTeamLineup,
+                awayPitcher,
+                homePitcher,
+
+                awayTeamBatting: true,
+                inning: 1,
+                numberOfOuts: 0,
+
+                awayRuns: 0,
+                homeRuns: 0,
+
+                currAwayTeamBatter: 0,
+                currHomeTeamBatter: 0,
+            });
+        } catch (error: any) {
+            console.error("Error creating game:", error);
+            setLineupError(error.message || "Failed to create game in the database.");
+        } finally {
+            setIsStartingGame(false);
+        }
     };
 
     /**
@@ -193,6 +230,13 @@ function Home({ onStartGame }: HomeProps) {
         e.preventDefault(); // Necessary to allow dropping
     };
 
+    /**
+     * Handles the drop event.
+     * 
+     * @param e - The drag event.
+     * @param team - The team to drop the player on.
+     * @param dropIndex - The index to drop the player at.
+     */
     const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
         e.preventDefault();
         e.stopPropagation();
@@ -218,25 +262,25 @@ function Home({ onStartGame }: HomeProps) {
             if (draggedTeam === 'away') {
                 const newAwayLineup = [...awayTeamLineup];
                 const [draggedPlayer] = newAwayLineup.splice(dragIndex, 1);
-                
+
                 // Clear pitcher if necessary
                 if (awayPitcher?.id === draggedPlayer.id) setAwayPitcher(null);
-                
+
                 const newHomeLineup = [...homeTeamLineup];
                 newHomeLineup.splice(dropIndex, 0, draggedPlayer);
-                
+
                 setAwayTeamLineup(newAwayLineup);
                 setHomeTeamLineup(newHomeLineup);
             } else {
                 const newHomeLineup = [...homeTeamLineup];
                 const [draggedPlayer] = newHomeLineup.splice(dragIndex, 1);
-                
+
                 // Clear pitcher if necessary
                 if (homePitcher?.id === draggedPlayer.id) setHomePitcher(null);
-                
+
                 const newAwayLineup = [...awayTeamLineup];
                 newAwayLineup.splice(dropIndex, 0, draggedPlayer);
-                
+
                 setHomeTeamLineup(newHomeLineup);
                 setAwayTeamLineup(newAwayLineup);
             }
@@ -244,8 +288,8 @@ function Home({ onStartGame }: HomeProps) {
     };
 
     // Calculate available players dynamically by filtering out anyone already in a lineup
-    const availablePlayers = players.filter(p => 
-        !awayTeamLineup.some(lp => lp.id === p.id) && 
+    const availablePlayers = players.filter(p =>
+        !awayTeamLineup.some(lp => lp.id === p.id) &&
         !homeTeamLineup.some(lp => lp.id === p.id)
     );
 
@@ -265,7 +309,7 @@ function Home({ onStartGame }: HomeProps) {
 
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
-                    <div 
+                    <div
                         style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, team, lineup.length)}
@@ -500,9 +544,10 @@ function Home({ onStartGame }: HomeProps) {
                                 </button>
                                 <button
                                     type="submit"
-                                    style={{ padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                    disabled={isStartingGame}
+                                    style={{ padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isStartingGame ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
                                 >
-                                    Play Ball!
+                                    {isStartingGame ? "Setting up..." : "Play Ball!"}
                                 </button>
                             </div>
                         </form>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { AtBatLog, PitchingChangeLog, GameData, GameLogEntry } from "../types";
+import { supabase } from "../supabase-client";
+import { playerName, type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
 
@@ -10,13 +11,108 @@ type GameLoggerProps = {
     onUpdateGameState: (atBat: AtBatLog) => void;
 }
 
+/*
+    TODO:
+    - Add IPHR and SF to switch case
+    - Add baserunner tracking to optimize RBI selection?
+    - Add game ending/final screen
+*/
+
 function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
 
-    const handleLogAtBat = (atBat: AtBatLog) => {
+    const handleLogAtBat = async (atBat: AtBatLog) => {
         setLog(prev => [...prev, atBat]);
         onUpdateGameState(atBat);
+
+        const batter = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => playerName(p) === atBat.batter);
+        const pitcher = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => playerName(p) === atBat.pitcher);
+
+        if (!batter || !pitcher) return;
+
+        try {
+            // Fetch current stats for both players in this game
+            const { data: statsData, error: statsError } = await supabase
+                .from('player_game_stats')
+                .select('*')
+                .eq('game_id', gameData.gameId)
+                .in('player_id', [batter.id, pitcher.id]);
+
+            if (statsError) throw statsError;
+
+            const batterStats = statsData.find((s: any) => s.player_id === batter.id);
+            const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
+
+            // Define increments/decrements for db updates
+            let batterDelta: any = { runs_batted_in: atBat.rbis };
+            let pitcherDelta: any = { runs_allowed: atBat.rbis };
+
+            const sign = atBat.outcomeSign;
+            switch (sign) {
+                case 'K':
+                case 'KI':
+                    batterDelta.at_bats = 1;
+                    batterDelta.strikeouts = 1;
+                    pitcherDelta.pitched_strikeouts = 1;
+                    pitcherDelta.pitched_outs = 1;
+                    break;
+                case 'Out in Play':
+                    batterDelta.at_bats = 1;
+                    pitcherDelta.pitched_outs = 1;
+                    break;
+                case 'BB':
+                    batterDelta.walks = 1;
+                    pitcherDelta.pitched_walks = 1;
+                    break;
+                case '1B':
+                    batterDelta.at_bats = 1;
+                    batterDelta.singles = 1;
+                    pitcherDelta.hits_allowed = 1;
+                    break;
+                case '2B':
+                    batterDelta.at_bats = 1;
+                    batterDelta.doubles = 1;
+                    pitcherDelta.hits_allowed = 1;
+                    break;
+                case '3B':
+                    batterDelta.at_bats = 1;
+                    batterDelta.triples = 1;
+                    pitcherDelta.hits_allowed = 1;
+                    break;
+                case 'HR':
+                    batterDelta.at_bats = 1;
+                    batterDelta.home_runs = 1;
+                    batterDelta.runs = 1; // Batter scores a run on a HR
+                    pitcherDelta.hits_allowed = 1;
+                    break;
+            }
+
+            // Update Batter
+            if (batterStats) {
+                const updatedBatter = { ...batterStats };
+                for (const key in batterDelta) {
+                    updatedBatter[key] = (updatedBatter[key] || 0) + batterDelta[key];
+                }
+                delete updatedBatter.innings_pitched; // Avoid writing computed columns
+                delete updatedBatter.hits;            // Avoid writing computed columns
+                await supabase.from('player_game_stats').update(updatedBatter).eq('id', batterStats.id);
+            }
+
+            // Update Pitcher
+            if (pitcherStats) {
+                const updatedPitcher = { ...pitcherStats };
+                for (const key in pitcherDelta) {
+                    updatedPitcher[key] = (updatedPitcher[key] || 0) + pitcherDelta[key];
+                }
+                delete updatedPitcher.innings_pitched; // Avoid writing computed columns
+                delete updatedPitcher.hits;            // Avoid writing computed columns
+                await supabase.from('player_game_stats').update(updatedPitcher).eq('id', pitcherStats.id);
+            }
+
+        } catch (error) {
+            console.error("Error updating stats:", error);
+        }
     };
 
     const handleLogPitchingChange = (pitchingChange: PitchingChangeLog) => {
@@ -31,14 +127,14 @@ function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
             </div>
 
             {logType === 'atbat' && (
-                <AtBat 
-                    gameData={gameData} 
-                    onLogAtBat={handleLogAtBat} 
+                <AtBat
+                    gameData={gameData}
+                    onLogAtBat={handleLogAtBat}
                 />
             )}
             {logType === 'pitching_change' && (
-                <PitchingChange 
-                    gameData={gameData} 
+                <PitchingChange
+                    gameData={gameData}
                     onLogPitchingChange={handleLogPitchingChange}
                 />
             )}

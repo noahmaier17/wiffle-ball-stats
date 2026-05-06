@@ -19,6 +19,7 @@ export type Player = {
 export const playerName = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`;
 
 export type GameData = {
+    gameId: number;
     awayTeamLineup: Player[]; // The away team lineup; does not change once set
     homeTeamLineup: Player[]; // The home team lineup; does not change once set
     awayPitcher: Player;
