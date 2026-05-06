@@ -30,18 +30,20 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     }, [currentBatter]);
 
     // Parameters for the logged occurance
-    const [rbis, setRbis] = useState<number>(0)
-    const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign>("K")
+    const [rbis, setRbis] = useState<number | undefined>(undefined) // Default undefined until changed
+    const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign | undefined>(undefined) // Default undefined until changed
     const [extraComments, setExtraComments] = useState<string>("")
 
     // Function to log an at bat
     const logAtBat = () => {
+        if (rbis === undefined || !outcomeSign) return; // Type guard; we cannot handleSubmit unless the button is enabled
+
         // Updates our log
         onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, outcomeSign, extraComments });
 
         // Resets the values for the form
-        setRbis(0);
-        setOutcomeSign("K");
+        setRbis(undefined);
+        setOutcomeSign(undefined);
         setExtraComments("");
     }
 
@@ -115,6 +117,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <button
                     type="submit"
+                    disabled={(rbis === undefined || outcomeSign === undefined)}
+
                     onClick={() => logAtBat()}
                 >Log at bat</button>
             </form>

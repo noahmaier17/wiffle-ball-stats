@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../supabase-client";
-import { playerName, type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
 
@@ -151,8 +151,8 @@ function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerP
             <ul>
                 {log.map((entry, index) =>
                     entry.type === 'atbat'
-                        ? <li key={index}>{playerName(entry.batter)}: {entry.rbis}-run {entry.outcomeSign}</li>
-                        : <li key={index}>Pitching change: {playerName(entry.newPitcher)} subs in for {playerName(entry.oldPitcher)}</li>
+                        ? <li key={index}>{entry.batter.lastName}: {entry.outcomeSign}{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</li>
+                        : <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
                 )}
             </ul>
         </div>
