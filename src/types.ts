@@ -3,7 +3,7 @@ import type { AT_BAT_OUTCOMES } from "./constants";
 export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
 
 export type AtBatLog = {
-    type: 'atbat', // TODO: Remove
+    type: 'atbat',
     batter: string,
     pitcher: string,
     rbis: number,
@@ -36,8 +36,11 @@ export type GameData = {
 }
 
 export type PitchingChangeLog = {
-    type: 'pitching_change', // TODO: Remove
-    newPitcher: string;
+    type: 'pitching_change';
+    oldPitcher: string;
+    newPitcher: string; // Change to Player probably
 }
 
 export type GameLogEntry = AtBatLog | PitchingChangeLog
+
+export type HomeAway = 'home' | 'away'

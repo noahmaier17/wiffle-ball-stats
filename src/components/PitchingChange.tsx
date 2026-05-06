@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { playerName, type GameData, type PitchingChangeLog } from "../types";
+import { useState, useEffect } from "react";
+import { type HomeAway, playerName, type GameData, type PitchingChangeLog } from "../types";
 
 type PitchingChangeProps = {
     gameData: GameData;
@@ -10,9 +10,25 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
     const {
         awayTeamLineup,
         homeTeamLineup,
+        awayPitcher,
+        homePitcher
     } = gameData;
 
-    const [newPitcher, setNewPitcher] = useState<string>("");
+    // Needed to initalize the pitcher
+    const getFirstValidPitcher = (t: HomeAway) => {
+        const lineup = t === 'away' ? awayTeamLineup : homeTeamLineup;
+        const currentPitcher = t === 'away' ? awayPitcher : homePitcher;
+        const first = lineup.find(p => p !== currentPitcher);
+        return first ? playerName(first) : "";
+    };
+
+    const [team, setTeam] = useState<HomeAway>('home');
+    const [newPitcher, setNewPitcher] = useState<string>(() => getFirstValidPitcher('home'));
+
+    // And updates the new pitcher field when we change team
+    useEffect(() => {
+        setNewPitcher(getFirstValidPitcher(team));
+    }, [team]);
 
     return (<>
         <h1>Log Pitching Change</h1>
@@ -21,13 +37,28 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
             onSubmit={(e) => e.preventDefault()}
         >
             <div>
+                <label>Team: </label>
+                <select
+                    value={team}
+                    onChange={(e) => setTeam(e.target.value as HomeAway)}
+                >
+                    <option value={'home'}>Home</option>
+                    <option value={'away'}>Away</option>
+                </select>
+
                 <label>New Pitcher: </label>
                 <select 
                     value={newPitcher} 
                     onChange={(e) => setNewPitcher(e.target.value)}
                 >
-                    {[...awayTeamLineup, ...homeTeamLineup].map(p => (
-                        <option key={p.id} value={playerName(p)}>{playerName(p)}</option>
+                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
+                        <option 
+                            key={p.id} 
+                            value={playerName(p)}
+                            disabled={p === awayPitcher || p === homePitcher}
+                        >
+                            {playerName(p)}
+                        </option>
                     ))}
                 </select>
             </div>
@@ -35,8 +66,12 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
         
             <button
                 type="submit"
-                onClick={() => onLogPitchingChange({ type: 'pitching_change', newPitcher })}
-            >Log at bat</button>
+                onClick={() => onLogPitchingChange({ 
+                    type: 'pitching_change', 
+                    oldPitcher: team === 'away' ? playerName(awayPitcher) : playerName(homePitcher),
+                    newPitcher 
+                })}
+            >Log Pitching Change</button>
         </form>
     </>)
 }

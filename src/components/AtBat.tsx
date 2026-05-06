@@ -19,11 +19,12 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         currHomeTeamBatter
     } = gameData;
 
-    const battingLineup = awayTeamBatting ? awayTeamLineup : homeTeamLineup;
+    // const battingLineup = awayTeamBatting ? awayTeamLineup : homeTeamLineup;
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
     const pitcherName = playerName(awayTeamBatting ? homePitcher : awayPitcher);
 
     const [batterName, setBatterName] = useState<string>(playerName(currentBatter));
+
     useEffect(() => {
         setBatterName(playerName(currentBatter));
     }, [currentBatter]);
@@ -53,14 +54,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
             >
                 <div>
                     <label>Batter: </label>
-                    <select
-                        value={batterName}
-                        onChange={(e) => setBatterName(e.target.value)}
-                    >
-                        {battingLineup.map(p => (
-                            <option key={p.id} value={playerName(p)}>{playerName(p)}</option>
-                        ))}
-                    </select>
+                    {batterName}
                 </div>
 
                 <div>

@@ -21,6 +21,8 @@ function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
 
     const handleLogPitchingChange = (pitchingChange: PitchingChangeLog) => {
         setLog(prev => [...prev, pitchingChange]);
+
+        // TODO: need to do set game data
     };
 
     return (
@@ -47,7 +49,7 @@ function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
                 {log.map((entry, index) =>
                     entry.type === 'atbat'
                         ? <li key={index}>{entry.batter}: {entry.rbis}-run {entry.outcomeSign}</li>
-                        : <li key={index}>Pitching change: {entry.newPitcher}</li>
+                        : <li key={index}>Pitching change: {entry.newPitcher} subs in for {entry.oldPitcher}</li>
                 )}
             </ul>
         </div>
