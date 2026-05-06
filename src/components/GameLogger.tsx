@@ -3,6 +3,7 @@ import { supabase } from "../supabase-client";
 import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
+import Jumbotron from "./Jumbotron";
 
 type LogType = 'atbat' | 'pitching_change';
 
@@ -130,7 +131,11 @@ function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerP
 
     return (
         <div>
+            <Jumbotron
+                gameData={gameData}
+            />
             <div>
+                <label>Types of logs: </label>
                 <button onClick={() => setLogType('atbat')}>Log At Bat</button>
                 <button onClick={() => setLogType('pitching_change')}>Log Pitching Change</button>
             </div>

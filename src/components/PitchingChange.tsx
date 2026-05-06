@@ -46,34 +46,38 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
             className="at-bat-form"
             onSubmit={(e) => e.preventDefault()}
         >
-            <label>Team: </label>
-            <select
-                value={team}
-                onChange={(e) => setTeam(e.target.value as HomeAway)}
-            >
-                <option value={'home'}>Home</option>
-                <option value={'away'}>Away</option>
-            </select>
-
-            <label>New Pitcher: </label>
-            <select
-                value={newPitcher?.id.toString()}
-                onChange={(e) => {
-                    const lineup = team === 'away' ? awayTeamLineup : homeTeamLineup;
-                    setNewPitcher(lineup.find(p => p.id.toString() === e.target.value));
-                }}
-            >
-                {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
-                    <option
-                        key={p.id}
-                        value={p.id.toString()}
-                        disabled={p === awayPitcher || p === homePitcher}
-                    >
-                        {playerName(p)}
-                    </option>
-                ))}
-            </select>
-        
+            <div>
+                <label>Team: </label>
+                <select
+                    value={team}
+                    onChange={(e) => setTeam(e.target.value as HomeAway)}
+                >
+                    <option value={'home'}>Home</option>
+                    <option value={'away'}>Away</option>
+                </select>
+            </div>
+            
+            <div>
+                <label>New Pitcher: </label>
+                <select
+                    value={newPitcher?.id.toString()}
+                    onChange={(e) => {
+                        const lineup = team === 'away' ? awayTeamLineup : homeTeamLineup;
+                        setNewPitcher(lineup.find(p => p.id.toString() === e.target.value));
+                    }}
+                >
+                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
+                        <option
+                            key={p.id}
+                            value={p.id.toString()}
+                            disabled={p === awayPitcher || p === homePitcher}
+                        >
+                            {playerName(p)}
+                        </option>
+                    ))}
+                </select>
+            </div>    
+    
             <button
                 type="submit"
                 disabled={newPitcher === undefined}
