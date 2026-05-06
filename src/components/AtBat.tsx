@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOMES } from '../constants'
-import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName } from '../types'
+import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player } from '../types'
 import BatterOutcomeText from './BattingOutcomeText'
 
 type AtBatProps = {
@@ -21,12 +21,12 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
     // const battingLineup = awayTeamBatting ? awayTeamLineup : homeTeamLineup;
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
-    const pitcherName = playerName(awayTeamBatting ? homePitcher : awayPitcher);
+    const pitcherName = awayTeamBatting ? homePitcher : awayPitcher;
 
-    const [batterName, setBatterName] = useState<string>(playerName(currentBatter));
+    const [batterName, setBatterName] = useState<Player>(currentBatter);
 
     useEffect(() => {
-        setBatterName(playerName(currentBatter));
+        setBatterName(currentBatter);
     }, [currentBatter]);
 
     // Parameters for the logged occurance
@@ -54,12 +54,12 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
             >
                 <div>
                     <label>Batter: </label>
-                    {batterName}
+                    {playerName(batterName)}
                 </div>
 
                 <div>
                     <label>Pitcher: </label>
-                    {pitcherName}
+                    {playerName(pitcherName)}
                 </div>
 
                 <div>
@@ -106,8 +106,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <div>
                     <BatterOutcomeText
-                        batter={batterName}
-                        pitcher={pitcherName}
+                        batter={playerName(batterName)}
+                        pitcher={playerName(pitcherName)}
                         rbis={rbis}
                         outcomeSign={outcomeSign}
                     />

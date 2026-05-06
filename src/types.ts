@@ -4,8 +4,8 @@ export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
 
 export type AtBatLog = {
     type: 'atbat',
-    batter: string,
-    pitcher: string,
+    batter: Player,
+    pitcher: Player,
     rbis: number,
     outcomeSign: AtBatOutcomeSign,
     extraComments: string
@@ -38,8 +38,9 @@ export type GameData = {
 
 export type PitchingChangeLog = {
     type: 'pitching_change';
-    oldPitcher: string;
-    newPitcher: string; // Change to Player probably
+    teamChangingPitchers: HomeAway;
+    oldPitcher: Player;
+    newPitcher: Player;
 }
 
 export type GameLogEntry = AtBatLog | PitchingChangeLog

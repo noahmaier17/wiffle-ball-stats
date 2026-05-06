@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type HomeAway, playerName, type GameData, type PitchingChangeLog } from "../types";
+import { type HomeAway, playerName, type GameData, type PitchingChangeLog, type Player } from "../types";
 
 type PitchingChangeProps = {
     gameData: GameData;
@@ -19,16 +19,26 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
         const lineup = t === 'away' ? awayTeamLineup : homeTeamLineup;
         const currentPitcher = t === 'away' ? awayPitcher : homePitcher;
         const first = lineup.find(p => p !== currentPitcher);
-        return first ? playerName(first) : "";
+        return first;
     };
 
     const [team, setTeam] = useState<HomeAway>('home');
-    const [newPitcher, setNewPitcher] = useState<string>(() => getFirstValidPitcher('home'));
+    const [newPitcher, setNewPitcher] = useState<Player | undefined>(() => getFirstValidPitcher('home'));
 
-    // And updates the new pitcher field when we change team
     useEffect(() => {
         setNewPitcher(getFirstValidPitcher(team));
-    }, [team]);
+    }, [team, awayPitcher, homePitcher]);
+
+    const handleSubmit = () => {
+        if (!newPitcher) return; // Type guard; we cannot handleSubmit unless the button is enabled
+
+        onLogPitchingChange({
+            type: 'pitching_change',
+            teamChangingPitchers: team,
+            oldPitcher: team === 'away' ? awayPitcher : homePitcher,
+            newPitcher
+        });
+    }
 
     return (<>
         <h1>Log Pitching Change</h1>
@@ -36,41 +46,38 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
             className="at-bat-form"
             onSubmit={(e) => e.preventDefault()}
         >
-            <div>
-                <label>Team: </label>
-                <select
-                    value={team}
-                    onChange={(e) => setTeam(e.target.value as HomeAway)}
-                >
-                    <option value={'home'}>Home</option>
-                    <option value={'away'}>Away</option>
-                </select>
+            <label>Team: </label>
+            <select
+                value={team}
+                onChange={(e) => setTeam(e.target.value as HomeAway)}
+            >
+                <option value={'home'}>Home</option>
+                <option value={'away'}>Away</option>
+            </select>
 
-                <label>New Pitcher: </label>
-                <select 
-                    value={newPitcher} 
-                    onChange={(e) => setNewPitcher(e.target.value)}
-                >
-                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
-                        <option 
-                            key={p.id} 
-                            value={playerName(p)}
-                            disabled={p === awayPitcher || p === homePitcher}
-                        >
-                            {playerName(p)}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
+            <label>New Pitcher: </label>
+            <select
+                value={newPitcher?.id.toString()}
+                onChange={(e) => {
+                    const lineup = team === 'away' ? awayTeamLineup : homeTeamLineup;
+                    setNewPitcher(lineup.find(p => p.id.toString() === e.target.value));
+                }}
+            >
+                {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
+                    <option
+                        key={p.id}
+                        value={p.id.toString()}
+                        disabled={p === awayPitcher || p === homePitcher}
+                    >
+                        {playerName(p)}
+                    </option>
+                ))}
+            </select>
         
             <button
                 type="submit"
-                onClick={() => onLogPitchingChange({ 
-                    type: 'pitching_change', 
-                    oldPitcher: team === 'away' ? playerName(awayPitcher) : playerName(homePitcher),
-                    newPitcher 
-                })}
+                disabled={newPitcher === undefined}
+                onClick={() => handleSubmit()}
             >Log Pitching Change</button>
         </form>
     </>)

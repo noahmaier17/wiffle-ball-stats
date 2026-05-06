@@ -61,7 +61,11 @@ function App() {
   };
 
   if (gameState) {
-    return <GameLogger gameData={gameState} onUpdateGameState={handleLogAtBat} />;
+    return <GameLogger 
+      gameData={gameState} 
+      setLogAtBatGameData={handleLogAtBat} 
+      setGameState={setGameState}
+    />;
   }
 
   return (

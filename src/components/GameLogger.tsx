@@ -8,7 +8,8 @@ type LogType = 'atbat' | 'pitching_change';
 
 type GameLoggerProps = {
     gameData: GameData;
-    onUpdateGameState: (atBat: AtBatLog) => void;
+    setLogAtBatGameData: (atBat: AtBatLog) => void;
+    setGameState: React.Dispatch<React.SetStateAction<GameData | null>>;
 }
 
 /*
@@ -18,16 +19,16 @@ type GameLoggerProps = {
     - Add game ending/final screen
 */
 
-function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
+function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
 
     const handleLogAtBat = async (atBat: AtBatLog) => {
         setLog(prev => [...prev, atBat]);
-        onUpdateGameState(atBat);
+        setLogAtBatGameData(atBat);
 
-        const batter = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => playerName(p) === atBat.batter);
-        const pitcher = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => playerName(p) === atBat.pitcher);
+        const batter = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.batter);
+        const pitcher = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.pitcher);
 
         if (!batter || !pitcher) return;
 
@@ -118,7 +119,13 @@ function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
     const handleLogPitchingChange = (pitchingChange: PitchingChangeLog) => {
         setLog(prev => [...prev, pitchingChange]);
 
-        // TODO: need to do set game data
+        setGameState(prev => {
+            if (!prev) return prev;
+
+            return ((pitchingChange.teamChangingPitchers === 'away') 
+                ? { ...prev, awayPitcher: pitchingChange.newPitcher }
+                : { ...prev, homePitcher: pitchingChange.newPitcher })
+        })
     };
 
     return (
@@ -144,8 +151,8 @@ function GameLogger({ gameData, onUpdateGameState }: GameLoggerProps) {
             <ul>
                 {log.map((entry, index) =>
                     entry.type === 'atbat'
-                        ? <li key={index}>{entry.batter}: {entry.rbis}-run {entry.outcomeSign}</li>
-                        : <li key={index}>Pitching change: {entry.newPitcher} subs in for {entry.oldPitcher}</li>
+                        ? <li key={index}>{playerName(entry.batter)}: {entry.rbis}-run {entry.outcomeSign}</li>
+                        : <li key={index}>Pitching change: {playerName(entry.newPitcher)} subs in for {playerName(entry.oldPitcher)}</li>
                 )}
             </ul>
         </div>
