@@ -120,7 +120,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     disabled={(rbis === undefined || outcomeSign === undefined)}
 
                     onClick={() => logAtBat()}
-                >Log at bat</button>
+                >Submit</button>
             </form>
         </div>
     </>)

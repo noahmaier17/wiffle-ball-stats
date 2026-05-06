@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { supabase } from "../supabase-client";
-import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
 import Jumbotron from "./Jumbotron";
+import AdditionalInformation from "./AdditionalInformation";
 
-type LogType = 'atbat' | 'pitching_change';
+type LogType = 'atbat' | 'pitching_change' | 'additional_information';
 
 type GameLoggerProps = {
     gameData: GameData;
-    setLogAtBatGameData: (atBat: AtBatLog) => void;
     setGameState: React.Dispatch<React.SetStateAction<GameData | null>>;
 }
 
@@ -20,13 +20,50 @@ type GameLoggerProps = {
     - Add game ending/final screen
 */
 
-function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerProps) {
+function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
 
     const handleLogAtBat = async (atBat: AtBatLog) => {
         setLog(prev => [...prev, atBat]);
-        setLogAtBatGameData(atBat);
+        setGameState(prev => {
+            if (!prev) return prev;
+
+            let returnGameState: GameData = { ...prev };
+
+            let outsAdded = 0;
+            const sign = atBat.outcomeSign;
+            if (sign === 'K' || sign === 'KI' || sign === 'Out in Play') {
+                outsAdded = 1;
+            }
+
+            let newOuts = returnGameState.numberOfOuts + outsAdded;
+            let switchSides = false;
+
+            if (newOuts >= 3) {
+                switchSides = true;
+                newOuts = 0;
+            }
+
+            returnGameState.numberOfOuts = newOuts;
+
+            if (prev.awayTeamBatting) {
+                returnGameState.currAwayTeamBatter = (returnGameState.currAwayTeamBatter + 1) % returnGameState.awayTeamLineup.length;
+                returnGameState.awayRuns += atBat.rbis;
+            } else {
+                returnGameState.currHomeTeamBatter = (returnGameState.currHomeTeamBatter + 1) % returnGameState.homeTeamLineup.length;
+                returnGameState.homeRuns += atBat.rbis;
+            }
+
+            if (switchSides) {
+                if (!prev.awayTeamBatting) {
+                    returnGameState.inning += 1;
+                }
+                returnGameState.awayTeamBatting = !prev.awayTeamBatting;
+            }
+
+            return returnGameState;
+        });
 
         const batter = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.batter);
         const pitcher = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.pitcher);
@@ -129,6 +166,10 @@ function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerP
         })
     };
 
+    const handleLogAdditionalInformation = (additionalInformation: AdditionalInformationLog) => {
+        setLog(prev => [...prev, additionalInformation])
+    }
+
     return (
         <div>
             <Jumbotron
@@ -136,8 +177,9 @@ function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerP
             />
             <div>
                 <label>Types of logs: </label>
-                <button onClick={() => setLogType('atbat')}>Log At Bat</button>
-                <button onClick={() => setLogType('pitching_change')}>Log Pitching Change</button>
+                <button onClick={() => setLogType('atbat')}>At Bat</button>
+                <button onClick={() => setLogType('pitching_change')}>Pitching Change</button>
+                <button onClick={() => setLogType('additional_information')}>Additional Information</button>
             </div>
 
             {logType === 'atbat' && (
@@ -152,13 +194,29 @@ function GameLogger({ gameData, setLogAtBatGameData, setGameState }: GameLoggerP
                     onLogPitchingChange={handleLogPitchingChange}
                 />
             )}
+            {logType === 'additional_information' && (
+                <AdditionalInformation
+                    onLogAdditionalInformation={handleLogAdditionalInformation}
+                />
+            )}
 
             <ul>
-                {log.map((entry, index) =>
-                    entry.type === 'atbat'
-                        ? <li key={index}>{entry.batter.lastName}: {entry.outcomeSign}{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</li>
-                        : <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
-                )}
+                {log.map((entry, index) => {
+                    switch (entry.type) {
+                        case 'atbat':
+                            return <li 
+                                key={index}
+                            >
+                                <span>{entry.batter.lastName}: {entry.outcomeSign}</span>
+                                <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
+                                <span>{(entry.extraComments !== "" ? "; " : "")}</span>
+                                <em>{entry.extraComments}</em>
+                            </li>
+                        case 'pitching_change':
+                            return <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
+                        case 'additional_information':
+                            return <em key={index}>{entry.info}</em>
+                }})}
             </ul>
         </div>
     );

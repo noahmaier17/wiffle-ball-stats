@@ -87,7 +87,7 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
                 type="submit"
                 disabled={newPitcher === undefined}
                 onClick={() => handleSubmit()}
-            >Log Pitching Change</button>
+            >Submit</button>
         </form>
     </>)
 }

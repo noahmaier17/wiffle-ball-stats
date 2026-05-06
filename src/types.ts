@@ -77,7 +77,16 @@ export type PitchingChangeLog = {
     newPitcher: Player;
 }
 
-export type GameLogEntry = AtBatLog | PitchingChangeLog
+export type AdditionalInformationLog = {
+    type: 'additional_information';
+    info: string;
+}
+
+export type InningSwitchLog = {
+    type: 'inning_switch'
+}
+
+export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationLog | InningSwitchLog
 
 export type HomeAway = 'home' | 'away'
 
