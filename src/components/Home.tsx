@@ -544,8 +544,9 @@ function Home({ onStartGame }: HomeProps) {
                                 </button>
                                 <button
                                     type="submit"
+                                    className="submit-btn"
                                     disabled={isStartingGame}
-                                    style={{ padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isStartingGame ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                                    style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none' }}
                                 >
                                     {isStartingGame ? "Setting up..." : "Play Ball!"}
                                 </button>

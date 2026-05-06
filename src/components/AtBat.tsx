@@ -66,7 +66,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <div>
                     <label>RBIs: </label>
-                    <div className="radio-group">
+                    <div className="radio-group radio-group--fill">
                         {[0, 1, 2, 3, 4].map(n => (
                             <label key={n}>
                                 <input
@@ -84,7 +84,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <div>
                     <label>Outcome: </label>
-                    <div className="radio-group">
+                    <div className="radio-group  radio-group--fill">
                         {AT_BAT_OUTCOMES_BASE_HITS.map(abo => (
                             <label key={abo.sign}>
                                 <input
@@ -97,6 +97,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                 {abo.sign}
                             </label>
                         ))}
+                    </div>
+                    <div className="radio-group  radio-group--fill">
                         {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
                             <label key={abo.sign}>
                                 <input
@@ -145,6 +147,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <button
                     type="submit"
+                    className="submit-btn"
                     disabled={(rbis === undefined || outcomeSign === undefined)}
 
                     onClick={() => logAtBat()}

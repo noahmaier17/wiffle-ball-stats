@@ -12,6 +12,14 @@
   gap: 8px;
 }
 
+.radio-group--fill {
+  flex-wrap: nowrap;
+}
+
+.radio-group--fill label {
+  flex: 1;
+}
+
 .radio-group input[type="radio"] {
   display: none;
 }
@@ -32,6 +40,20 @@
 
 .radio-group input[type="radio"]:checked + span {
   /* handled via label styling below */
+}
+
+.submit-btn {
+  min-height: 52px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .radio-group label:has(input:checked) {

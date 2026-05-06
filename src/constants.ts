@@ -11,8 +11,9 @@ export const AT_BAT_OUTCOMES_BASE_HITS = [
     { name: 'HR', sign: 'HR' }
 ]
 export const AT_BAT_OUTCOMES_OTHER = [
+    { name: 'Out', sign: 'Out' },
     { name: 'Walk', sign: 'BB' },
-    { name: 'Out', sign: 'Out' }
+    { name: 'Inside the Park HR', sign: 'IPHR' }
 ]
 
 export const AT_BAT_OUTCOMES = [...AT_BAT_OUTCOMES_STRIKEOUTS, ...AT_BAT_OUTCOMES_BASE_HITS, ...AT_BAT_OUTCOMES_OTHER]
