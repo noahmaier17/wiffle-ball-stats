@@ -5,3 +5,38 @@
   align-items: left;
   gap: 8px;
 }
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.radio-group input[type="radio"] {
+  display: none;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  user-select: none;
+}
+
+.radio-group input[type="radio"]:checked + span {
+  /* handled via label styling below */
+}
+
+.radio-group label:has(input:checked) {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}

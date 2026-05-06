@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import './App.css'
 import Home from './components/Home.tsx'
 import GameLogger from './components/GameLogger.tsx'
@@ -8,7 +8,7 @@ function App() {
 
   const [gameState, setGameState] = useState<GameData | null>(null);
 
-  /* Debugging use Effects */
+  /* Debugging use Effects *
 
   useEffect(() => {
     console.log(gameState);

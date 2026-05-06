@@ -16,6 +16,7 @@ function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInforma
     }
 
     return (<div>
+        <h1>Log Additional Information</h1>
         <form
             className="at-bat-form"
             onSubmit={(e) => e.preventDefault()}

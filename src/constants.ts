@@ -1,14 +1,18 @@
 
 
-export const AT_BAT_OUTCOMES = [
+export const AT_BAT_OUTCOMES_STRIKEOUTS = [
     { name: 'Strikeout Swinging', sign: 'K' },
-    { name: 'Strikeout Looking', sign: 'KI' },
-    { name: 'Out in Play', sign: 'Out in Play' },
-    { name: 'Walk', sign: 'BB' },
+    { name: 'Strikeout Looking', sign: 'KI' }
+]
+export const AT_BAT_OUTCOMES_BASE_HITS = [
     { name: 'Single', sign: '1B' },
     { name: 'Double', sign: '2B' },
     { name: 'Triple', sign: '3B' },
-    { name: 'HR', sign: 'HR' },
-    { name: 'Inside-the-park HR', sign: 'IPHR' },
-    { name: 'Sacrifice Fly', sign: 'SF' }
+    { name: 'HR', sign: 'HR' }
 ]
+export const AT_BAT_OUTCOMES_OTHER = [
+    { name: 'Walk', sign: 'BB' },
+    { name: 'Out', sign: 'Out' }
+]
+
+export const AT_BAT_OUTCOMES = [...AT_BAT_OUTCOMES_STRIKEOUTS, ...AT_BAT_OUTCOMES_BASE_HITS, ...AT_BAT_OUTCOMES_OTHER]

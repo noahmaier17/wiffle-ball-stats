@@ -11,7 +11,8 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
         awayTeamLineup,
         homeTeamLineup,
         awayPitcher,
-        homePitcher
+        homePitcher,
+        awayTeamBatting
     } = gameData;
 
     // Needed to initalize the pitcher
@@ -22,7 +23,7 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
         return first;
     };
 
-    const [team, setTeam] = useState<HomeAway>('home');
+    const [team, setTeam] = useState<HomeAway>(awayTeamBatting ? 'home' : 'away');
     const [newPitcher, setNewPitcher] = useState<Player | undefined>(() => getFirstValidPitcher('home'));
 
     useEffect(() => {
@@ -48,40 +49,47 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
         >
             <div>
                 <label>Team: </label>
-                <select
-                    value={team}
-                    onChange={(e) => setTeam(e.target.value as HomeAway)}
-                >
-                    <option value={'home'}>Home</option>
-                    <option value={'away'}>Away</option>
-                </select>
+                <div className="radio-group">
+                    {(['away', 'home'] as HomeAway[]).map(t => (
+                        <label key={t}>
+                            <input
+                                type="radio"
+                                name="team"
+                                value={t}
+                                checked={team === t}
+                                onChange={() => setTeam(t)}
+                            />
+                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </label>
+                    ))}
+                </div>
             </div>
 
             <div>
                 <label>Current Pitcher: </label>
                 {team === 'away' ? playerName(awayPitcher) : playerName(homePitcher)}
             </div>
-            
+
             <div>
                 <label>New Pitcher: </label>
-                <select
-                    value={newPitcher?.id.toString()}
-                    onChange={(e) => {
-                        const lineup = team === 'away' ? awayTeamLineup : homeTeamLineup;
-                        setNewPitcher(lineup.find(p => p.id.toString() === e.target.value));
-                    }}
-                >
-                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup]).map(p => (
-                        <option
-                            key={p.id}
-                            value={p.id.toString()}
-                            disabled={p === awayPitcher || p === homePitcher}
-                        >
-                            {playerName(p)}
-                        </option>
-                    ))}
-                </select>
-            </div>    
+                <div className="radio-group">
+                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup])
+                        .filter(p => p !== awayPitcher && p !== homePitcher)
+                        .map(p => (
+                            <label key={p.id}>
+                                <input
+                                    type="radio"
+                                    name="new-pitcher"
+                                    value={p.id.toString()}
+                                    checked={newPitcher?.id === p.id}
+                                    onChange={() => setNewPitcher(p)}
+                                />
+                                {playerName(p)}
+                            </label>
+                        ))
+                    }
+                </div>
+            </div>
     
             <button
                 type="submit"

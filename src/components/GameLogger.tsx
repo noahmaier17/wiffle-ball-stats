@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../supabase-client";
 import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog } from "../types";
 import AtBat from "./AtBat";
@@ -24,29 +24,45 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
 
+    /* Debugging use Effects */
+
+    useEffect(() => {
+        console.log(log);
+    }, [log])
+
+    /* --------------------- */
+
     const handleLogAtBat = async (atBat: AtBatLog) => {
         setLog(prev => [...prev, atBat]);
+
+        // Logs a switch of an inning
+        let outsAdded = 0;
+        const sign = atBat.outcomeSign;
+        if (sign === 'K' || sign === 'KI' || sign === 'Out') {
+            outsAdded = 1;
+        }
+
+        let newOuts = gameData.numberOfOuts + outsAdded;
+        let switchSides = false;
+
+        if (newOuts >= 3) {
+            switchSides = true;
+            newOuts = 0;
+    
+            setLog(prev => [...prev, {
+                type: 'inning_switch'
+            }]);
+        }
+
         setGameState(prev => {
             if (!prev) return prev;
 
             let returnGameState: GameData = { ...prev };
 
-            let outsAdded = 0;
-            const sign = atBat.outcomeSign;
-            if (sign === 'K' || sign === 'KI' || sign === 'Out in Play') {
-                outsAdded = 1;
-            }
-
-            let newOuts = returnGameState.numberOfOuts + outsAdded;
-            let switchSides = false;
-
-            if (newOuts >= 3) {
-                switchSides = true;
-                newOuts = 0;
-            }
-
+            // 1. Update outs
             returnGameState.numberOfOuts = newOuts;
 
+            // 2. Update rbis and batters
             if (prev.awayTeamBatting) {
                 returnGameState.currAwayTeamBatter = (returnGameState.currAwayTeamBatter + 1) % returnGameState.awayTeamLineup.length;
                 returnGameState.awayRuns += atBat.rbis;
@@ -55,6 +71,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 returnGameState.homeRuns += atBat.rbis;
             }
 
+            // 3. Handle switching innings
             if (switchSides) {
                 if (!prev.awayTeamBatting) {
                     returnGameState.inning += 1;
@@ -96,7 +113,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
-                case 'Out in Play':
+                case 'Out':
                     batterDelta.at_bats = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
@@ -177,9 +194,38 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             />
             <div>
                 <label>Types of logs: </label>
-                <button onClick={() => setLogType('atbat')}>At Bat</button>
-                <button onClick={() => setLogType('pitching_change')}>Pitching Change</button>
-                <button onClick={() => setLogType('additional_information')}>Additional Information</button>
+                <div className="radio-group">
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="atbat"
+                            checked={logType === 'atbat'}
+                            onChange={() => setLogType('atbat')}
+                        />
+                        At Bat
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="pitching_change"
+                            checked={logType === 'pitching_change'}
+                            onChange={() => setLogType('pitching_change')}
+                        />
+                        Pitching Change
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="additional_information"
+                            checked={logType === 'additional_information'}
+                            onChange={() => setLogType('additional_information')}
+                        />
+                        Additional Information
+                    </label>
+                </div>
             </div>
 
             {logType === 'atbat' && (
@@ -216,6 +262,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                             return <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
                         case 'additional_information':
                             return <em key={index}>{entry.info}</em>
+                        case 'inning_switch':
+                            return <strong key={index}>Switching innings</strong>
                 }})}
             </ul>
         </div>

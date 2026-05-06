@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { AT_BAT_OUTCOMES } from '../constants'
+import { AT_BAT_OUTCOMES_BASE_HITS, AT_BAT_OUTCOMES_OTHER, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player } from '../types'
 import BatterOutcomeText from './BattingOutcomeText'
 
@@ -66,34 +66,62 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <div>
                     <label>RBIs: </label>
-                    {[0, 1, 2, 3, 4].map(n => (
-                        <label key={n}>
-                            <input
-                                type="radio"
-                                name="rbis"
-                                value={n}
-                                checked={rbis === n}
-                                onChange={() => setRbis(n)}
-                            />
-                            {n}
-                        </label>
-                    ))}
+                    <div className="radio-group">
+                        {[0, 1, 2, 3, 4].map(n => (
+                            <label key={n}>
+                                <input
+                                    type="radio"
+                                    name="rbis"
+                                    value={n}
+                                    checked={rbis === n}
+                                    onChange={() => setRbis(n)}
+                                />
+                                {n}
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div>
                     <label>Outcome: </label>
-                    {AT_BAT_OUTCOMES.map(abo => (
-                        <label key={abo.sign}>
-                            <input
-                                type="radio"
-                                name="bating outcome"
-                                value={abo.sign}
-                                checked={outcomeSign === abo.sign}
-                                onChange={() => setOutcomeSign(abo.sign)}
-                            />
-                            {abo.sign}
-                        </label>
-                    ))}
+                    <div className="radio-group">
+                        {AT_BAT_OUTCOMES_BASE_HITS.map(abo => (
+                            <label key={abo.sign}>
+                                <input
+                                    type="radio"
+                                    name="batting-outcome"
+                                    value={abo.sign}
+                                    checked={outcomeSign === abo.sign}
+                                    onChange={() => setOutcomeSign(abo.sign)}
+                                />
+                                {abo.sign}
+                            </label>
+                        ))}
+                        {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
+                            <label key={abo.sign}>
+                                <input
+                                    type="radio"
+                                    name="batting-outcome"
+                                    value={abo.sign}
+                                    checked={outcomeSign === abo.sign}
+                                    onChange={() => setOutcomeSign(abo.sign)}
+                                />
+                                {abo.sign}
+                            </label>
+                        ))}
+                        {AT_BAT_OUTCOMES_OTHER.map(abo => (
+                            <label key={abo.sign}>
+                                <input
+                                    type="radio"
+                                    name="batting-outcome"
+                                    value={abo.sign}
+                                    checked={outcomeSign === abo.sign}
+                                    onChange={() => setOutcomeSign(abo.sign)}
+                                />
+                                {abo.sign}
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div>
