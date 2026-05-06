@@ -56,6 +56,11 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
                     <option value={'away'}>Away</option>
                 </select>
             </div>
+
+            <div>
+                <label>Current Pitcher: </label>
+                {team === 'away' ? playerName(awayPitcher) : playerName(homePitcher)}
+            </div>
             
             <div>
                 <label>New Pitcher: </label>
