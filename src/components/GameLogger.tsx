@@ -38,7 +38,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         // Logs a switch of an inning
         let outsAdded = 0;
         const sign = atBat.outcomeSign;
-        if (sign === 'K' || sign === 'KI' || sign === 'Out') {
+        if (sign === 'K' || sign === 'Out') {
             outsAdded = 1;
         }
 
@@ -107,7 +107,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             const sign = atBat.outcomeSign;
             switch (sign) {
                 case 'K':
-                case 'KI':
                     batterDelta.at_bats = 1;
                     batterDelta.strikeouts = 1;
                     pitcherDelta.pitched_strikeouts = 1;
