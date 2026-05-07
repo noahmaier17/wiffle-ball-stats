@@ -143,33 +143,32 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             let batterDelta: any = { runs_batted_in: atBat.rbis, plate_appearances: 1 };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
+            batterDelta.plate_appearances = 1;
+            batterDelta.at_bats = 1; // Except walk
             switch (atBat.outcomeSign) {
+                case 'reverse-K':
                 case 'K':
-                    batterDelta.at_bats = 1;
                     batterDelta.strikeouts = 1;
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
                 case 'Out':
-                    batterDelta.at_bats = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
                 case 'BB':
+                    batterDelta.at_bats = 0; // 0 for a walk
                     batterDelta.walks = 1;
                     pitcherDelta.pitched_walks = 1;
                     break;
                 case '1B':
-                    batterDelta.at_bats = 1;
                     batterDelta.singles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '2B':
-                    batterDelta.at_bats = 1;
                     batterDelta.doubles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '3B':
-                    batterDelta.at_bats = 1;
                     batterDelta.triples = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
@@ -256,76 +255,76 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             )}
 
             <div style={{ paddingBottom: "1em" }}>
-                        <h3>Types of logs: </h3>
-                        <div className="radio-group radio-group--fill">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="atbat"
-                                    checked={logType === 'atbat'}
-                                    onChange={() => setLogType('atbat')}
-                                />
-                                At Bat
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="pitching_change"
-                                    checked={logType === 'pitching_change'}
-                                    onChange={() => setLogType('pitching_change')}
-                                />
-                                Pitching Change
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="additional_information"
-                                    checked={logType === 'additional_information'}
-                                    onChange={() => setLogType('additional_information')}
-                                />
-                                Additional Information
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="edit_gamestate"
-                                    checked={logType === 'edit_gamestate'}
-                                    onChange={() => setLogType('edit_gamestate')}
-                                />
-                                Edit Gamestate
-                            </label>
-                        </div>
-                    </div>
+                <h3>Types of logs: </h3>
+                <div className="radio-group radio-group--fill">
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="atbat"
+                            checked={logType === 'atbat'}
+                            onChange={() => setLogType('atbat')}
+                        />
+                        At Bat
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="pitching_change"
+                            checked={logType === 'pitching_change'}
+                            onChange={() => setLogType('pitching_change')}
+                        />
+                        Pitching Change
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="additional_information"
+                            checked={logType === 'additional_information'}
+                            onChange={() => setLogType('additional_information')}
+                        />
+                        Additional Information
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="edit_gamestate"
+                            checked={logType === 'edit_gamestate'}
+                            onChange={() => setLogType('edit_gamestate')}
+                        />
+                        Edit Gamestate
+                    </label>
+                </div>
+            </div>
 
-                    <hr></hr>
+            <hr></hr>
 
-                    {logType === 'atbat' && (
-                        <AtBat
-                            gameData={gameData}
-                            onLogAtBat={handleLogAtBat}
-                        />
-                    )}
-                    {logType === 'pitching_change' && (
-                        <PitchingChange
-                            gameData={gameData}
-                            onLogPitchingChange={handleLogPitchingChange}
-                        />
-                    )}
-                    {logType === 'additional_information' && (
-                        <AdditionalInformation
-                            onLogAdditionalInformation={handleLogAdditionalInformation}
-                        />
-                    )}
-                    {logType === 'edit_gamestate' && (
-                        <EditGamestate
-                            gameData={gameData}
-                            onUpdate={handleEditGamestate}
-                        />
-                    )}
+            {logType === 'atbat' && (
+                <AtBat
+                    gameData={gameData}
+                    onLogAtBat={handleLogAtBat}
+                />
+            )}
+            {logType === 'pitching_change' && (
+                <PitchingChange
+                    gameData={gameData}
+                    onLogPitchingChange={handleLogPitchingChange}
+                />
+            )}
+            {logType === 'additional_information' && (
+                <AdditionalInformation
+                    onLogAdditionalInformation={handleLogAdditionalInformation}
+                />
+            )}
+            {logType === 'edit_gamestate' && (
+                <EditGamestate
+                    gameData={gameData}
+                    onUpdate={handleEditGamestate}
+                />
+            )}
 
             <ul>
                 {log.map((entry, index) => {
