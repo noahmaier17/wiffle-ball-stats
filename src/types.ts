@@ -7,6 +7,7 @@ export type AtBatLog = {
     batter: Player,
     pitcher: Player,
     rbis: number,
+    recordedOuts: number,
     outcomeSign: AtBatOutcomeSign,
     extraComments: string
 }

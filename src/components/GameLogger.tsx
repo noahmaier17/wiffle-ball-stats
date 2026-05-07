@@ -36,13 +36,15 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setLog(prev => [...prev, atBat]);
 
         // Logs a switch of an inning
+        /*
         let outsAdded = 0;
         const sign = atBat.outcomeSign;
         if (sign === 'K' || sign === 'Out') {
             outsAdded = 1;
         }
+        */
 
-        let newOuts = gameData.numberOfOuts + outsAdded;
+        let newOuts = gameData.numberOfOuts + atBat.recordedOuts;
         let switchSides = false;
 
         if (newOuts >= 3) {

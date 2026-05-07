@@ -32,20 +32,40 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     // Parameters for the logged occurance
     const [rbis, setRbis] = useState<number | undefined>(undefined) // Default undefined until changed
     const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign | undefined>(undefined) // Default undefined until changed
+    const [recordedOuts, setRecordedOuts] = useState<number | undefined>(undefined) // Default undefined until changed
     const [extraComments, setExtraComments] = useState<string>("")
 
     // Function to log an at bat
     const logAtBat = () => {
-        if (rbis === undefined || !outcomeSign) return; // Type guard; we cannot handleSubmit unless the button is enabled
+        // Type guard; we cannot handleSubmit unless the button is enabled
+        if (rbis === undefined || !outcomeSign || recordedOuts === undefined) return;
 
         // Updates our log
-        onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, outcomeSign, extraComments });
+        onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, recordedOuts, outcomeSign, extraComments });
 
         // Resets the values for the form
         setRbis(undefined);
         setOutcomeSign(undefined);
+        setRecordedOuts(undefined);
         setExtraComments("");
     }
+
+    // If we select specific outcomes, we must change our RBIs and Recorded Outs
+    useEffect(() => {
+        if (AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) { // Strikeout
+            setRbis(0);
+            setRecordedOuts(1);
+        } else if (outcomeSign === 'HR') {
+            setRbis(1);
+            setRecordedOuts(0);
+        } else if (outcomeSign === 'IPHR') { 
+            setRbis(1);
+        } else if (outcomeSign === 'BB') {
+            setRecordedOuts(0);
+        } else if (outcomeSign === 'Out' && recordedOuts === 0) {
+            setRecordedOuts(1);
+        }
+    }, [outcomeSign])
 
     return (<>
         <div>
@@ -72,7 +92,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                 <input
                                     type="radio"
                                     name="batting-outcome"
-                                    value={abo.sign}
+                                    value={abo.sign === 'Out' ? 'Out in Play' : abo.sign}
                                     checked={outcomeSign === abo.sign}
                                     onChange={() => setOutcomeSign(abo.sign)}
                                 />
@@ -117,6 +137,11 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                     type="radio"
                                     name="rbis"
                                     value={n}
+                                    disabled={
+                                        (n !== 0 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
+                                        (n === 0 && (outcomeSign === 'HR' || outcomeSign === 'IPHR')) ||
+                                        (n > 1 && outcomeSign === 'BB')
+                                    }
                                     checked={rbis === n}
                                     onChange={() => setRbis(n)}
                                 />
@@ -125,7 +150,32 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                         ))}
                     </div>
                 </div>
-                
+
+                <div>
+                    <label>Recorded Outs: </label>
+                    <div className="radio-group radio-group--fill">
+                        {[0, 1, 2, 3].map(n => (
+                                <label key={n}>
+                                    <input
+                                        type="radio"
+                                        name="recorded outs"
+                                        value={n}
+                                        disabled={
+                                            (gameData.numberOfOuts + n > 3) ||
+                                            (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
+                                            (n !== 0 && outcomeSign === 'HR') ||
+                                            (n !== 0 && outcomeSign === 'BB') ||
+                                            (n === 0 && outcomeSign === 'Out')
+                                        }
+                                        checked={recordedOuts === n}
+                                        onChange={() => setRecordedOuts(n)}
+                                    />
+                                    {n}
+                                </label>
+                            ))}
+                    </div>
+                </div>
+
                 <div>
                     <textarea
                         value={extraComments}
@@ -148,7 +198,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 <button
                     type="submit"
                     className="submit-btn"
-                    disabled={(rbis === undefined || outcomeSign === undefined)}
+                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined)}
 
                     onClick={() => logAtBat()}
                 >Submit</button>

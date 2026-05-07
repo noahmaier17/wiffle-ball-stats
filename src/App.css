@@ -24,10 +24,6 @@ body {
   flex-wrap: nowrap;
 }
 
-.radio-group--fill label {
-  /* flex: 1; */
-}
-
 .radio-group input[type="radio"] {
   display: none;
 }
@@ -46,10 +42,6 @@ body {
   user-select: none;
 }
 
-.radio-group input[type="radio"]:checked + span {
-  /* handled via label styling below */
-}
-
 .submit-btn {
   min-height: 52px;
   padding: 12px 24px;
@@ -62,6 +54,13 @@ body {
 .submit-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.radio-group label:has(input:disabled) {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  border-color: #d1d5db;
+  cursor: not-allowed;
 }
 
 .radio-group label:has(input:checked) {
