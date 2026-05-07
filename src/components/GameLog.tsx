@@ -11,7 +11,7 @@ function GameLog({ log }: GameLogProps) {
                 switch (entry.type) {
                     case 'atbat':
                         return <li key={index}>
-                            <span>{entry.batter.lastName}: {entry.outcomeSign}</span>
+                            <span>{entry.batter.firstName[0] + ". " + entry.batter.lastName}: {entry.outcomeSign}</span>
                             <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
                             <span>{(entry.extraComments !== "" ? "; " : "")}</span>
                             <em>{entry.extraComments}</em>

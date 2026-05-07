@@ -381,7 +381,7 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
         const setIsAdding = team === 'away' ? setIsAddingAway : setIsAddingHome;
 
         return (
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: '1 1 250px' }}>
                 <h3 style={{ color: '#9ca3af' }}>{title}</h3>
 
                 <div style={{ marginBottom: '20px' }}>
@@ -628,12 +628,13 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                 <div className="popup-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
-                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    padding: '1rem'
                 }}>
                     <div className="popup-content" style={{
                         backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
                         maxHeight: '90vh', overflowY: 'auto', border: '1px solid #374151',
-                        minWidth: '700px', color: 'white', textAlign: 'left',
+                        width: '100%', maxWidth: '700px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
                         <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
@@ -647,7 +648,7 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                         )}
 
                         <form onSubmit={handleStartGameSubmit}>
-                            <div style={{ display: 'flex', gap: '40px', marginTop: '20px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', marginTop: '20px' }}>
 
                                 {renderTeamSection('Away Team', 'away', awayTeamLineup, awayPitcher, setAwayPitcher)}
                                 {renderTeamSection('Home Team', 'home', homeTeamLineup, homePitcher, setHomePitcher)}
@@ -681,12 +682,13 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                 <div className="popup-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
-                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    padding: '1rem'
                 }}>
                     <div style={{
                         backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
                         maxHeight: '80vh', overflowY: 'auto', border: '1px solid #374151',
-                        minWidth: '500px', color: 'white', textAlign: 'left',
+                        width: '100%', maxWidth: '500px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
                         <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
@@ -717,6 +719,7 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                                             cursor: 'pointer',
                                             border: '1px solid #4b5563',
                                             display: 'flex',
+                                            flexWrap: 'wrap', gap: '10px',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                         }}
@@ -750,12 +753,13 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                 <div className="popup-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
-                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    padding: '1rem'
                 }}>
                     <div style={{
                         backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
                         maxHeight: '80vh', overflowY: 'auto', border: '1px solid #374151',
-                        minWidth: '500px', color: 'white', textAlign: 'left',
+                        width: '100%', maxWidth: '500px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
                         <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
@@ -786,6 +790,7 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                                             cursor: 'pointer',
                                             border: '1px solid #4b5563',
                                             display: 'flex',
+                                            flexWrap: 'wrap', gap: '10px',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                         }}

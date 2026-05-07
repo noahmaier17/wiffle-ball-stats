@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOMES_BASE_HITS, AT_BAT_OUTCOMES_OTHER, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
-import BatterOutcomeText from './BattingOutcomeText'
 
 type AtBatProps = {
     gameData: GameData;
@@ -193,15 +192,6 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     >
                         {extraComments}
                     </textarea>
-                </div>
-
-                <div>
-                    <BatterOutcomeText
-                        batter={playerName(batterName)}
-                        pitcher={playerName(pitcherName)}
-                        rbis={rbis}
-                        outcomeSign={outcomeSign}
-                    />
                 </div>
 
                 <button
