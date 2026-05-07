@@ -19,6 +19,28 @@ export type Player = {
 }
 export const playerName = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`;
 
+export type PlayerDatabaseSchema = {
+    id: number,
+    player_id: number,
+    game_id: number,
+    at_bats: number,
+    doubles: number,
+    triples: number,
+    home_runs: number,
+    runs_batted_in: number,
+    walks: number,
+    strikeouts: number,
+    runs_allowed: number,
+    pitched_strikeouts: number,
+    pitched_walks: number,
+    hits_allowed: number,
+    innings_pitched: number,
+    hits: number,
+    singles: number,
+    pitched_outs: number,
+    plate_appearances: number
+}
+
 export type GameData = {
     gameId: number;
     awayTeamLineup: Player[]; // The away team lineup; does not change once set

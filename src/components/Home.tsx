@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabase-client';
 import type { Player, GameData } from '../types';
 import Select from 'react-select';
 
 type HomeProps = {
+    players: Player[];
+    loading: boolean;
     onStartGame: (gameData: GameData) => void;
     onSpectateGame: (gameId: number) => void;
+    onViewStatistics: () => void;
 };
 
 /**
@@ -22,10 +25,8 @@ type HomeProps = {
  * 4. Packaging the finalized lineups and game configuration, and passing them to the parent component
  *    via the `onStartGame` prop to initiate the game state (transitioning to the `AtBat` screen).
  */
-function Home({ onStartGame, onSpectateGame }: HomeProps) {
-    const [players, setPlayers] = useState<Player[]>([]);
+function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics }: HomeProps) {
     const [showPopup, setShowPopup] = useState(false);
-    const [loading, setLoading] = useState(true);
 
     // Lineup state
     const [awayTeamLineup, setAwayTeamLineup] = useState<Player[]>([]);
@@ -47,38 +48,6 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
     const [spectateGames, setSpectateGames] = useState<any[]>([]);
     const [loadingSpectateGames, setLoadingSpectateGames] = useState(false);
     const [spectateError, setSpectateError] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetchPlayers();
-    }, []);
-
-    /**
-     * Fetches the list of players from the Supabase database.
-     * 
-     * @remarks
-     * - Queries the 'players' table in Supabase.
-     * - Maps the database records to the local `Player` type.
-     * - Updates the `players` state with the fetched data.
-     * - Handles loading and error states, updating the `loading` and `lineupError` states accordingly.
-     */
-    const fetchPlayers = async () => {
-        setLoading(true);
-
-        // Fetch from supabase 'players' table
-        const { data, error } = await supabase.from('players').select('id, first_name, last_name');
-
-        if (error) {
-            console.error("Error fetching players:", error);
-        } else if (data) {
-            const mappedData = data.map((p: any) => ({
-                id: p.id,
-                firstName: p.first_name,
-                lastName: p.last_name
-            }));
-            setPlayers(mappedData);
-        }
-        setLoading(false);
-    };
 
     const fetchGames = async () => {
         setLoadingGames(true);
@@ -623,6 +592,21 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                     }}
                 >
                     Spectate a Game
+                </button>
+                <button
+                    onClick={onViewStatistics}
+                    style={{
+                        padding: '12px 24px',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer',
+                        backgroundColor: '#374151',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    View Statistics
                 </button>
             </div>
 

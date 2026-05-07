@@ -3,13 +3,36 @@ import './App.css'
 import Home from './components/Home.tsx'
 import GameLogger from './components/GameLogger.tsx'
 import Spectate from './components/Spectate.tsx'
-import type { GameData } from './types'
+import PlayerStatisticsDepot from './components/PlayerStatisticsDepot.tsx'
+import type { GameData, Player } from './types'
 import { supabase } from "./supabase-client.ts";
 
 function App() {
 
     const [gameState, setGameState] = useState<GameData | null>(null);
     const [spectateGameId, setSpectateGameId] = useState<number | null>(null);
+    const [showStatistics, setShowStatistics] = useState(false);
+    const [players, setPlayers] = useState<Player[]>([]);
+    const [playersLoading, setPlayersLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPlayers();
+    }, []);
+
+    const fetchPlayers = async () => {
+        setPlayersLoading(true);
+        const { data, error } = await supabase.from('players').select('id, first_name, last_name');
+        if (error) {
+            console.error("Error fetching players:", error);
+        } else if (data) {
+            setPlayers(data.map((p: any) => ({
+                id: p.id,
+                firstName: p.first_name,
+                lastName: p.last_name,
+            })));
+        }
+        setPlayersLoading(false);
+    };
 
     /* Debugging use Effects *
 
@@ -54,8 +77,18 @@ function App() {
         return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
     }
 
+    if (showStatistics) {
+        return <PlayerStatisticsDepot players={players} onBack={() => setShowStatistics(false)} />;
+    }
+
     return (
-        <Home onStartGame={setGameState} onSpectateGame={setSpectateGameId} />
+        <Home
+            players={players}
+            loading={playersLoading}
+            onStartGame={setGameState}
+            onSpectateGame={setSpectateGameId}
+            onViewStatistics={() => setShowStatistics(true)}
+        />
     );
 }
 

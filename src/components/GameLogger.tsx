@@ -162,19 +162,23 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     pitcherDelta.pitched_walks = 1;
                     break;
                 case '1B':
+                    batterDelta.hits = 1;
                     batterDelta.singles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '2B':
+                    batterDelta.hits = 1;
                     batterDelta.doubles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '3B':
+                    batterDelta.hits = 1;
                     batterDelta.triples = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case 'HR':
                 case 'IPHR':
+                    batterDelta.hits = 1;
                     batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
@@ -188,7 +192,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     updatedBatter[key] = (updatedBatter[key] || 0) + batterDelta[key];
                 }
                 delete updatedBatter.innings_pitched; // Avoid writing computed columns
-                delete updatedBatter.hits;            // Avoid writing computed columns
                 await supabase.from('player_game_stats').update(updatedBatter).eq('id', batterStats.id);
             }
 
@@ -199,7 +202,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     updatedPitcher[key] = (updatedPitcher[key] || 0) + pitcherDelta[key];
                 }
                 delete updatedPitcher.innings_pitched; // Avoid writing computed columns
-                delete updatedPitcher.hits;            // Avoid writing computed columns
                 await supabase.from('player_game_stats').update(updatedPitcher).eq('id', pitcherStats.id);
             }
 
