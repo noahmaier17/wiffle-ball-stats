@@ -40,9 +40,24 @@ function Spectate({ gameId, onBack }: SpectateProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+    const playersRef = useRef<Player[]>([]);
 
     useEffect(() => {
+        // Subscribe first so no updates are missed while the initial fetch is in flight
+        const channel = supabase
+            .channel(`spectate-${gameId}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'games',
+                filter: `id=eq.${gameId}`,
+            }, (payload) => {
+                const updated = buildGameData(payload.new, playersRef.current);
+                if (updated) setGameData(updated);
+                if (payload.new.logs?.length) setLog(payload.new.logs);
+            })
+            .subscribe((status) => console.log('Spectate subscription:', status));
+
         const load = async () => {
             const [{ data: playersData }, { data: gameRow, error: gameError }] = await Promise.all([
                 supabase.from('players').select('id, first_name, last_name'),
@@ -61,6 +76,8 @@ function Spectate({ gameId, onBack }: SpectateProps) {
                 lastName: p.last_name,
             }));
 
+            playersRef.current = players;
+
             const gd = buildGameData(gameRow, players);
             if (!gd) {
                 setError('Game data is incomplete.');
@@ -71,28 +88,11 @@ function Spectate({ gameId, onBack }: SpectateProps) {
             setGameData(gd);
             if (gameRow.logs?.length) setLog(gameRow.logs);
             setLoading(false);
-
-            // Subscribe to realtime updates for live games
-            channelRef.current = supabase
-                .channel(`spectate-${gameId}`)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'games',
-                    filter: `id=eq.${gameId}`,
-                }, (payload) => {
-                    const updated = buildGameData(payload.new, players);
-                    if (updated) setGameData(updated);
-                    if (payload.new.logs?.length) setLog(payload.new.logs);
-                })
-                .subscribe();
         };
 
         load();
 
-        return () => {
-            if (channelRef.current) supabase.removeChannel(channelRef.current);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [gameId]);
 
     if (loading) return <div style={{ padding: '2rem' }}>Loading game...</div>;
