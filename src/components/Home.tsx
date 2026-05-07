@@ -80,6 +80,7 @@ function Home({ onStartGame }: HomeProps) {
         const { data, error } = await supabase
             .from('games')
             .select('*')
+            .neq('game_over', true)
             .order('date', { ascending: false });
         if (error) {
             setResumeError(error.message);
@@ -528,6 +529,16 @@ function Home({ onStartGame }: HomeProps) {
         )
     };
 
+    const formatGameTime = (date: string, time: string | null) => {
+        if (!time) return null;
+        return new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Los_Angeles',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        }).format(new Date(`${date}T${time}Z`));
+    };
+
     return (
         <div className="home-container" style={{ padding: '2rem', textAlign: 'center' }}>
             <h1>Wiffle Ball Stats</h1>
@@ -667,7 +678,9 @@ function Home({ onStartGame }: HomeProps) {
                                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#4b5563')}
                                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#374151')}
                                     >
-                                        <span style={{ fontWeight: 'bold' }}>{game.date}</span>
+                                        <span style={{ fontWeight: 'bold' }}>
+                                            {game.date}{game.time ? ' — ' + formatGameTime(game.date, game.time) : ''}
+                                        </span>
                                         <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
                                             Away {game.away_score ?? 0} – {game.home_score ?? 0} Home &nbsp;|&nbsp; Inning {game.inning ?? 1}
                                         </span>
