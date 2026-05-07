@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOMES_BASE_HITS, AT_BAT_OUTCOMES_OTHER, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
 
@@ -83,7 +83,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 onSubmit={(e) => e.preventDefault()}
             >
                 <div style={{ whiteSpace: 'pre-wrap' }}>
-                    <label><b><u>Batting {ordinalNumber(currAwayTeamBatter + 1)}:{"\t"}</u></b></label>
+                    <label><b><u>Batting {ordinalNumber((awayTeamBatting ? currAwayTeamBatter : currHomeTeamBatter) + 1)}:{"\t"}</u></b></label>
                     {playerName(batterName)}
                 </div>
 
