@@ -6,6 +6,7 @@ import PitchingChange from "./PitchingChange";
 import Jumbotron from "./Jumbotron";
 import AdditionalInformation from "./AdditionalInformation";
 import EditGamestate from "./EditGamestate";
+import GameLog from "./GameLog";
 
 type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
 
@@ -326,27 +327,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 />
             )}
 
-            <ul>
-                {log.map((entry, index) => {
-                    switch (entry.type) {
-                        case 'atbat':
-                            return <li
-                                key={index}
-                            >
-                                <span>{entry.batter.lastName}: {entry.outcomeSign}</span>
-                                <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
-                                <span>{(entry.extraComments !== "" ? "; " : "")}</span>
-                                <em>{entry.extraComments}</em>
-                            </li>
-                        case 'pitching_change':
-                            return <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
-                        case 'additional_information':
-                            return <em key={index}>{entry.info}</em>
-                        case 'inning_switch':
-                            return <strong key={index}>Switching innings</strong>
-                    }
-                })}
-            </ul>
+            <GameLog log={log} />
         </div>
     );
 }

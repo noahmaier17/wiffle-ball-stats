@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import './App.css'
 import Home from './components/Home.tsx'
 import GameLogger from './components/GameLogger.tsx'
+import Spectate from './components/Spectate.tsx'
 import type { GameData } from './types'
 import { supabase } from "./supabase-client.ts";
 
 function App() {
 
     const [gameState, setGameState] = useState<GameData | null>(null);
+    const [spectateGameId, setSpectateGameId] = useState<number | null>(null);
 
     /* Debugging use Effects *
 
@@ -47,8 +49,12 @@ function App() {
         />;
     }
 
+    if (spectateGameId !== null) {
+        return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
+    }
+
     return (
-        <Home onStartGame={setGameState} />
+        <Home onStartGame={setGameState} onSpectateGame={setSpectateGameId} />
     );
 }
 

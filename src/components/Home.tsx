@@ -5,6 +5,7 @@ import Select from 'react-select';
 
 type HomeProps = {
     onStartGame: (gameData: GameData) => void;
+    onSpectateGame: (gameId: number) => void;
 };
 
 /**
@@ -21,7 +22,7 @@ type HomeProps = {
  * 4. Packaging the finalized lineups and game configuration, and passing them to the parent component
  *    via the `onStartGame` prop to initiate the game state (transitioning to the `AtBat` screen).
  */
-function Home({ onStartGame }: HomeProps) {
+function Home({ onStartGame, onSpectateGame }: HomeProps) {
     const [players, setPlayers] = useState<Player[]>([]);
     const [showPopup, setShowPopup] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -41,6 +42,11 @@ function Home({ onStartGame }: HomeProps) {
     const [games, setGames] = useState<any[]>([]);
     const [loadingGames, setLoadingGames] = useState(false);
     const [resumeError, setResumeError] = useState<string | null>(null);
+
+    const [showSpectatePopup, setShowSpectatePopup] = useState(false);
+    const [spectateGames, setSpectateGames] = useState<any[]>([]);
+    const [loadingSpectateGames, setLoadingSpectateGames] = useState(false);
+    const [spectateError, setSpectateError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchPlayers();
@@ -129,6 +135,26 @@ function Home({ onStartGame }: HomeProps) {
     const openResumePopup = () => {
         setShowResumePopup(true);
         fetchGames();
+    };
+
+    const fetchSpectateGames = async () => {
+        setLoadingSpectateGames(true);
+        setSpectateError(null);
+        const { data, error } = await supabase
+            .from('games')
+            .select('*')
+            .order('date', { ascending: false });
+        if (error) {
+            setSpectateError(error.message);
+        } else {
+            setSpectateGames(data || []);
+        }
+        setLoadingSpectateGames(false);
+    };
+
+    const openSpectatePopup = () => {
+        setShowSpectatePopup(true);
+        fetchSpectateGames();
     };
 
     /**
@@ -580,6 +606,22 @@ function Home({ onStartGame }: HomeProps) {
                 >
                     Resume a Game
                 </button>
+                <button
+                    onClick={openSpectatePopup}
+                    disabled={loading}
+                    style={{
+                        padding: '12px 24px',
+                        fontSize: '1.2rem',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        backgroundColor: '#4b5563',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    Spectate a Game
+                </button>
             </div>
 
             {showPopup && (
@@ -695,6 +737,81 @@ function Home({ onStartGame }: HomeProps) {
                         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #374151', paddingTop: '15px' }}>
                             <button
                                 onClick={() => setShowResumePopup(false)}
+                                style={{ padding: '10px 20px', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSpectatePopup && (
+                <div className="popup-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
+                        maxHeight: '80vh', overflowY: 'auto', border: '1px solid #374151',
+                        minWidth: '500px', color: 'white', textAlign: 'left',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
+                            Spectate a Game
+                        </h2>
+
+                        {spectateError && (
+                            <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
+                                {spectateError}
+                            </div>
+                        )}
+
+                        {loadingSpectateGames ? (
+                            <p style={{ textAlign: 'center', color: '#9ca3af' }}>Loading games...</p>
+                        ) : spectateGames.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#9ca3af' }}>No games found.</p>
+                        ) : (
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                {spectateGames.map(game => (
+                                    <li
+                                        key={game.id}
+                                        onClick={() => { setShowSpectatePopup(false); onSpectateGame(game.id); }}
+                                        style={{
+                                            padding: '12px 16px',
+                                            marginBottom: '8px',
+                                            backgroundColor: '#374151',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            border: '1px solid #4b5563',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#4b5563')}
+                                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#374151')}
+                                    >
+                                        <span style={{ fontWeight: 'bold' }}>
+                                            {game.date}{game.time ? ' — ' + formatGameTime(game.date, game.time) : ''}
+                                        </span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
+                                                Away {game.away_score ?? 0} – {game.home_score ?? 0} Home &nbsp;|&nbsp; Inning {game.inning ?? 1}
+                                            </span>
+                                            {game.game_over
+                                                ? <span style={{ backgroundColor: '#374151', color: '#9ca3af', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid #4b5563' }}>FINAL</span>
+                                                : <span style={{ backgroundColor: '#166534', color: '#86efac', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>LIVE</span>
+                                            }
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #374151', paddingTop: '15px' }}>
+                            <button
+                                onClick={() => setShowSpectatePopup(false)}
                                 style={{ padding: '10px 20px', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
                             >
                                 Cancel
