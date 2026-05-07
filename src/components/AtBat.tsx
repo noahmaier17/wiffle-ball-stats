@@ -67,6 +67,15 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         }
     }, [outcomeSign])
 
+    const outcomeButtonText = (sign: string) => {
+        switch (sign) {
+            case 'reverse-K':
+                return <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>K</span>
+            default:
+                return <>{sign}</>
+        }
+    }
+
     return (<>
         <div>
             <h1>Log At Bat</h1>
@@ -92,11 +101,11 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                 <input
                                     type="radio"
                                     name="batting-outcome"
-                                    value={abo.sign === 'Out' ? 'Out in Play' : abo.sign}
+                                    value={abo.sign}
                                     checked={outcomeSign === abo.sign}
                                     onChange={() => setOutcomeSign(abo.sign)}
                                 />
-                                {abo.sign}
+                                {outcomeButtonText(abo.sign)}
                             </label>
                         ))}
                     </div>
@@ -110,7 +119,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                     checked={outcomeSign === abo.sign}
                                     onChange={() => setOutcomeSign(abo.sign)}
                                 />
-                                {abo.sign}
+                                {outcomeButtonText(abo.sign)}
                             </label>
                         ))}
                         {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
@@ -122,7 +131,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                     checked={outcomeSign === abo.sign}
                                     onChange={() => setOutcomeSign(abo.sign)}
                                 />
-                                {abo.sign}
+                                {outcomeButtonText(abo.sign)}
                             </label>
                         ))}
                     </div>
@@ -155,24 +164,24 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     <label>Recorded Outs: </label>
                     <div className="radio-group radio-group--fill">
                         {[0, 1, 2, 3].map(n => (
-                                <label key={n}>
-                                    <input
-                                        type="radio"
-                                        name="recorded outs"
-                                        value={n}
-                                        disabled={
-                                            (gameData.numberOfOuts + n > 3) ||
-                                            (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
-                                            (n !== 0 && outcomeSign === 'HR') ||
-                                            (n !== 0 && outcomeSign === 'BB') ||
-                                            (n === 0 && outcomeSign === 'Out')
-                                        }
-                                        checked={recordedOuts === n}
-                                        onChange={() => setRecordedOuts(n)}
-                                    />
-                                    {n}
-                                </label>
-                            ))}
+                            <label key={n}>
+                                <input
+                                    type="radio"
+                                    name="recorded outs"
+                                    value={n}
+                                    disabled={
+                                        (gameData.numberOfOuts + n > 3) ||
+                                        (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
+                                        (n !== 0 && outcomeSign === 'HR') ||
+                                        (n !== 0 && outcomeSign === 'BB') ||
+                                        (n === 0 && outcomeSign === 'Out')
+                                    }
+                                    checked={recordedOuts === n}
+                                    onChange={() => setRecordedOuts(n)}
+                                />
+                                {n}
+                            </label>
+                        ))}
                     </div>
                 </div>
 

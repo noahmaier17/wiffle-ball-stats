@@ -1,7 +1,8 @@
 
 
 export const AT_BAT_OUTCOMES_STRIKEOUTS = [
-    { name: 'Strikeout', sign: 'K' }
+    { name: 'Strikeout Swinging', sign: 'K' }, 
+    { name: 'Strikeout Looking', sign: 'reverse-K' }
 ]
 export const AT_BAT_OUTCOMES_BASE_HITS = [
     { name: 'Single', sign: '1B' },

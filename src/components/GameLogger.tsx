@@ -119,38 +119,36 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             let batterDelta: any = { runs_batted_in: atBat.rbis };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
+            batterDelta.plate_appearances = 1;
+            batterDelta.at_bats = 1; // Except walk
             switch (atBat.outcomeSign) {
+                case 'reverse-K':
                 case 'K':
-                    batterDelta.at_bats = 1;
                     batterDelta.strikeouts = 1;
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
                 case 'Out':
-                    batterDelta.at_bats = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
                 case 'BB':
+                    batterDelta.at_bats = 0; // 0 for a walk
                     batterDelta.walks = 1;
                     pitcherDelta.pitched_walks = 1;
                     break;
                 case '1B':
-                    batterDelta.at_bats = 1;
                     batterDelta.singles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '2B':
-                    batterDelta.at_bats = 1;
                     batterDelta.doubles = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case '3B':
-                    batterDelta.at_bats = 1;
                     batterDelta.triples = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case 'HR':
-                    batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
