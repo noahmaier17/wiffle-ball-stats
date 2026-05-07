@@ -35,29 +35,50 @@ function buildGameData(game: any, players: Player[]): GameData | null {
     };
 }
 
+const playPing = () => {
+    const ctx = new AudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+};
+
 function Spectate({ gameId, onBack }: SpectateProps) {
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const playersRef = useRef<Player[]>([]);
+    const prevLogLengthRef = useRef(0);
 
     useEffect(() => {
-        // Subscribe first so no updates are missed while the initial fetch is in flight
-        const channel = supabase
-            .channel(`spectate-${gameId}`)
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'games',
-                filter: `id=eq.${gameId}`,
-            }, (payload) => {
-                const updated = buildGameData(payload.new, playersRef.current);
-                if (updated) setGameData(updated);
-                if (payload.new.logs?.length) setLog(payload.new.logs);
-            })
-            .subscribe((status) => console.log('Spectate subscription:', status));
+        if (log.length > prevLogLengthRef.current && prevLogLengthRef.current > 0) {
+            playPing();
+        }
+        prevLogLengthRef.current = log.length;
+    }, [log]);
 
+    const fetchGame = async () => {
+        const { data: gameRow, error: gameError } = await supabase
+            .from('games')
+            .select('*')
+            .eq('id', gameId)
+            .single();
+
+        if (gameError || !gameRow) return;
+
+        const gd = buildGameData(gameRow, playersRef.current);
+        if (gd) setGameData(gd);
+        if (gameRow.logs?.length) setLog(gameRow.logs);
+    };
+
+    useEffect(() => {
         const load = async () => {
             const [{ data: playersData }, { data: gameRow, error: gameError }] = await Promise.all([
                 supabase.from('players').select('id, first_name, last_name'),
@@ -70,15 +91,13 @@ function Spectate({ gameId, onBack }: SpectateProps) {
                 return;
             }
 
-            const players: Player[] = playersData.map((p: any) => ({
+            playersRef.current = playersData.map((p: any) => ({
                 id: p.id,
                 firstName: p.first_name,
                 lastName: p.last_name,
             }));
 
-            playersRef.current = players;
-
-            const gd = buildGameData(gameRow, players);
+            const gd = buildGameData(gameRow, playersRef.current);
             if (!gd) {
                 setError('Game data is incomplete.');
                 setLoading(false);
@@ -92,7 +111,8 @@ function Spectate({ gameId, onBack }: SpectateProps) {
 
         load();
 
-        return () => { supabase.removeChannel(channel); };
+        const interval = setInterval(fetchGame, 5000);
+        return () => clearInterval(interval);
     }, [gameId]);
 
     if (loading) return <div style={{ padding: '2rem' }}>Loading game...</div>;
