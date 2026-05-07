@@ -232,6 +232,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
     return (
         <div>
+            <button onClick={() => setGameState(null)}>← Back</button>
             <Jumbotron
                 gameData={gameData}
             />
