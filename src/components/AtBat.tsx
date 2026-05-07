@@ -62,7 +62,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
             setRbis(1);
         } else if (outcomeSign === 'BB') {
             setRecordedOuts(0);
-        } else if (outcomeSign === 'Out' && recordedOuts === 0) {
+        } else if (outcomeSign === 'Out' && (recordedOuts === 0 || recordedOuts === undefined)) {
             setRecordedOuts(1);
         }
     }, [outcomeSign])

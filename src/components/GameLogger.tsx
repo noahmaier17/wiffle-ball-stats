@@ -33,17 +33,18 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
     /* --------------------- */
 
+    useEffect(() => {
+        if (log.length === 0) return;
+
+        supabase
+            .from('games')
+            .update({ logs: log })
+            .eq('id', gameData.gameId)
+            .then(({ error }) => console.log('logs update error:', error));
+    }, [log])
+
     const handleLogAtBat = async (atBat: AtBatLog) => {
         setLog(prev => [...prev, atBat]);
-
-        // Logs a switch of an inning
-        /*
-        let outsAdded = 0;
-        const sign = atBat.outcomeSign;
-        if (sign === 'K' || sign === 'Out') {
-            outsAdded = 1;
-        }
-        */
 
         let newOuts = gameData.numberOfOuts + atBat.recordedOuts;
         let switchSides = false;
@@ -85,8 +86,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             return returnGameState;
         });
 
-        const batter = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.batter);
-        const pitcher = [...gameData.awayTeamLineup, ...gameData.homeTeamLineup].find(p => p === atBat.pitcher);
+        const batter = atBat.batter;
+        const pitcher = atBat.pitcher;
 
         if (!batter || !pitcher) return;
 
@@ -107,8 +108,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             let batterDelta: any = { runs_batted_in: atBat.rbis };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
-            const sign = atBat.outcomeSign;
-            switch (sign) {
+            switch (atBat.outcomeSign) {
                 case 'K':
                     batterDelta.at_bats = 1;
                     batterDelta.strikeouts = 1;
@@ -141,7 +141,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 case 'HR':
                     batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
-                    batterDelta.runs = 1; // Batter scores a run on a HR
                     pitcherDelta.hits_allowed = 1;
                     break;
             }
