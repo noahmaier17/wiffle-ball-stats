@@ -37,6 +37,11 @@ function Home({ onStartGame }: HomeProps) {
     const [isAddingHome, setIsAddingHome] = useState(false);
     const [isStartingGame, setIsStartingGame] = useState(false);
 
+    const [showResumePopup, setShowResumePopup] = useState(false);
+    const [games, setGames] = useState<any[]>([]);
+    const [loadingGames, setLoadingGames] = useState(false);
+    const [resumeError, setResumeError] = useState<string | null>(null);
+
     useEffect(() => {
         fetchPlayers();
     }, []);
@@ -69,15 +74,57 @@ function Home({ onStartGame }: HomeProps) {
         setLoading(false);
     };
 
-    /**
-     * Initiates the game setup process.
-     * 
-     * @remarks
-     * - Displays the game setup modal/popup, allowing the user to configure lineups.
-     * - This function is typically triggered by a user action, such as clicking a "Start Game" button.
-     */
+    const fetchGames = async () => {
+        setLoadingGames(true);
+        setResumeError(null);
+        const { data, error } = await supabase
+            .from('games')
+            .select('*')
+            .order('date', { ascending: false });
+        if (error) {
+            setResumeError(error.message);
+        } else {
+            setGames(data || []);
+        }
+        setLoadingGames(false);
+    };
+
+    const handleResumeGame = (game: any) => {
+        const findPlayer = (id: number) => players.find(p => p.id === id);
+
+        const awayLineup = (game.away_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+        const homeLineup = (game.home_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+        const awayPitcherPlayer = findPlayer(game.away_pitcher_id);
+        const homePitcherPlayer = findPlayer(game.home_pitcher_id);
+
+        if (!awayPitcherPlayer || !homePitcherPlayer || awayLineup.length === 0 || homeLineup.length === 0) {
+            setResumeError('This game does not have enough data to resume.');
+            return;
+        }
+
+        onStartGame({
+            gameId: game.id,
+            awayTeamLineup: awayLineup,
+            homeTeamLineup: homeLineup,
+            awayPitcher: awayPitcherPlayer,
+            homePitcher: homePitcherPlayer,
+            awayTeamBatting: game.away_team_is_batting ?? true,
+            inning: game.inning ?? 1,
+            numberOfOuts: game.number_of_outs ?? 0,
+            awayRuns: game.away_score ?? 0,
+            homeRuns: game.home_score ?? 0,
+            currAwayTeamBatter: game.current_away_team_batter_index ?? 0,
+            currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
+        });
+    };
+
     const startGame = () => {
         setShowPopup(true);
+    };
+
+    const openResumePopup = () => {
+        setShowResumePopup(true);
+        fetchGames();
     };
 
     /**
@@ -486,23 +533,40 @@ function Home({ onStartGame }: HomeProps) {
             <h1>Wiffle Ball Stats</h1>
             <p>Welcome to the Wiffle Ball Stat Tracker!</p>
 
-            <button
-                onClick={startGame}
-                disabled={loading}
-                style={{
-                    padding: '12px 24px',
-                    fontSize: '1.2rem',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    marginTop: '20px'
-                }}
-            >
-                {loading ? "Loading Players..." : "Start a New Game"}
-            </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+                <button
+                    onClick={startGame}
+                    disabled={loading}
+                    style={{
+                        padding: '12px 24px',
+                        fontSize: '1.2rem',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    {loading ? "Loading Players..." : "Start a New Game"}
+                </button>
+                <button
+                    onClick={openResumePopup}
+                    disabled={loading}
+                    style={{
+                        padding: '12px 24px',
+                        fontSize: '1.2rem',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    Resume a Game
+                </button>
+            </div>
 
             {showPopup && (
                 <div className="popup-overlay" style={{
@@ -553,6 +617,73 @@ function Home({ onStartGame }: HomeProps) {
                             </div>
                         </form>
 
+                    </div>
+                </div>
+            )}
+
+            {showResumePopup && (
+                <div className="popup-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
+                        maxHeight: '80vh', overflowY: 'auto', border: '1px solid #374151',
+                        minWidth: '500px', color: 'white', textAlign: 'left',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
+                            Resume a Game
+                        </h2>
+
+                        {resumeError && (
+                            <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
+                                {resumeError}
+                            </div>
+                        )}
+
+                        {loadingGames ? (
+                            <p style={{ textAlign: 'center', color: '#9ca3af' }}>Loading games...</p>
+                        ) : games.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#9ca3af' }}>No games found.</p>
+                        ) : (
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                {games.map(game => (
+                                    <li
+                                        key={game.id}
+                                        onClick={() => handleResumeGame(game)}
+                                        style={{
+                                            padding: '12px 16px',
+                                            marginBottom: '8px',
+                                            backgroundColor: '#374151',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            border: '1px solid #4b5563',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#4b5563')}
+                                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#374151')}
+                                    >
+                                        <span style={{ fontWeight: 'bold' }}>{game.date}</span>
+                                        <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
+                                            Away {game.away_score ?? 0} – {game.home_score ?? 0} Home &nbsp;|&nbsp; Inning {game.inning ?? 1}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #374151', paddingTop: '15px' }}>
+                            <button
+                                onClick={() => setShowResumePopup(false)}
+                                style={{ padding: '10px 20px', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
