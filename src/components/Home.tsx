@@ -639,9 +639,19 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                         width: '100%', maxWidth: '700px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
-                        <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
-                            Set Lineups
-                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px', marginBottom: '15px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowPopup(false)}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.5rem', padding: '0 15px 0 0', display: 'flex', alignItems: 'center' }}
+                                aria-label="Go Back"
+                            >
+                                &larr;
+                            </button>
+                            <h2 style={{ marginTop: 0, marginBottom: 0, flex: 1, textAlign: 'center', marginRight: '30px' }}>
+                                Set Lineups
+                            </h2>
+                        </div>
 
                         {lineupError && (
                             <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
@@ -693,9 +703,19 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                         width: '100%', maxWidth: '500px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
-                        <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
-                            Resume a Game
-                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px', marginBottom: '15px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowResumePopup(false)}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.5rem', padding: '0 15px 0 0', display: 'flex', alignItems: 'center' }}
+                                aria-label="Go Back"
+                            >
+                                &larr;
+                            </button>
+                            <h2 style={{ marginTop: 0, marginBottom: 0, flex: 1, textAlign: 'center', marginRight: '30px' }}>
+                                Resume a Game
+                            </h2>
+                        </div>
 
                         {resumeError && (
                             <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
@@ -764,9 +784,19 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
                         width: '100%', maxWidth: '500px', color: 'white', textAlign: 'left',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
                     }}>
-                        <h2 style={{ marginTop: 0, textAlign: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px' }}>
-                            Spectate a Game
-                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px', marginBottom: '15px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowSpectatePopup(false)}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.5rem', padding: '0 15px 0 0', display: 'flex', alignItems: 'center' }}
+                                aria-label="Go Back"
+                            >
+                                &larr;
+                            </button>
+                            <h2 style={{ marginTop: 0, marginBottom: 0, flex: 1, textAlign: 'center', marginRight: '30px' }}>
+                                Spectate a Game
+                            </h2>
+                        </div>
 
                         {spectateError && (
                             <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
