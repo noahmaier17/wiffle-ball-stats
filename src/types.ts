@@ -87,7 +87,13 @@ export type InningSwitchLog = {
     type: 'inning_switch'
 }
 
-export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationLog | InningSwitchLog
+export type EditGamestateLog = {
+    type: 'edit_gamestate';
+    newGameData: GameData;
+    info: string;
+}
+
+export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationLog | InningSwitchLog | EditGamestateLog
 
 export type HomeAway = 'home' | 'away'
 

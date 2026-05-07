@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase-client";
-import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
 import Jumbotron from "./Jumbotron";
 import AdditionalInformation from "./AdditionalInformation";
+import EditGamestate from "./EditGamestate";
 
-type LogType = 'atbat' | 'pitching_change' | 'additional_information';
+type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
 
 type GameLoggerProps = {
     gameData: GameData;
@@ -188,6 +189,10 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setLog(prev => [...prev, additionalInformation])
     }
 
+    const handleEditGamestate = (editGamestateLog: EditGamestateLog) => {
+        setGameState(editGamestateLog.newGameData);
+    }
+
     return (
         <div>
             <Jumbotron
@@ -229,6 +234,16 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                         />
                         Additional Information
                     </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="logType"
+                            value="edit_gamestate"
+                            checked={logType === 'edit_gamestate'}
+                            onChange={() => setLogType('edit_gamestate')}
+                        />
+                        Edit Gamestate
+                    </label>
                 </div>
             </div>
 
@@ -249,6 +264,12 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             {logType === 'additional_information' && (
                 <AdditionalInformation
                     onLogAdditionalInformation={handleLogAdditionalInformation}
+                />
+            )}
+            {logType === 'edit_gamestate' && (
+                <EditGamestate
+                    gameData={gameData}
+                    onUpdate={handleEditGamestate}
                 />
             )}
 
