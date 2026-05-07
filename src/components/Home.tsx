@@ -86,7 +86,7 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
         const { data, error } = await supabase
             .from('games')
             .select('*')
-            .neq('game_over', true)
+            .eq('game_over', false)
             .order('date', { ascending: false });
         if (error) {
             setResumeError(error.message);
@@ -122,9 +122,9 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
             homeRuns: game.home_score ?? 0,
             currAwayTeamBatter: game.current_away_team_batter_index ?? 0,
             currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
-            isGameOver: ((game.inning >= 3 && !game.away_team_is_batting && game.home_score > game.away_score) || 
-                         (game.inning >= 3 && game.away_team_is_batting && game.number_of_outs >= 3 && game.home_score > game.away_score) ||
-                         (game.inning >= 3 && !game.away_team_is_batting && game.number_of_outs >= 3 && game.away_score !== game.home_score))
+            isGameOver: ((game.inning >= 3 && !game.away_team_is_batting && game.home_score > game.away_score) ||
+                (game.inning >= 3 && game.away_team_is_batting && game.number_of_outs >= 3 && game.home_score > game.away_score) ||
+                (game.inning >= 3 && !game.away_team_is_batting && game.number_of_outs >= 3 && game.away_score !== game.home_score))
         });
     };
 

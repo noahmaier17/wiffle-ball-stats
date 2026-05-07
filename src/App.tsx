@@ -25,7 +25,7 @@ function App() {
 
         supabase
             .from('games')
-            .update({ 
+            .update({
                 home_score: gameState.homeRuns,
                 away_score: gameState.awayRuns,
                 away_pitcher_id: gameState.awayPitcher.id,
@@ -36,7 +36,8 @@ function App() {
                 inning: gameState.inning,
                 number_of_outs: gameState.numberOfOuts,
                 current_away_team_batter_index: gameState.currAwayTeamBatter,
-                current_home_team_batter_index: gameState.currHomeTeamBatter
+                current_home_team_batter_index: gameState.currHomeTeamBatter,
+                game_over: !!gameState.isGameOver
             })
             .eq('id', gameState.gameId)
             .then(({ error }) => console.log('logs update error:', error));
@@ -44,8 +45,8 @@ function App() {
 
     if (gameState) {
         return <GameLogger
-        gameData={gameState}
-        setGameState={setGameState}
+            gameData={gameState}
+            setGameState={setGameState}
         />;
     }
 
