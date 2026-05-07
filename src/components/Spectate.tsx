@@ -35,12 +35,34 @@ function buildGameData(game: any, players: Player[]): GameData | null {
     };
 }
 
+const playPing = () => {
+    const ctx = new AudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+};
+
 function Spectate({ gameId, onBack }: SpectateProps) {
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const playersRef = useRef<Player[]>([]);
+    const prevLogLengthRef = useRef(0);
+
+    useEffect(() => {
+        if (log.length > prevLogLengthRef.current && prevLogLengthRef.current > 0) {
+            playPing();
+        }
+        prevLogLengthRef.current = log.length;
+    }, [log]);
 
     const fetchGame = async () => {
         const { data: gameRow, error: gameError } = await supabase
