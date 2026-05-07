@@ -34,6 +34,17 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     /* --------------------- */
 
     useEffect(() => {
+        supabase
+            .from('games')
+            .select('logs')
+            .eq('id', gameData.gameId)
+            .single()
+            .then(({ data }) => {
+                if (data?.logs?.length) setLog(data.logs);
+            });
+    }, []);
+
+    useEffect(() => {
         if (log.length === 0) return;
 
         supabase
