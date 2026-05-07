@@ -87,7 +87,8 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
             .from('games')
             .select('*')
             .eq('game_over', false)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .order('time', { ascending: false, nullsFirst: false });
         if (error) {
             setResumeError(error.message);
         } else {
@@ -143,7 +144,8 @@ function Home({ onStartGame, onSpectateGame }: HomeProps) {
         const { data, error } = await supabase
             .from('games')
             .select('*')
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .order('time', { ascending: false, nullsFirst: false });
         if (error) {
             setSpectateError(error.message);
         } else {
