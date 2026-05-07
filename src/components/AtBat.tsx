@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOMES_BASE_HITS, AT_BAT_OUTCOMES_OTHER, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
-import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player } from '../types'
+import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
 import BatterOutcomeText from './BattingOutcomeText'
 
 type AtBatProps = {
@@ -58,7 +58,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         } else if (outcomeSign === 'HR') {
             setRbis(1);
             setRecordedOuts(0);
-        } else if (outcomeSign === 'IPHR') { 
+        } else if (outcomeSign === 'IPHR') {
             setRbis(1);
         } else if (outcomeSign === 'BB') {
             setRecordedOuts(0);
@@ -74,13 +74,13 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 className="at-bat-form"
                 onSubmit={(e) => e.preventDefault()}
             >
-                <div>
-                    <label>Batter: </label>
+                <div style={{ whiteSpace: 'pre-wrap' }}>
+                    <label><b><u>Batting {ordinalNumber(currAwayTeamBatter + 1)}:{"\t"}</u></b></label>
                     {playerName(batterName)}
                 </div>
 
-                <div>
-                    <label>Pitcher: </label>
+                <div style={{ whiteSpace: 'pre-wrap' }}>
+                    <label><b><u>Pitcher:{"\t\t"}</u></b></label>
                     {playerName(pitcherName)}
                 </div>
 
@@ -155,24 +155,24 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     <label>Recorded Outs: </label>
                     <div className="radio-group radio-group--fill">
                         {[0, 1, 2, 3].map(n => (
-                                <label key={n}>
-                                    <input
-                                        type="radio"
-                                        name="recorded outs"
-                                        value={n}
-                                        disabled={
-                                            (gameData.numberOfOuts + n > 3) ||
-                                            (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
-                                            (n !== 0 && outcomeSign === 'HR') ||
-                                            (n !== 0 && outcomeSign === 'BB') ||
-                                            (n === 0 && outcomeSign === 'Out')
-                                        }
-                                        checked={recordedOuts === n}
-                                        onChange={() => setRecordedOuts(n)}
-                                    />
-                                    {n}
-                                </label>
-                            ))}
+                            <label key={n}>
+                                <input
+                                    type="radio"
+                                    name="recorded outs"
+                                    value={n}
+                                    disabled={
+                                        (gameData.numberOfOuts + n > 3) ||
+                                        (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
+                                        (n !== 0 && outcomeSign === 'HR') ||
+                                        (n !== 0 && outcomeSign === 'BB') ||
+                                        (n === 0 && outcomeSign === 'Out')
+                                    }
+                                    checked={recordedOuts === n}
+                                    onChange={() => setRecordedOuts(n)}
+                                />
+                                {n}
+                            </label>
+                        ))}
                     </div>
                 </div>
 
@@ -202,8 +202,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                     onClick={() => logAtBat()}
                 >Submit</button>
-            </form>
-        </div>
+            </form >
+        </div >
     </>)
 }
 
