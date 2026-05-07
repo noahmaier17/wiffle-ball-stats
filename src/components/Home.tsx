@@ -116,6 +116,9 @@ function Home({ onStartGame }: HomeProps) {
             homeRuns: game.home_score ?? 0,
             currAwayTeamBatter: game.current_away_team_batter_index ?? 0,
             currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
+            isGameOver: ((game.inning >= 3 && !game.away_team_is_batting && game.home_score > game.away_score) || 
+                         (game.inning >= 3 && game.away_team_is_batting && game.number_of_outs >= 3 && game.home_score > game.away_score) ||
+                         (game.inning >= 3 && !game.away_team_is_batting && game.number_of_outs >= 3 && game.away_score !== game.home_score))
         });
     };
 

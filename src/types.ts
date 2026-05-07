@@ -35,6 +35,8 @@ export type GameData = {
 
     currAwayTeamBatter: number; // index corresponding to next batter in `awayTeamLineup`
     currHomeTeamBatter: number; // index corresponding to next batter in `homeTeamLineup`
+
+    isGameOver?: boolean;
 }
 export const currLineupAndBatterIndex = (gameData: GameData): [Player[], number] => {
     const {
@@ -97,10 +99,6 @@ export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationL
 
 export type HomeAway = 'home' | 'away'
 
-
-
-
-
 export const ordinalNumber = (number: number) => {
     switch (number) {
         case 1:
@@ -110,6 +108,6 @@ export const ordinalNumber = (number: number) => {
         case 3:
             return "3rd"
         default:
-            return number.toString + "th"
+            return number.toString() + "th"
     }
 }

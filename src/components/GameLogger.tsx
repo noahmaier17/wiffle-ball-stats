@@ -17,7 +17,6 @@ type GameLoggerProps = {
 /*
     TODO:
     - Add IPHR and SF to switch case
-    - Add baserunner tracking to optimize RBI selection?
     - Add game ending/final screen
 */
 
@@ -63,7 +62,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         if (newOuts >= 3) {
             switchSides = true;
             newOuts = 0;
-    
+
             setLog(prev => [...prev, {
                 type: 'inning_switch'
             }]);
@@ -86,12 +85,37 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 returnGameState.homeRuns += atBat.rbis;
             }
 
+            let isGameOver = false;
+
+            // Check Walk-off
+            if (!prev.awayTeamBatting && returnGameState.inning >= 3 && returnGameState.homeRuns > returnGameState.awayRuns) {
+                isGameOver = true;
+            }
+
             // 3. Handle switching innings
-            if (switchSides) {
-                if (!prev.awayTeamBatting) {
-                    returnGameState.inning += 1;
+            if (switchSides && !isGameOver) {
+                if (prev.awayTeamBatting) {
+                    // Middle of the 3rd or later: if Home is already ahead, game over
+                    if (returnGameState.inning >= 3 && returnGameState.homeRuns > returnGameState.awayRuns) {
+                        isGameOver = true;
+                    }
+                } else {
+                    // End of the 3rd or later: if not tied, game over
+                    if (returnGameState.inning >= 3 && returnGameState.awayRuns !== returnGameState.homeRuns) {
+                        isGameOver = true;
+                    }
                 }
-                returnGameState.awayTeamBatting = !prev.awayTeamBatting;
+
+                if (!isGameOver) {
+                    if (!prev.awayTeamBatting) {
+                        returnGameState.inning += 1;
+                    }
+                    returnGameState.awayTeamBatting = !prev.awayTeamBatting;
+                }
+            }
+
+            if (isGameOver) {
+                returnGameState.isGameOver = true;
             }
 
             return returnGameState;
@@ -116,7 +140,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
 
             // Define increments/decrements for db updates
-            let batterDelta: any = { runs_batted_in: atBat.rbis };
+            let batterDelta: any = { runs_batted_in: atBat.rbis, plate_appearances: 1 };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
             batterDelta.plate_appearances = 1;
@@ -149,6 +173,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case 'HR':
+                case 'IPHR':
+                    batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
@@ -187,7 +213,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setGameState(prev => {
             if (!prev) return prev;
 
-            return ((pitchingChange.teamChangingPitchers === 'away') 
+            return ((pitchingChange.teamChangingPitchers === 'away')
                 ? { ...prev, awayPitcher: pitchingChange.newPitcher }
                 : { ...prev, homePitcher: pitchingChange.newPitcher })
         })
@@ -208,6 +234,25 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             />
 
             <hr></hr>
+
+            {gameData.isGameOver && (
+                <div className="popup-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div style={{ textAlign: "center", padding: "3em", backgroundColor: "#1f2937", borderRadius: "12px", border: "1px solid #374151", color: "white", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)", minWidth: "300px" }}>
+                        <h2 style={{ marginTop: 0 }}>Game Over!</h2>
+                        <p style={{ fontSize: "1.2rem", margin: "1em 0" }}>Final Score:<br />Away {gameData.awayRuns} - {gameData.homeRuns} Home</p>
+                        <button
+                            onClick={() => setGameState(null)}
+                            style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: "bold", marginTop: "10px" }}
+                        >
+                            Return to Menu
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div style={{ paddingBottom: "1em" }}>
                 <h3>Types of logs: </h3>
@@ -285,7 +330,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 {log.map((entry, index) => {
                     switch (entry.type) {
                         case 'atbat':
-                            return <li 
+                            return <li
                                 key={index}
                             >
                                 <span>{entry.batter.lastName}: {entry.outcomeSign}</span>
@@ -299,7 +344,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                             return <em key={index}>{entry.info}</em>
                         case 'inning_switch':
                             return <strong key={index}>Switching innings</strong>
-                }})}
+                    }
+                })}
             </ul>
         </div>
     );
