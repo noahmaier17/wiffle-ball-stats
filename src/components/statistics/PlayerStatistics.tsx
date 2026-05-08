@@ -16,7 +16,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
     useEffect(() => {
         fetchAllPlayerStatistics({ players: [user] }).then(data => {
-            if (data) setStats(data.get(user.id) ?? null);
+            if (data) setStats(data[0].get(user.id) ?? null);
         });
     }, [user.id]);
 

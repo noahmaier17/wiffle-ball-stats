@@ -5,7 +5,7 @@ type FetchAllPlayerStatisticsProps = {
     players: Player[]
 }
 
-async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsProps) {
+async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsProps): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
 
     // Fetches our data from supabase
     const { data, error } = await supabase
@@ -69,18 +69,24 @@ async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsPro
     }
 
     // For each player without any parameter, sets default 0s
+    const playerIdsWithNoStats = new Set<number>();
+
     for (const player of players) {
         if (!playerIdToAllStats.has(player.id)) {
+            // Sets stats to 0
             playerIdToAllStats.set(player.id, 
                 {
                     ...defaultPlayerGameData,
                     player_id: player.id
                 }
-            )
+            );
+
+            // Populates playerIdsWithNoStats
+            playerIdsWithNoStats.add(player.id);
         }
     }
     
-    return playerIdToAllStats;
+    return [playerIdToAllStats, playerIdsWithNoStats];
 }
 
 export default fetchAllPlayerStatistics

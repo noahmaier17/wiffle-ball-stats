@@ -53,6 +53,7 @@ type AllPlayerStatisticsProps = {
 
 function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
     const [allStats, setAllStats] = useState<PlayerGameData[] | null>(null);
+    const [playerIdsWithoutStats, setPlayerIdsWithoutStats] = useState<Set<number> | null>(null);
 
     const [sortedBatterColumn, setSortedBatterColumn] = useState<string | null>(null);
     const [batterSortDirection, setBatterSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -62,7 +63,10 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
 
     useEffect(() => {
         fetchAllPlayerStatistics({players}).then(data => {
-            if (data) setAllStats(Array.from(data.values()));
+            if (data) {
+                setAllStats(Array.from(data[0].values()));
+                setPlayerIdsWithoutStats(data[1]);
+            }
         });
     }, []);
 
@@ -107,12 +111,16 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
 
     const battingJSX: JSX.Element[] = sortedBatterStats.map(stats => {
         const player = players.find(p => p.id === stats.player_id);
-        return <BatterStatisticsRow key={stats.player_id} pde={stats} player={player}/>;
+        return (player && !playerIdsWithoutStats?.has(player.id))
+            ? <BatterStatisticsRow key={stats.player_id} pde={stats} player={player}/>
+            : <></>
     });
 
     const pitchingJSX: JSX.Element[] = sortedPitcherStats.map(stats => {
         const player = players.find(p => p.id === stats.player_id);
-        return <PitcherStatisticsRow key={stats.player_id} pde={stats} player={player}/>;
+        return (player && !playerIdsWithoutStats?.has(player.id))
+            ? <PitcherStatisticsRow key={stats.player_id} pde={stats} player={player}/>
+            : <></>
     })
 
     return (
