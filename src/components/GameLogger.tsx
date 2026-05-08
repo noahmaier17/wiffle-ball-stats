@@ -256,6 +256,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     }
 
     const handleEditGamestate = (editGamestateLog: EditGamestateLog) => {
+        setLog(prev => [...prev, editGamestateLog]);
         setGameState(editGamestateLog.newGameData);
     }
 
