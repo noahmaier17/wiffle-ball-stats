@@ -218,7 +218,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 for (const key in pitcherDelta) {
                     updatedPitcher[key] = (updatedPitcher[key] || 0) + pitcherDelta[key];
                 }
-                delete updatedPitcher.innings_pitched; // Avoid writing computed columns
                 updatedPitcher.games_pitched = 1; // They pitched this game
                 await supabase.from('player_game_stats').update(updatedPitcher).eq('id', pitcherStats.id);
             }

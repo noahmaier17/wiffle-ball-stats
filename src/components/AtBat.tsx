@@ -55,10 +55,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
             setRbis(0);
             setRecordedOuts(1);
         } else if (outcomeSign === 'HR') {
-            setRbis(1);
             setRecordedOuts(0);
-        } else if (outcomeSign === 'IPHR') {
-            setRbis(1);
         } else if (outcomeSign === 'BB') {
             setRecordedOuts(0);
         } else if (outcomeSign === 'Out' && (recordedOuts === 0 || recordedOuts === undefined)) {
