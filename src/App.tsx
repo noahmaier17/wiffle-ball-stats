@@ -3,7 +3,7 @@ import './App.css'
 import Home from './components/Home.tsx'
 import GameLogger from './components/GameLogger.tsx'
 import Spectate from './components/Spectate.tsx'
-import PlayerStatisticsDepot from './components/PlayerStatisticsDepot.tsx'
+import PlayerStatisticsDepot from './components/statistics/PlayerStatisticsDepot.tsx'
 import type { GameData, Player } from './types'
 import { supabase } from "./supabase-client.ts";
 

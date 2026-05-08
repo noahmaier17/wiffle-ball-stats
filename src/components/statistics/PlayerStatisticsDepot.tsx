@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { playerName, type Player } from '../types';
+import { playerName, type Player } from '../../types';
 import PlayerStatistics from './PlayerStatistics';
+import AllPlayerStatistics from './AllPlayerStatistics';
 
 type PlayerStatisticsDepotProps = {
     players: Player[];
@@ -9,8 +10,10 @@ type PlayerStatisticsDepotProps = {
 
 function PlayerStatisticsDepot({ players, onBack }: PlayerStatisticsDepotProps) {
     const [selectedUser, setSelectedUser] = useState<Player | null>(null);
+    const [showAllUsers, setShowAllUsers] = useState<boolean>(false);
 
     if (selectedUser) return <PlayerStatistics user={selectedUser} onBack={() => setSelectedUser(null)} />
+    if (showAllUsers) return <AllPlayerStatistics players={players} onBack={() => setShowAllUsers(false)} />
 
     return (
         <div>
@@ -18,10 +21,12 @@ function PlayerStatisticsDepot({ players, onBack }: PlayerStatisticsDepotProps) 
             <h1>Player Statistics</h1>
 
             <div>
+                <button key={"all button"} onClick={() => setShowAllUsers(true)}>Show All</button>
+                <hr></hr>
                 {players.map(p => (
-                    <div key={p.id} onClick={() => setSelectedUser(p)} style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}>
+                    <button key={p.id} onClick={() => setSelectedUser(p)} className="radio-group">
                         {playerName(p)}
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>

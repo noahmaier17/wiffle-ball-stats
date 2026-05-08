@@ -177,10 +177,16 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     pitcherDelta.hits_allowed = 1;
                     break;
                 case 'HR':
+                    batterDelta.hits = 1;
+                    batterDelta.at_bats = 1;
+                    batterDelta.home_runs = 1;
+                    pitcherDelta.hits_allowed = 1;
+                    break
                 case 'IPHR':
                     batterDelta.hits = 1;
                     batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
+                    batterDelta.inside_the_park_home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
                     break;
             }

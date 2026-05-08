@@ -19,7 +19,7 @@ export type Player = {
 }
 export const playerName = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`;
 
-export type PlayerDatabaseSchema = {
+export type PlayerGameData = {
     id: number,
     player_id: number,
     game_id: number,
@@ -27,6 +27,7 @@ export type PlayerDatabaseSchema = {
     doubles: number,
     triples: number,
     home_runs: number,
+    inside_the_park_home_runs: number,
     runs_batted_in: number,
     walks: number,
     strikeouts: number,

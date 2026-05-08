@@ -70,6 +70,30 @@ body {
   font-weight: 600;
 }
 
+.stats-table {
+  border-collapse: collapse;
+}
+
+.stats-table th {
+  color: #c00;
+  border-right: 1px solid #b0b0b0;
+  padding: 4px 8px;
+}
+
+.stats-table td {
+  border-right: 1px solid #b0b0b0;
+  padding: 4px 8px;
+}
+
+.stats-table th:last-child,
+.stats-table td:last-child {
+  border-right: none;
+}
+
+.stats-table tbody tr {
+  border-bottom: 1px solid #e8e8e8;
+}
+
 textarea {
   width: 100%;
   min-height: 80px;
