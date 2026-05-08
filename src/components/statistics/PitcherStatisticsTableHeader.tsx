@@ -23,6 +23,7 @@ function PitcherStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirec
 
             {th('IP', 'innings_pitched')}
             {th('ERA', 'earned_runs')}
+            {th('WHIP', 'walks_plus_hits_per_inning_pitched')}
             {th('G', 'games_pitched')}
             {th('H', 'hits_allowed')}
             {th('R', 'runs_allowed')}

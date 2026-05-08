@@ -1,6 +1,6 @@
 import { useEffect, useState, type JSX } from "react";
 import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
-import { calculateERA, playerName, type Player, type PlayerGameData } from "../../types";
+import { calculateERA, calculateWHIP, playerName, type Player, type PlayerGameData } from "../../types";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
@@ -35,6 +35,7 @@ function getSortValue(stats: PlayerGameData, col: string): number {
         case 'innings_pitched': return stats.innings_pitched;
         case 'games_pitched': return stats.games_pitched;
         case 'earned_runs': return calculateERA(stats);
+        case 'walks_plus_hits_per_inning_pitched': return calculateWHIP(stats);
         case 'hits_allowed': return stats.hits_allowed;
         case 'runs_allowed': return stats.runs_allowed;
         case 'pitched_walks': return stats.pitched_walks;

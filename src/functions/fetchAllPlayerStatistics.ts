@@ -61,6 +61,7 @@ async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsPro
             pitched_strikeouts: sum('pitched_strikeouts'),
             pitched_walks: sum('pitched_walks'),
             hits_allowed: sum('hits_allowed'),
+            home_runs_allowed: sum('home_runs_allowed'),
             runs_allowed: sum('runs_allowed'),
             games_pitched: sum('games_pitched'),
             win: sum('win'),

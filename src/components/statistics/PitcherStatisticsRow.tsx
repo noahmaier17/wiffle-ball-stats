@@ -1,4 +1,4 @@
-import { calculateERA, playerName, type Player, type PlayerGameData } from "../../types";
+import { calculateERA, calculateWHIP, playerName, type Player, type PlayerGameData } from "../../types";
 
 type PitcherStatisticsRowProps = {
     pde: PlayerGameData;
@@ -11,6 +11,7 @@ function PitcherStatisticsRow({ pde, player }: PitcherStatisticsRowProps) {
             {player && <td>{playerName(player)}</td>}
             <td>{pde.innings_pitched.toFixed(1)}</td>
             <td>{calculateERA(pde).toFixed(2)}</td>
+            <td>{calculateWHIP(pde).toFixed(2)}</td>
             <td>{pde.games_pitched}</td>
             <td>{pde.hits_allowed}</td>
             <td>{pde.runs_allowed}</td>

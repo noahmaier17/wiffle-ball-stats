@@ -149,7 +149,9 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             let batterDelta: any = { runs_batted_in: atBat.rbis, plate_appearances: 1 };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
+            // Stat changes
             batterDelta.plate_appearances = 1;
+            pitcherDelta.pitched_outs = atBat.recordedOuts
             batterDelta.at_bats = 1; // Except walk
             switch (atBat.outcomeSign) {
                 case 'reverse-K':
@@ -163,8 +165,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     batterDelta.strikeouts_swinging = 1;
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_strikeouts_swinging = 1;
-                    break;
-                case 'Out':
                     break;
                 case 'BB':
                     batterDelta.at_bats = 0; // 0 for a walk
@@ -188,20 +188,18 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     break;
                 case 'HR':
                     batterDelta.hits = 1;
-                    batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
+                    pitcherDelta.home_runs_allowed = 1;
                     break
                 case 'IPHR':
                     batterDelta.hits = 1;
-                    batterDelta.at_bats = 1;
                     batterDelta.home_runs = 1;
                     batterDelta.inside_the_park_home_runs = 1;
                     pitcherDelta.hits_allowed = 1;
+                    // Home runs allowed does not count IPHR
                     break;
             }
-
-            pitcherDelta.pitched_outs = atBat.recordedOuts
 
             // Update Batter
             if (batterStats) {
