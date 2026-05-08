@@ -31,8 +31,13 @@ export type PlayerGameData = {
     runs_batted_in: number,
     walks: number,
     strikeouts: number,
+    strikeouts_swinging: number,
+    strikeouts_looking: number,
+    
     runs_allowed: number,
     pitched_strikeouts: number,
+    pitched_strikeouts_swinging: number,
+    pitched_strikeouts_looking: number,
     pitched_walks: number,
     hits_allowed: number,
     innings_pitched: number,

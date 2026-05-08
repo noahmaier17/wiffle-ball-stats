@@ -32,6 +32,8 @@ function BatterStatisticsRow({ pde, player }: BatterStatisticsRowProps) {
             <td>{pde.inside_the_park_home_runs}</td>
             <td>{pde.runs_batted_in}</td>
             <td>{pde.walks}</td>
+            <td>{pde.strikeouts_swinging}</td>
+            <td>{pde.strikeouts_looking}</td>
             <td>{pde.strikeouts}</td>
             <td>{battingAverage}</td>
             <td>{onBasePercentage}</td>

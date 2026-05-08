@@ -3,6 +3,8 @@ import { playerName, type Player, type PlayerGameData } from "../../types";
 import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import BatterStatisticsRow from "./BatterStatisticsRow";
+import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
+import PitcherStatisticsRow from "./PitcherStatisticsRow";
 
 type PlayerStatisticsProps = {
     user: Player;
@@ -20,9 +22,9 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
     if (!stats) return <></>;
 
-    const {
+    /* const {
         innings_pitched, pitched_strikeouts, pitched_walks, hits_allowed, runs_allowed
-    } = stats;
+    } = stats; */
 
     return (
         <div>
@@ -36,19 +38,15 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
             <h3>Pitching</h3>
             <table className="stats-table">
-                <thead>
-                    <tr>
-                        <th>IP</th><th>K</th><th>BB</th><th>H</th><th>R</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
+                <thead><PitcherStatisticsTableHeader/></thead>
+                <tbody><PitcherStatisticsRow pde={stats}/>
+                    {/*<tr>
                         <td>{innings_pitched.toFixed(1)}</td>
                         <td>{pitched_strikeouts}</td>
                         <td>{pitched_walks}</td>
                         <td>{hits_allowed}</td>
                         <td>{runs_allowed}</td>
-                    </tr>
+                    </tr>*/}
                 </tbody>
             </table>
         </div>

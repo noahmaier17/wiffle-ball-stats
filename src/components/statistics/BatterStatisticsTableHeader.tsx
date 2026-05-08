@@ -29,6 +29,8 @@ function BatterStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirect
             {th('IPHR', 'inside_the_park_home_runs')}
             {th('RBI', 'runs_batted_in')}
             {th('BB', 'walks')}
+            {th('K', 'strikeouts_swinging')}
+            {th('KI', 'strikeouts_looking')}
             {th('SO', 'strikeouts')}
             {th('BA', 'ba')}
             {th('OBP', 'obp')}

@@ -148,9 +148,17 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             batterDelta.at_bats = 1; // Except walk
             switch (atBat.outcomeSign) {
                 case 'reverse-K':
+                    batterDelta.strikeouts = 1;
+                    batterDelta.strikeouts_looking = 1;
+                    pitcherDelta.pitched_strikeouts = 1;
+                    pitcherDelta.pitched_strikeouts_looking = 1;
+                    pitcherDelta.pitched_outs = 1;
+                    break;
                 case 'K':
                     batterDelta.strikeouts = 1;
+                    batterDelta.strikeouts_swinging = 1;
                     pitcherDelta.pitched_strikeouts = 1;
+                    pitcherDelta.pitched_strikeouts_swinging = 1;
                     pitcherDelta.pitched_outs = 1;
                     break;
                 case 'Out':
