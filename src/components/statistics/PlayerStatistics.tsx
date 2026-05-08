@@ -21,8 +21,6 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     if (!stats) return <></>;
 
     const {
-        plate_appearances, at_bats, hits, singles, doubles, triples,
-        home_runs, inside_the_park_home_runs, runs_batted_in, walks, strikeouts,
         innings_pitched, pitched_strikeouts, pitched_walks, hits_allowed, runs_allowed
     } = stats;
 
