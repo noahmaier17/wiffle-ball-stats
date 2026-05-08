@@ -1,7 +1,11 @@
 import { supabase } from "../supabase-client";
-import { type PlayerGameData } from "../types";
+import { defaultPlayerGameData, type Player, type PlayerGameData } from "../types";
 
-async function fetchAllPlayerStatistics() {
+type FetchAllPlayerStatisticsProps = {
+    players: Player[]
+}
+
+async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsProps) {
 
     // Fetches our data from supabase
     const { data, error } = await supabase
@@ -24,6 +28,7 @@ async function fetchAllPlayerStatistics() {
 
     // For every player, populates an aggregated `PlayerDatabaseSchema` for them
     const playerIdToAllStats = new Map<number, PlayerGameData>();
+
     for (const [playerId, entries] of playerIdToDatabaseEntries.entries()) {
         const sum = (key: keyof PlayerGameData) =>
             entries.reduce((acc, curr) => acc + (curr[key] as number), 0);
@@ -61,6 +66,18 @@ async function fetchAllPlayerStatistics() {
             win: sum('win'),
             loss: sum('loss')
         })
+    }
+
+    // For each player without any parameter, sets default 0s
+    for (const player of players) {
+        if (!playerIdToAllStats.has(player.id)) {
+            playerIdToAllStats.set(player.id, 
+                {
+                    ...defaultPlayerGameData,
+                    player_id: player.id
+                }
+            )
+        }
     }
     
     return playerIdToAllStats;

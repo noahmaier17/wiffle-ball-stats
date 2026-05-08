@@ -6,38 +6,50 @@ type BatterStatisticsRowProps = {
 };
 
 function BatterStatisticsRow({ pde, player }: BatterStatisticsRowProps) {
-    const battingAverage = (pde.hits / pde.at_bats).toFixed(3);
-    const onBasePercentage = ((pde.hits + pde.walks) / pde.plate_appearances).toFixed(3);
+    const safePde = Object.fromEntries(
+        Object.entries(pde).map(([key, value]) => (
+            [ key, Number.isFinite(value) ? value : 0 ]
+        )
+    )) as PlayerGameData;
+
+    const safeDiv = (number: number) => {
+        return (Number.isFinite(number))
+            ? number
+            : 0
+    }
+
+    const battingAverage = safeDiv(safePde.hits / safePde.at_bats).toFixed(3);
+    const onBasePercentage = safeDiv((safePde.hits + safePde.walks) / safePde.plate_appearances).toFixed(3);
     const totalBases = (
-        pde.singles * 1 +
-        pde.doubles * 2 +
-        pde.triples * 3 +
-        pde.home_runs * 4
+        safePde.singles * 1 +
+        safePde.doubles * 2 +
+        safePde.triples * 3 +
+        safePde.home_runs * 4
     );
-    const sluggingPercentage = (totalBases / pde.at_bats).toFixed(3);
-    const onBasePlusSlugging = (
-        ((pde.hits + pde.walks) / pde.plate_appearances)
-        + (totalBases / pde.at_bats)
+    const sluggingPercentage = safeDiv(totalBases / safePde.at_bats).toFixed(3);
+    const onBasePlusSlugging = safeDiv(
+        ((safePde.hits + safePde.walks) / safePde.plate_appearances)
+        + (totalBases / safePde.at_bats)
     ).toFixed(3);
 
     return (
         <tr>
             {player && <td>{playerName(player)}</td>}
-            <td>{pde.games_played}</td>
-            <td>{pde.win}</td>
-            <td>{pde.loss}</td>
-            <td>{pde.at_bats}</td>
-            <td>{pde.hits}</td>
-            <td>{pde.singles}</td>
-            <td>{pde.doubles}</td>
-            <td>{pde.triples}</td>
-            <td>{pde.home_runs}</td>
-            <td>{pde.inside_the_park_home_runs}</td>
-            <td>{pde.runs_batted_in}</td>
-            <td>{pde.walks}</td>
-            <td>{pde.strikeouts_swinging}</td>
-            <td>{pde.strikeouts_looking}</td>
-            <td>{pde.strikeouts}</td>
+            <td>{safePde.games_played}</td>
+            <td>{safePde.win}</td>
+            <td>{safePde.loss}</td>
+            <td>{safePde.at_bats}</td>
+            <td>{safePde.hits}</td>
+            <td>{safePde.singles}</td>
+            <td>{safePde.doubles}</td>
+            <td>{safePde.triples}</td>
+            <td>{safePde.home_runs}</td>
+            <td>{safePde.inside_the_park_home_runs}</td>
+            <td>{safePde.runs_batted_in}</td>
+            <td>{safePde.walks}</td>
+            <td>{safePde.strikeouts_swinging}</td>
+            <td>{safePde.strikeouts_looking}</td>
+            <td>{safePde.strikeouts}</td>
             <td>{battingAverage}</td>
             <td>{onBasePercentage}</td>
             <td>{sluggingPercentage}</td>

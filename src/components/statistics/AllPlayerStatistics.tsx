@@ -61,12 +61,10 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
     const [pitcherSortDirection, setPitcherSortDirection] = useState<'asc' | 'desc'>('desc');
 
     useEffect(() => {
-        fetchAllPlayerStatistics().then(data => {
+        fetchAllPlayerStatistics({players}).then(data => {
             if (data) setAllStats(Array.from(data.values()));
         });
     }, []);
-
-    if (!allStats) return <></>;
 
     const handleBatterSort = (col: string) => {
         if (col === sortedBatterColumn) {
@@ -84,6 +82,8 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
             setPitcherSortDirection('desc');
         }
     }
+
+    if (!allStats) return <></>
 
     const sortedBatterStats = sortedBatterColumn ? [...allStats].sort((a, b) => {
         if (sortedBatterColumn === 'name') {

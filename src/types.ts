@@ -58,6 +58,16 @@ export const calculateERA = (pde: PlayerGameData) => {
         ? era
         : 0
 }
+export const defaultPlayerGameData: PlayerGameData = {
+    id: 0, player_id: 0, game_id: 0,
+    games_played: 0, at_bats: 0, doubles: 0, triples: 0,
+    home_runs: 0, inside_the_park_home_runs: 0, runs_batted_in: 0,
+    walks: 0, strikeouts: 0, strikeouts_swinging: 0, strikeouts_looking: 0,
+    win: 0, loss: 0, games_pitched: 0, runs_allowed: 0,
+    pitched_strikeouts: 0, pitched_strikeouts_swinging: 0,
+    pitched_strikeouts_looking: 0, pitched_walks: 0, hits_allowed: 0,
+    innings_pitched: 0, hits: 0, singles: 0, pitched_outs: 0, plate_appearances: 0
+};
 
 export type GameData = {
     gameId: number;
