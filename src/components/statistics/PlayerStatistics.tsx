@@ -22,10 +22,6 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
     if (!stats) return <></>;
 
-    /* const {
-        innings_pitched, pitched_strikeouts, pitched_walks, hits_allowed, runs_allowed
-    } = stats; */
-
     return (
         <div>
             <button onClick={onBack}>← Back</button>
@@ -39,15 +35,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
             <h3>Pitching</h3>
             <table className="stats-table">
                 <thead><PitcherStatisticsTableHeader/></thead>
-                <tbody><PitcherStatisticsRow pde={stats}/>
-                    {/*<tr>
-                        <td>{innings_pitched.toFixed(1)}</td>
-                        <td>{pitched_strikeouts}</td>
-                        <td>{pitched_walks}</td>
-                        <td>{hits_allowed}</td>
-                        <td>{runs_allowed}</td>
-                    </tr>*/}
-                </tbody>
+                <tbody><PitcherStatisticsRow pde={stats}/></tbody>
             </table>
         </div>
     );

@@ -20,6 +20,9 @@ function BatterStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirect
                     Name{indicator('name')}
                 </th>
             )}
+            {th('G', 'games_played')}
+            {th('W', 'win')}
+            {th('L', 'loss')}
             {th('AB', 'at_bats')}
             {th('H', 'hits')}
             {th('1B', 'singles')}

@@ -23,6 +23,7 @@ export type PlayerGameData = {
     id: number,
     player_id: number,
     game_id: number,
+    games_played: number,
     at_bats: number,
     doubles: number,
     triples: number,
@@ -34,6 +35,10 @@ export type PlayerGameData = {
     strikeouts_swinging: number,
     strikeouts_looking: number,
     
+    win: number,
+    loss: number,
+
+    games_pitched: number,
     runs_allowed: number,
     pitched_strikeouts: number,
     pitched_strikeouts_swinging: number,
@@ -45,6 +50,13 @@ export type PlayerGameData = {
     singles: number,
     pitched_outs: number,
     plate_appearances: number
+}
+export const calculateERA = (pde: PlayerGameData) => {
+    const era = (pde.runs_allowed * 3) / pde.innings_pitched;
+
+    return (Number.isFinite(era))
+        ? era
+        : 0
 }
 
 export type GameData = {

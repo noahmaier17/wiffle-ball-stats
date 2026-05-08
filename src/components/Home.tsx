@@ -163,8 +163,8 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
 
             // 2. Create player_game_stats rows for all players in both lineups
             const statsToInsert = [
-                ...awayTeamLineup.map(p => ({ player_id: p.id, game_id: gameId })),
-                ...homeTeamLineup.map(p => ({ player_id: p.id, game_id: gameId }))
+                ...awayTeamLineup.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 })),
+                ...homeTeamLineup.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 }))
             ];
 
             const { error: statsError } = await supabase

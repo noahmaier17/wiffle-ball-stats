@@ -23,6 +23,9 @@ function BatterStatisticsRow({ pde, player }: BatterStatisticsRowProps) {
     return (
         <tr>
             {player && <td>{playerName(player)}</td>}
+            <td>{pde.games_played}</td>
+            <td>{pde.win}</td>
+            <td>{pde.loss}</td>
             <td>{pde.at_bats}</td>
             <td>{pde.hits}</td>
             <td>{pde.singles}</td>

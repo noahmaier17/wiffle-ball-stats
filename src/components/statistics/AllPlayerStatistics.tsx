@@ -1,6 +1,6 @@
 import { useEffect, useState, type JSX } from "react";
 import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
-import { playerName, type Player, type PlayerGameData } from "../../types";
+import { calculateERA, playerName, type Player, type PlayerGameData } from "../../types";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
@@ -10,6 +10,7 @@ function getSortValue(stats: PlayerGameData, col: string): number {
     const tb = stats.singles + stats.doubles * 2 + stats.triples * 3 + stats.home_runs * 4;
     switch (col) {
         case 'at_bats': return stats.at_bats;
+        case 'games_played': return stats.games_played;
         case 'hits': return stats.hits;
         case 'singles': return stats.singles;
         case 'doubles': return stats.doubles;
@@ -28,7 +29,12 @@ function getSortValue(stats: PlayerGameData, col: string): number {
         case 'ops': return (stats.hits + stats.walks) / stats.plate_appearances + tb / stats.at_bats;
         case 'tb': return tb;
 
+        case 'win': return stats.win;
+        case 'loss': return stats.loss;
+
         case 'innings_pitched': return stats.innings_pitched;
+        case 'games_pitched': return stats.games_pitched;
+        case 'earned_runs': return calculateERA(stats);
         case 'hits_allowed': return stats.hits_allowed;
         case 'runs_allowed': return stats.runs_allowed;
         case 'pitched_walks': return stats.pitched_walks;

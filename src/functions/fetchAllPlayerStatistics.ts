@@ -36,6 +36,7 @@ async function fetchAllPlayerStatistics() {
             game_id: -1,            // Does not matter for these aggregated stats
             plate_appearances: sum('plate_appearances'),
             at_bats: sum('at_bats'),
+            games_played: sum('games_played'),
             hits: sum('hits'),
             singles: sum('singles'),
             doubles: sum('doubles'),
@@ -55,7 +56,10 @@ async function fetchAllPlayerStatistics() {
             pitched_strikeouts: sum('pitched_strikeouts'),
             pitched_walks: sum('pitched_walks'),
             hits_allowed: sum('hits_allowed'),
-            runs_allowed: sum('runs_allowed')
+            runs_allowed: sum('runs_allowed'),
+            games_pitched: sum('games_pitched'),
+            win: sum('win'),
+            loss: sum('loss')
         })
     }
     

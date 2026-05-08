@@ -22,6 +22,8 @@ function PitcherStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirec
             )}
 
             {th('IP', 'innings_pitched')}
+            {th('ERA', 'earned_runs')}
+            {th('G', 'games_pitched')}
             {th('H', 'hits_allowed')}
             {th('R', 'runs_allowed')}
             {th('BB', 'pitched_walks')}

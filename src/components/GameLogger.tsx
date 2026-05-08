@@ -69,6 +69,9 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             }]);
         }
 
+        let gameJustEnded = false;
+        let homeTeamWon = false;
+
         setGameState(prev => {
             if (!prev) return prev;
 
@@ -117,6 +120,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
             if (isGameOver) {
                 returnGameState.isGameOver = true;
+                gameJustEnded = true;
+                homeTeamWon = returnGameState.homeRuns > returnGameState.awayRuns;
             }
 
             return returnGameState;
@@ -216,7 +221,22 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     updatedPitcher[key] = (updatedPitcher[key] || 0) + pitcherDelta[key];
                 }
                 delete updatedPitcher.innings_pitched; // Avoid writing computed columns
+                updatedPitcher.games_pitched = 1; // They pitched this game
                 await supabase.from('player_game_stats').update(updatedPitcher).eq('id', pitcherStats.id);
+            }
+
+            // Update wins/losses for all players when the game ends
+            if (gameJustEnded) {
+                const winnerLineup = homeTeamWon ? gameData.homeTeamLineup : gameData.awayTeamLineup;
+                const loserLineup = homeTeamWon ? gameData.awayTeamLineup : gameData.homeTeamLineup;
+                await supabase.from('player_game_stats')
+                    .update({ win: 1 })
+                    .eq('game_id', gameData.gameId)
+                    .in('player_id', winnerLineup.map(p => p.id));
+                await supabase.from('player_game_stats')
+                    .update({ loss: 1 })
+                    .eq('game_id', gameData.gameId)
+                    .in('player_id', loserLineup.map(p => p.id));
             }
 
         } catch (error) {
