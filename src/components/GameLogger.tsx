@@ -157,17 +157,14 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     batterDelta.strikeouts_looking = 1;
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_strikeouts_looking = 1;
-                    pitcherDelta.pitched_outs = 1;
                     break;
                 case 'K':
                     batterDelta.strikeouts = 1;
                     batterDelta.strikeouts_swinging = 1;
                     pitcherDelta.pitched_strikeouts = 1;
                     pitcherDelta.pitched_strikeouts_swinging = 1;
-                    pitcherDelta.pitched_outs = 1;
                     break;
                 case 'Out':
-                    pitcherDelta.pitched_outs = 1;
                     break;
                 case 'BB':
                     batterDelta.at_bats = 0; // 0 for a walk
@@ -204,13 +201,14 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     break;
             }
 
+            pitcherDelta.pitched_outs = atBat.recordedOuts
+
             // Update Batter
             if (batterStats) {
                 const updatedBatter = { ...batterStats };
                 for (const key in batterDelta) {
                     updatedBatter[key] = (updatedBatter[key] || 0) + batterDelta[key];
                 }
-                delete updatedBatter.innings_pitched; // Avoid writing computed columns
                 await supabase.from('player_game_stats').update(updatedBatter).eq('id', batterStats.id);
             }
 

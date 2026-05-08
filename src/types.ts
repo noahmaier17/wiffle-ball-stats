@@ -46,9 +46,9 @@ export type PlayerGameData = {
     pitched_walks: number,
     hits_allowed: number,
     innings_pitched: number,
+    pitched_outs: number,
     hits: number,
     singles: number,
-    pitched_outs: number,
     plate_appearances: number
 }
 export const calculateERA = (pde: PlayerGameData) => {
@@ -66,7 +66,7 @@ export const defaultPlayerGameData: PlayerGameData = {
     win: 0, loss: 0, games_pitched: 0, runs_allowed: 0,
     pitched_strikeouts: 0, pitched_strikeouts_swinging: 0,
     pitched_strikeouts_looking: 0, pitched_walks: 0, hits_allowed: 0,
-    innings_pitched: 0, hits: 0, singles: 0, pitched_outs: 0, plate_appearances: 0
+    innings_pitched: 0, pitched_outs: 0, hits: 0, singles: 0, plate_appearances: 0
 };
 
 export type GameData = {
