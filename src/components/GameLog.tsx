@@ -14,7 +14,7 @@ function GameLog({ log }: GameLogProps) {
                             <span>{entry.batter.firstName[0] + ". " + entry.batter.lastName}: {entry.outcomeSign}</span>
                             <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
                             <span>{(entry.extraComments !== "" ? "; " : "")}</span>
-                            {entry.recordedOuts > 0 && <span>{" (outs: " + entry.recordedOuts + ")"}</span>}
+                            {entry.recordedOuts > 0 && <span>{" (outs: " + entry.recordedOuts + ") "}</span>}
                             <em>{entry.extraComments}</em>
                         </li>
                     case 'pitching_change':
