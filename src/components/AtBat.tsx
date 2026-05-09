@@ -18,7 +18,6 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         currHomeTeamBatter
     } = gameData;
 
-    // const battingLineup = awayTeamBatting ? awayTeamLineup : homeTeamLineup;
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
     const pitcherName = awayTeamBatting ? homePitcher : awayPitcher;
 
@@ -49,14 +48,45 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         setExtraComments("");
     }
 
+    const displayOutsButton = (number: number) => {
+        const BLACKED_OUT_CSS = "!bg-gray-400 !text-gray-700 !border-gray-400"
+        const GRAYED_OUT_CSS = '!bg-gray-200 !text-gray-400 !border-gray-200'
+
+        const isBlackedOut = (gameData.numberOfOuts + number > 3);
+        const isGrayedOut = (
+            (number !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
+            (number !== 0 && outcomeSign === 'HR') ||
+            (number !== 0 && outcomeSign === 'BB') ||
+            (number === 0 && outcomeSign === 'Out')
+        );
+
+        return (
+            <label key={number} className={isBlackedOut ? BLACKED_OUT_CSS : isGrayedOut ? GRAYED_OUT_CSS : ""}>
+                <input
+                    type="radio"
+                    name="recorded outs"
+                    value={number}
+                    disabled={isBlackedOut || isGrayedOut}
+                    checked={recordedOuts === number}
+                    onChange={() => setRecordedOuts(number)}
+                />
+                {number}
+            </label>
+        );
+    }
+
     // If we select specific outcomes, we must change our RBIs and Recorded Outs
     useEffect(() => {
         if (AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) { // Strikeout
             setRbis(0);
             setRecordedOuts(1);
         } else if (outcomeSign === 'HR') {
+            setRbis(undefined);
             setRecordedOuts(0);
+        } else if (outcomeSign === 'IPHR') {
+            setRbis(undefined);
         } else if (outcomeSign === 'BB') {
+            setRbis(undefined);
             setRecordedOuts(0);
         } else if (outcomeSign === 'Out' && (recordedOuts === 0 || recordedOuts === undefined)) {
             setRecordedOuts(1);
@@ -142,11 +172,11 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                                     type="radio"
                                     name="rbis"
                                     value={n}
-                                    disabled={
+                                    disabled={(
                                         (n !== 0 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
                                         (n === 0 && (outcomeSign === 'HR' || outcomeSign === 'IPHR')) ||
                                         (n > 1 && outcomeSign === 'BB')
-                                    }
+                                    )}
                                     checked={rbis === n}
                                     onChange={() => setRbis(n)}
                                 />
@@ -160,23 +190,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     <label>Recorded Outs: </label>
                     <div className="radio-group radio-group--fill">
                         {[0, 1, 2, 3].map(n => (
-                            <label key={n}>
-                                <input
-                                    type="radio"
-                                    name="recorded outs"
-                                    value={n}
-                                    disabled={
-                                        (gameData.numberOfOuts + n > 3) ||
-                                        (n !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
-                                        (n !== 0 && outcomeSign === 'HR') ||
-                                        (n !== 0 && outcomeSign === 'BB') ||
-                                        (n === 0 && outcomeSign === 'Out')
-                                    }
-                                    checked={recordedOuts === n}
-                                    onChange={() => setRecordedOuts(n)}
-                                />
-                                {n}
-                            </label>
+                            displayOutsButton(n)
                         ))}
                     </div>
                 </div>

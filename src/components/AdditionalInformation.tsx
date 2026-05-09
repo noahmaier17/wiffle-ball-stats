@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { AdditionalInformationLog } from "../types";
+import type { AdditionalInformationLog, TypeOfInfo } from "../types";
 
 type AdditionalInformationProps = {
     onLogAdditionalInformation: (additionalInformation: AdditionalInformationLog) => void;
@@ -7,9 +7,10 @@ type AdditionalInformationProps = {
 
 function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInformationProps) {
     const [info, setInfo] = useState<string>("");
+    const [typeOfInfo, setTypeOfInfo] = useState<TypeOfInfo>('logging_issue');
 
     const handleOnSubmit = () => {
-        onLogAdditionalInformation({ type: 'additional_information', info });
+        onLogAdditionalInformation({ type: 'additional_information', info, typeOfInfo });
 
         // Resets field
         setInfo("");
@@ -26,6 +27,21 @@ function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInforma
                 value={info}
                 onChange={(e) => setInfo(e.target.value)}
             />
+
+        <label>
+            {"Type of Additional Information: "}
+            <select
+                value={typeOfInfo as string}
+                onChange={(e) => setTypeOfInfo(e.target.value as TypeOfInfo)}
+            >
+                <option value={'logging_issue'}>
+                    Important Logging Issue
+                </option>
+                <option value={'other'}>
+                    Other
+                </option>
+            </select>
+        </label>
 
         <button
             type='submit'

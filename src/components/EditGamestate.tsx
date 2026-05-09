@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
-import type { EditGamestateLog, GameData, Player } from "../types"
+import type { EditGamestateLog, GameData } from "../types"
 import { playerName } from "../types"
 import { supabase } from "../supabase-client"
+import type { Player } from "../types"
 
 type EditGamestateProps = {
     gameData: GameData
@@ -25,23 +26,20 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
     const setLineupPlayer = (
         lineup: 'awayTeamLineup' | 'homeTeamLineup',
         index: number,
-        field: keyof Player,
-        value: string | number
+        playerId: number
     ) => {
+        const player = allPlayers.find(p => p.id === playerId)
+        if (!player) return
         setDraft(prev => ({
             ...prev,
-            [lineup]: prev[lineup].map((p, i) =>
-                i === index ? { ...p, [field]: field === 'id' ? Number(value) : value } : p
-            )
+            [lineup]: prev[lineup].map((p, i) => i === index ? player : p)
         }))
     }
 
     const addToLineup = (lineup: 'awayTeamLineup' | 'homeTeamLineup') => {
-        setDraft(prev => {
-            const existing = prev[lineup]
-            const newId = existing.length > 0 ? Math.max(...existing.map(p => p.id)) + 1 : 1
-            return { ...prev, [lineup]: [...existing, { id: newId, firstName: '', lastName: '' }] }
-        })
+        const defaultPlayer = allPlayers[0]
+        if (!defaultPlayer) return
+        setDraft(prev => ({ ...prev, [lineup]: [...prev[lineup], defaultPlayer] }))
     }
 
     const removeFromLineup = (lineup: 'awayTeamLineup' | 'homeTeamLineup', index: number) =>
@@ -52,41 +50,9 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
         onUpdate({ type: 'edit_gamestate', newGameData: draft, info })
     }
 
-    const renderPlayerFields = (
-        label: string,
-        player: Player,
-        onChange: (field: keyof Player, value: string | number) => void
-    ) => (
-        <div style={{ marginBottom: '0.5em' }}>
-            <strong>{label}</strong>
-            <div style={{ display: 'flex', gap: '0.5em', marginTop: '0.25em' }}>
-                <label>ID: <input type="number" value={player.id} onChange={e => onChange('id', Number(e.target.value))} style={{ width: '4em' }} /></label>
-                <label>First: <input type="text" value={player.firstName} onChange={e => onChange('firstName', e.target.value)} /></label>
-                <label>Last: <input type="text" value={player.lastName} onChange={e => onChange('lastName', e.target.value)} /></label>
-            </div>
-        </div>
-    )
-
     return (
         <form onSubmit={handleSubmit}>
             <h3>Edit Game State</h3>
-
-            <h4>All Players (DB)</h4>
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Name</th></tr>
-                </thead>
-                <tbody>
-                    {allPlayers.map(p => (
-                        <tr key={p.id}>
-                            <td>{p.id}</td>
-                            <td>{playerName(p)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            <hr />
 
             <h4>Score</h4>
             <div style={{ display: 'flex', gap: '1em' }}>
@@ -102,6 +68,19 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
                 <label>Outs: <input type="number" min={0} max={2} value={draft.numberOfOuts} onChange={e => set('numberOfOuts', Number(e.target.value))} style={{ width: '3em' }} /></label>
                 <label>Away Team Batting: <input type="checkbox" checked={draft.awayTeamBatting} onChange={e => set('awayTeamBatting', e.target.checked)} /></label>
             </div>
+            {(() => {
+                const lineup = draft.awayTeamBatting ? draft.awayTeamLineup : draft.homeTeamLineup
+                const currIdx = draft.awayTeamBatting ? draft.currAwayTeamBatter : draft.currHomeTeamBatter
+                const onDeckIdx = (currIdx + 1) % lineup.length
+                const current = lineup[currIdx]
+                const onDeck = lineup[onDeckIdx]
+                return lineup.length > 0 ? (
+                    <div style={{ marginTop: '0.5em', color: '#555' }}>
+                        <span>At bat: <strong>{current ? playerName(current) : '—'}</strong></span>
+                        <span style={{ marginLeft: '1.5em' }}>On deck: <strong>{onDeck ? playerName(onDeck) : '—'}</strong></span>
+                    </div>
+                ) : null
+            })()}
 
             <hr />
 
@@ -131,8 +110,13 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
                 <div key={lineupKey}>
                     <h4>{lineupKey === 'awayTeamLineup' ? 'Away' : 'Home'} Team Lineup</h4>
                     {draft[lineupKey].map((player, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                            {renderPlayerFields(`#${i + 1}`, player, (f, v) => setLineupPlayer(lineupKey, i, f, v))}
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
+                            <strong>#{i + 1}</strong>
+                            <select value={player.id} onChange={e => setLineupPlayer(lineupKey, i, Number(e.target.value))}>
+                                {allPlayers.map(p => (
+                                    <option key={p.id} value={p.id}>{playerName(p)}</option>
+                                ))}
+                            </select>
                             <button type="button" onClick={() => removeFromLineup(lineupKey, i)}>Remove</button>
                         </div>
                     ))}
@@ -151,7 +135,7 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
 
             <hr />
 
-            <button type="submit">Save Changes</button>
+            <button type="submit" disabled={info.trim() === ""}>Save Changes</button>
         </form>
     )
 }

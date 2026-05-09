@@ -139,9 +139,11 @@ export type PitchingChangeLog = {
     newPitcher: Player;
 }
 
+export type TypeOfInfo = 'logging_issue' | 'other'
 export type AdditionalInformationLog = {
     type: 'additional_information';
     info: string;
+    typeOfInfo: TypeOfInfo;
 }
 
 export type InningSwitchLog = {
