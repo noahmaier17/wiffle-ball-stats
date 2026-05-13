@@ -1,3 +1,6 @@
+import { type ReactNode } from "react";
+import ReverseK from "../ReverseK";
+
 type BattePitcherStatisticsTableHeaderProps = {
     setSortedColumn?: (col: string) => void;
     sortedColumn?: string | null;
@@ -7,7 +10,7 @@ type BattePitcherStatisticsTableHeaderProps = {
 
 function PitcherStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirection = 'desc', showName = false }: BattePitcherStatisticsTableHeaderProps) {
     const indicator = (col: string) => sortedColumn === col ? (sortDirection === 'desc' ? ' ▼' : ' ▲') : '';
-    const th = (label: string, col: string) => (
+    const th = (label: ReactNode, col: string) => (
         <th key={col} onClick={setSortedColumn ? () => setSortedColumn(col) : undefined} style={setSortedColumn ? { cursor: 'pointer' } : undefined}>
             {label}{indicator(col)}
         </th>
@@ -29,7 +32,7 @@ function PitcherStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirec
             {th('R', 'runs_allowed')}
             {th('BB', 'pitched_walks')}
             {th('K', 'pitched_strikeouts_swinging')}
-            {th('KI', 'pitched_strikeouts_looking')}
+            {th(<ReverseK/>, 'pitched_strikeouts_looking')}
             {th('SO', 'pitched_strikeouts')}
         </tr>
     );

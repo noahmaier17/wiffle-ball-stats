@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { playerName, type Player, type PlayerGameData } from "../../types";
+import { playerName, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
+import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 
 type PlayerStatisticsProps = {
     user: Player;
@@ -14,22 +15,25 @@ type PlayerStatisticsProps = {
 function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     const [stats, setStats] = useState<PlayerGameData | null>(null);
 
+    const [viewType, setViewType] = useState<statViewTypes>('default');
+    
     useEffect(() => {
         fetchAllPlayerStatistics({ players: [user] }).then(data => {
             if (data) setStats(data[0].get(user.id) ?? null);
         });
     }, [user.id]);
 
-    if (!stats) return <></>;
+    if (!stats) return <h3>Loading...</h3>;
 
     return (
         <div>
             <button onClick={onBack}>← Back</button>
             <h1>{playerName(user)} Statistics</h1>
+            <HandleStatisticsViewToggle viewType={viewType} setViewType={setViewType}/>
             <h3>Batting</h3>
             <table className="stats-table">
-                <thead><BatterStatisticsTableHeader/></thead>
-                <tbody><BatterStatisticsRow pde={stats}/></tbody>
+                <thead><BatterStatisticsTableHeader viewType={viewType}/></thead>
+                <tbody><BatterStatisticsRow viewType={viewType} pde={stats}/></tbody>
             </table>
 
             <h3>Pitching</h3>

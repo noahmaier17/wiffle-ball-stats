@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
+import ReverseK from './ReverseK'
 
 type AtBatProps = {
     gameData: GameData;
@@ -97,7 +98,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     const outcomeButtonText = (sign: string) => {
         switch (sign) {
             case 'reverse-K':
-                return <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>K</span>
+                return <ReverseK/>
             default:
                 return <>{sign}</>
         }

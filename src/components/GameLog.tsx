@@ -1,4 +1,4 @@
-import type { GameLogEntry } from '../types';
+import { playerNameShort, type GameLogEntry } from '../types';
 
 type GameLogProps = {
     log: GameLogEntry[];
@@ -11,7 +11,7 @@ function GameLog({ log }: GameLogProps) {
                 switch (entry.type) {
                     case 'atbat':
                         return <li key={index}>
-                            <span>{entry.batter.firstName[0] + ". " + entry.batter.lastName}: {entry.outcomeSign}</span>
+                            <span>{playerNameShort(entry.batter)}: {entry.outcomeSign}</span>
                             <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
                             <span>{(entry.extraComments !== "" ? "; " : "")}</span>
                             {entry.recordedOuts > 0 && <span>{" (outs: " + entry.recordedOuts + ") "}</span>}

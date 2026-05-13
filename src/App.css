@@ -70,14 +70,29 @@ body {
   font-weight: 600;
 }
 
+.table-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .stats-table {
   border-collapse: collapse;
+}
+
+.stats-table th:first-child,
+.stats-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 1;
+  white-space: nowrap;
 }
 
 .stats-table th {
   color: #c00;
   border-right: 1px solid #b0b0b0;
   padding: 4px 8px;
+  white-space: nowrap;
 }
 
 .stats-table td {

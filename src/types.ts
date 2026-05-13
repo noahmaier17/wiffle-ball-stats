@@ -18,6 +18,7 @@ export type Player = {
     lastName: string;
 }
 export const playerName = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`;
+export const playerNameShort = (p: { firstName: string; lastName: string }) => `${p.firstName.charAt(0)}. ${p.lastName}`;
 
 export type PlayerGameData = {
     id: number,
@@ -159,6 +160,8 @@ export type EditGamestateLog = {
 export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationLog | InningSwitchLog | EditGamestateLog
 
 export type HomeAway = 'home' | 'away'
+
+export type statViewTypes = 'default' | 'by_game'
 
 export const ordinalNumber = (number: number) => {
     switch (number) {
