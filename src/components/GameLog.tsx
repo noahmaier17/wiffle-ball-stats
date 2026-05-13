@@ -18,7 +18,7 @@ function GameLog({ log }: GameLogProps) {
                             <em>{entry.extraComments}</em>
                         </li>
                     case 'pitching_change':
-                        return <li key={index}>Pitching change: {entry.newPitcher.lastName} in for {entry.oldPitcher.lastName}</li>
+                        return <li key={index}>Pitching change: {playerNameShort(entry.newPitcher)} in for {playerNameShort(entry.oldPitcher)}</li>
                     case 'additional_information':
                         return <div key={index}><em>{entry.info}</em></div>
                     case 'inning_switch':
