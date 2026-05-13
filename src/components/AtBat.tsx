@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AT_BAT_OUTCOMES_BASE_HITS, AT_BAT_OUTCOMES_OTHER, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
+import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
 
 type AtBatProps = {
@@ -57,7 +57,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
             (number !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
             (number !== 0 && outcomeSign === 'HR') ||
             (number !== 0 && outcomeSign === 'BB') ||
-            (number === 0 && outcomeSign === 'Out')
+            (number === 0 && outcomeSign === 'Out') ||
+            (number === 0 && outcomeSign === 'FC')
         );
 
         return (
@@ -121,46 +122,22 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                 <div>
                     <label>Outcome: </label>
-                    <div className="radio-group  radio-group--fill">
-                        {AT_BAT_OUTCOMES_BASE_HITS.map(abo => (
-                            <label key={abo.sign}>
-                                <input
-                                    type="radio"
-                                    name="batting-outcome"
-                                    value={abo.sign}
-                                    checked={outcomeSign === abo.sign}
-                                    onChange={() => setOutcomeSign(abo.sign)}
-                                />
-                                {outcomeButtonText(abo.sign)}
-                            </label>
-                        ))}
-                    </div>
-                    <div className="radio-group  radio-group--fill">
-                        {AT_BAT_OUTCOMES_OTHER.map(abo => (
-                            <label key={abo.sign}>
-                                <input
-                                    type="radio"
-                                    name="batting-outcome"
-                                    value={abo.sign}
-                                    checked={outcomeSign === abo.sign}
-                                    onChange={() => setOutcomeSign(abo.sign)}
-                                />
-                                {outcomeButtonText(abo.sign)}
-                            </label>
-                        ))}
-                        {AT_BAT_OUTCOMES_STRIKEOUTS.map(abo => (
-                            <label key={abo.sign}>
-                                <input
-                                    type="radio"
-                                    name="batting-outcome"
-                                    value={abo.sign}
-                                    checked={outcomeSign === abo.sign}
-                                    onChange={() => setOutcomeSign(abo.sign)}
-                                />
-                                {outcomeButtonText(abo.sign)}
-                            </label>
-                        ))}
-                    </div>
+                    {AT_BAT_OUTCOME_LAYOUT.map((row, i) => (
+                        <div key={i} className="radio-group  radio-group--fill">
+                            {row.map(abo => (
+                                <label key={abo.sign}>
+                                    <input
+                                        type="radio"
+                                        name="batting-outcome"
+                                        value={abo.sign}
+                                        checked={outcomeSign === abo.sign}
+                                        onChange={() => setOutcomeSign(abo.sign as AtBatOutcomeSign)}
+                                    />
+                                    {outcomeButtonText(abo.sign)}
+                                </label>
+                            ))}
+                        </div>
+                    ))}
                 </div>
 
                 <div>
@@ -212,8 +189,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
                     onClick={() => logAtBat()}
                 >Submit</button>
-            </form >
-        </div >
+            </form>
+        </div>
     </>)
 }
 

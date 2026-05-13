@@ -25,14 +25,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
 
-    /* Debugging use Effects */
-
-    useEffect(() => {
-        console.log(log);
-    }, [log])
-
-    /* --------------------- */
-
     useEffect(() => {
         supabase
             .from('games')
@@ -50,8 +42,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         supabase
             .from('games')
             .update({ logs: log })
-            .eq('id', gameData.gameId)
-            .then(({ error }) => console.log('logs update error:', error));
+            .eq('id', gameData.gameId);
     }, [log])
 
     const handleLogAtBat = async (atBat: AtBatLog) => {
@@ -199,6 +190,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                     pitcherDelta.hits_allowed = 1;
                     // Home runs allowed does not count IPHR
                     break;
+                case 'FC':
+                    batterDelta.fielders_choice = 1;
             }
 
             // Update Batter
