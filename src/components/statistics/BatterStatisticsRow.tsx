@@ -32,7 +32,7 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             strikeouts_swinging: pde.strikeouts_swinging / pde.games_played
         }
     } */
-    const display = (value: number, isGameGranularityStatistic: boolean = false) => {
+    const display = (value: number) => { // , isGameGranularityStatistic: boolean = false) => {
         return (viewType === 'by_game') 
             ? (value / pdeWithZeroes.games_played).toFixed(2) 
             : value
