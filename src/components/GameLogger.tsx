@@ -15,12 +15,6 @@ type GameLoggerProps = {
     setGameState: React.Dispatch<React.SetStateAction<GameData | null>>;
 }
 
-/*
-    TODO:
-    - Add IPHR and SF to switch case
-    - Add game ending/final screen
-*/
-
 function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
