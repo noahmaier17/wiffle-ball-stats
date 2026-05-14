@@ -9,6 +9,7 @@ type HomeProps = {
     onStartGame: (gameData: GameData) => void;
     onSpectateGame: (gameId: number) => void;
     onViewStatistics: () => void;
+    isAuthenticated: boolean;
 };
 
 /**
@@ -25,7 +26,14 @@ type HomeProps = {
  * 4. Packaging the finalized lineups and game configuration, and passing them to the parent component
  *    via the `onStartGame` prop to initiate the game state (transitioning to the `AtBat` screen).
  */
-function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics }: HomeProps) {
+function Home({ 
+    players, 
+    loading, 
+    onStartGame, 
+    onSpectateGame, 
+    onViewStatistics, 
+    isAuthenticated
+}: HomeProps) {
     const [showPopup, setShowPopup] = useState(false);
 
     // Lineup state
@@ -48,6 +56,13 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
     const [spectateGames, setSpectateGames] = useState<any[]>([]);
     const [loadingSpectateGames, setLoadingSpectateGames] = useState(false);
     const [spectateError, setSpectateError] = useState<string | null>(null);
+
+    // Login state
+    const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+    const [loginEmail, setLoginEmail] = useState<string>('');
+    const [loginPassword, setLoginPassword] = useState<string>('');
+    const [loginError, setLoginError] = useState<string | null>(null);
+    const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
 
     const fetchGames = async () => {
         setLoadingGames(true);
@@ -121,6 +136,21 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
             setSpectateGames(data || []);
         }
         setLoadingSpectateGames(false);
+    };
+
+    const handleLogin = async (e: React.SyntheticEvent) => {
+        e.preventDefault();
+        setIsLoggingIn(true);
+        setLoginError(null);
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+        if (error) {
+            setLoginError(error.message);
+        } else {
+            setShowLoginModal(false);
+            setLoginEmail('');
+            setLoginPassword('');
+        }
+        setIsLoggingIn(false);
     };
 
     const openSpectatePopup = () => {
@@ -547,32 +577,36 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
                 <button
                     onClick={startGame}
-                    disabled={loading}
+                    disabled={loading || !isAuthenticated}
+                    title={!isAuthenticated ? "Sign in to start a new game" : undefined}
                     style={{
                         padding: '12px 24px',
                         fontSize: '1.2rem',
-                        cursor: loading ? 'not-allowed' : 'pointer',
+                        cursor: loading || !isAuthenticated ? 'not-allowed' : 'pointer',
                         backgroundColor: '#3b82f6',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         fontWeight: 'bold',
+                        opacity: !isAuthenticated ? 0.5 : 1,
                     }}
                 >
                     {loading ? "Loading Players..." : "Start a New Game"}
                 </button>
                 <button
                     onClick={openResumePopup}
-                    disabled={loading}
+                    disabled={loading || !isAuthenticated}
+                    title={!isAuthenticated ? "Sign in to resume a game" : undefined}
                     style={{
                         padding: '12px 24px',
                         fontSize: '1.2rem',
-                        cursor: loading ? 'not-allowed' : 'pointer',
+                        cursor: loading || !isAuthenticated ? 'not-allowed' : 'pointer',
                         backgroundColor: '#6b7280',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         fontWeight: 'bold',
+                        opacity: !isAuthenticated ? 0.5 : 1,
                     }}
                 >
                     Resume a Game
@@ -608,6 +642,30 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
                 >
                     View Statistics
                 </button>
+            </div>
+
+            <div style={{ marginTop: '14px', fontSize: '0.875rem', color: '#9ca3af' }}>
+                {isAuthenticated ? (
+                    <span>
+                        Signed in &nbsp;|&nbsp;
+                        <button
+                            onClick={() => supabase.auth.signOut()}
+                            style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.875rem', padding: 0 }}
+                        >
+                            Sign Out
+                        </button>
+                    </span>
+                ) : (
+                    <span>
+                        League members:&nbsp;
+                        <button
+                            onClick={() => setShowLoginModal(true)}
+                            style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.875rem', padding: 0 }}
+                        >
+                            Sign In
+                        </button>
+                    </span>
+                )}
             </div>
 
             {showPopup && (
@@ -838,6 +896,78 @@ function Home({ players, loading, onStartGame, onSpectateGame, onViewStatistics 
                                 Cancel
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showLoginModal && (
+                <div className="popup-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px',
+                        border: '1px solid #374151', width: '100%', maxWidth: '360px',
+                        color: 'white', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #374151', paddingBottom: '15px', marginBottom: '20px' }}>
+                            <button
+                                type="button"
+                                onClick={() => { setShowLoginModal(false); setLoginError(null); }}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.5rem', padding: '0 15px 0 0', display: 'flex', alignItems: 'center' }}
+                                aria-label="Close"
+                            >
+                                &larr;
+                            </button>
+                            <h2 style={{ margin: 0, flex: 1, textAlign: 'center', marginRight: '30px' }}>Sign In</h2>
+                        </div>
+
+                        {loginError && (
+                            <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center', fontSize: '0.875rem' }}>
+                                {loginError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', color: '#9ca3af' }}>Email</label>
+                                <input
+                                    type="email"
+                                    value={loginEmail}
+                                    onChange={e => setLoginEmail(e.target.value)}
+                                    required
+                                    style={{ width: '100%', padding: '10px', backgroundColor: '#374151', border: '1px solid #4b5563', borderRadius: '6px', color: 'white', fontSize: '1rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.875rem', color: '#9ca3af' }}>Password</label>
+                                <input
+                                    type="password"
+                                    value={loginPassword}
+                                    onChange={e => setLoginPassword(e.target.value)}
+                                    required
+                                    style={{ width: '100%', padding: '10px', backgroundColor: '#374151', border: '1px solid #4b5563', borderRadius: '6px', color: 'white', fontSize: '1rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #374151', paddingTop: '16px', marginTop: '6px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowLoginModal(false); setLoginError(null); }}
+                                    style={{ padding: '10px 20px', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isLoggingIn}
+                                    style={{ padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: isLoggingIn ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: isLoggingIn ? 0.7 : 1 }}
+                                >
+                                    {isLoggingIn ? "Signing in..." : "Sign In"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
