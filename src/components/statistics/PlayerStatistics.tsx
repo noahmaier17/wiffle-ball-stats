@@ -31,16 +31,20 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
             <h1>{playerName(user)} Statistics</h1>
             <HandleStatisticsViewToggle viewType={viewType} setViewType={setViewType}/>
             <h3>Batting</h3>
-            <table className="stats-table">
-                <thead><BatterStatisticsTableHeader viewType={viewType}/></thead>
-                <tbody><BatterStatisticsRow viewType={viewType} pde={stats}/></tbody>
-            </table>
+            <div className="table-scroll-container">
+                <table className="stats-table">
+                    <thead><BatterStatisticsTableHeader viewType={viewType}/></thead>
+                    <tbody><BatterStatisticsRow viewType={viewType} pde={stats}/></tbody>
+                </table>
+            </div>
 
             <h3>Pitching</h3>
-            <table className="stats-table">
-                <thead><PitcherStatisticsTableHeader/></thead>
-                <tbody><PitcherStatisticsRow pde={stats}/></tbody>
-            </table>
+            <div className="table-scroll-container">
+                <table className="stats-table">
+                    <thead><PitcherStatisticsTableHeader/></thead>
+                    <tbody><PitcherStatisticsRow pde={stats}/></tbody>
+                </table>
+            </div>
         </div>
     );
 }

@@ -131,7 +131,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
 
             // Define increments/decrements for db updates
-            let batterDelta: any = { runs_batted_in: atBat.rbis, plate_appearances: 1 };
+            let batterDelta: any = { runs_batted_in: atBat.rbis };
             let pitcherDelta: any = { runs_allowed: atBat.rbis };
 
             // Stat changes

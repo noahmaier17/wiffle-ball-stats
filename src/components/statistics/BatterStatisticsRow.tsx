@@ -13,25 +13,6 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             : 0
     }
 
-    /*
-    const statsByGame = (pde: PlayerGameData): PlayerGameData => {
-        return {...pde,
-            win: pde.win / pde.games_played,
-            loss: pde.loss / pde.games_played,
-            at_bats: pde.at_bats / pde.games_played,
-            hits: pde.hits / pde.games_played,
-            singles: pde.singles / pde.games_played,
-            doubles: pde.doubles / pde.games_played,
-            triples: pde.triples / pde.games_played,
-            home_runs: pde.home_runs / pde.games_played,
-            inside_the_park_home_runs: pde.inside_the_park_home_runs / pde.games_played,
-            runs_batted_in: pde.runs_batted_in / pde.games_played,
-            walks: pde.walks / pde.games_played,
-            strikeouts: pde.strikeouts / pde.games_played,
-            strikeouts_looking: pde.strikeouts_looking / pde.games_played,
-            strikeouts_swinging: pde.strikeouts_swinging / pde.games_played
-        }
-    } */
     const display = (value: number) => { // , isGameGranularityStatistic: boolean = false) => {
         return (viewType === 'by_game') 
             ? (value / pdeWithZeroes.games_played).toFixed(2) 

@@ -79,8 +79,8 @@ body {
   border-collapse: collapse;
 }
 
-.stats-table th:first-child,
-.stats-table td:first-child {
+.stats-table.sticky-first-col th:first-child,
+.stats-table.sticky-first-col td:first-child {
   position: sticky;
   left: 0;
   background: white;

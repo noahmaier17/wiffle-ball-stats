@@ -171,7 +171,7 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
             />
             <h3>Batting</h3>
             <div className="table-scroll-container">
-                <table className="stats-table">
+                <table className="stats-table sticky-first-col">
                     <thead>
                         <BatterStatisticsTableHeader
                             setSortedColumn={handleBatterSort}
@@ -187,7 +187,7 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
 
             <h3>Pitching</h3>
             <div className="table-scroll-container">
-                <table className="stats-table">
+                <table className="stats-table sticky-first-col">
                     <thead>
                         <PitcherStatisticsTableHeader
                             setSortedColumn={handlePitcherSort}
