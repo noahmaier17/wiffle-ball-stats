@@ -22,13 +22,9 @@ function Jumbotron({ gameData }: JumbotronProps) {
             {awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)} Inning with {numberOfOuts ? numberOfOuts : "No"} Out{numberOfOuts === 1 ? "" : "s"}; {awayRuns} - {homeRuns}
         </h3>
         <h4>
-            {awayTeamLineup.map((p, index) => (
-                <span key={index}>{playerName(p)}, </span>
-            ))}
-            VERSUS 
-            {homeTeamLineup.map((p, index) => (
-                <span key={index}> {playerName(p)},</span>
-            ))}
+            {awayTeamLineup.map(playerName).join(', ')}
+            {" VERSUS "}
+            {homeTeamLineup.map(playerName).join(', ')}
         </h4>
         <div>
             <span>At bat: {playerName(currAtBat(gameData))} | </span>
@@ -36,7 +32,7 @@ function Jumbotron({ gameData }: JumbotronProps) {
             <span>In hole: {playerName(currInHole(gameData))}</span>
         </div>
         <div>
-            Currently on the mound: {playerName(awayTeamBatting ? homePitcher : awayPitcher)}
+            On the mound: {playerName(awayTeamBatting ? homePitcher : awayPitcher)}
         </div>
     </div>
 }
