@@ -24,16 +24,16 @@ function PitcherStatisticsTableHeader({ setSortedColumn, sortedColumn, sortDirec
                 </th>
             )}
 
-            {th('IP', 'innings_pitched')}
-            {th('ERA', 'earned_runs')}
-            {th('WHIP', 'walks_plus_hits_per_inning_pitched')}
             {th('G', 'games_pitched')}
+            {th('IP', 'innings_pitched')}
             {th('H', 'hits_allowed')}
             {th('R', 'runs_allowed')}
             {th('BB', 'pitched_walks')}
             {th('K', 'pitched_strikeouts_swinging')}
             {th(<ReverseK/>, 'pitched_strikeouts_looking')}
             {th('SO', 'pitched_strikeouts')}
+            {th('ERA', 'earned_runs')}
+            {th('WHIP', 'walks_plus_hits_per_inning_pitched')}
         </tr>
     );
 }

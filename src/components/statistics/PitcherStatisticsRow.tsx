@@ -9,16 +9,16 @@ function PitcherStatisticsRow({ pde, player }: PitcherStatisticsRowProps) {
     return (
         <tr>
             {player && <td>{playerNameShort(player)}</td>}
-            <td>{pde.innings_pitched.toFixed(1)}</td>
-            <td>{calculateERA(pde).toFixed(2)}</td>
-            <td>{calculateWHIP(pde).toFixed(2)}</td>
             <td>{pde.games_pitched}</td>
+            <td>{pde.innings_pitched.toFixed(1)}</td>
             <td>{pde.hits_allowed}</td>
             <td>{pde.runs_allowed}</td>
             <td>{pde.pitched_walks}</td>
             <td>{pde.pitched_strikeouts_swinging}</td>
             <td>{pde.pitched_strikeouts_looking}</td>
             <td>{pde.pitched_strikeouts}</td>
+            <td>{calculateERA(pde).toFixed(2)}</td>
+            <td>{calculateWHIP(pde).toFixed(2)}</td>
         </tr>
     );
 }
