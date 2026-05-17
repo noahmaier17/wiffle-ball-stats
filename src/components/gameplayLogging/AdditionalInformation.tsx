@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { AdditionalInformationLog, TypeOfInfo } from "../types";
+import type { AdditionalInformationLog, TypeOfInfo } from "../../types";
 
 type AdditionalInformationProps = {
     onLogAdditionalInformation: (additionalInformation: AdditionalInformationLog) => void;

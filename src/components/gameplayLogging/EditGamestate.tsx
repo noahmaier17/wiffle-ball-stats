@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
-import type { EditGamestateLog, GameData } from "../types"
-import { playerName } from "../types"
-import { supabase } from "../supabase-client"
-import type { Player } from "../types"
+import type { EditGamestateLog, GameData } from "../../types"
+import { playerName } from "../../types"
+import { supabase } from "../../supabase-client"
+import type { Player } from "../../types"
 
 type EditGamestateProps = {
     gameData: GameData

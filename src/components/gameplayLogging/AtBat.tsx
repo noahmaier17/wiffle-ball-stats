@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS } from '../constants'
-import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../types'
-import ReverseK from './ReverseK'
+import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS } from '../../constants'
+import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../../types'
+import ReverseK from '../ReverseK'
 
 type AtBatProps = {
     gameData: GameData;

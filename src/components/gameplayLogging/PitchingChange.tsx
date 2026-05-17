@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type HomeAway, playerName, type GameData, type PitchingChangeLog, type Player } from "../types";
+import { type HomeAway, playerName, type GameData, type PitchingChangeLog, type Player } from "../../types";
 
 type PitchingChangeProps = {
     gameData: GameData;

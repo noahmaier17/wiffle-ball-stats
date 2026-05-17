@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
 import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, type Player, rowToLogEntry, makeFindPlayer } from "../types";
-import AtBat from "./AtBat";
-import PitchingChange from "./PitchingChange";
+import AtBat from "./gameplayLogging/AtBat";
+import PitchingChange from "./gameplayLogging/PitchingChange";
 import Jumbotron from "./Jumbotron";
-import AdditionalInformation from "./AdditionalInformation";
-import EditGamestate from "./EditGamestate";
+import AdditionalInformation from "./gameplayLogging/AdditionalInformation";
+import EditGamestate from "./gameplayLogging/EditGamestate";
 import GameLog from "./GameLog";
 
 type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
