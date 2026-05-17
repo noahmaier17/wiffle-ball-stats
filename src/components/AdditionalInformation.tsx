@@ -7,7 +7,7 @@ type AdditionalInformationProps = {
 
 function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInformationProps) {
     const [info, setInfo] = useState<string>("");
-    const [typeOfInfo, setTypeOfInfo] = useState<TypeOfInfo>('logging_issue');
+    const [typeOfInfo, setTypeOfInfo] = useState<TypeOfInfo>('other');
 
     const handleOnSubmit = () => {
         onLogAdditionalInformation({ type: 'additional_information', info, typeOfInfo });
@@ -34,11 +34,11 @@ function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInforma
                 value={typeOfInfo as string}
                 onChange={(e) => setTypeOfInfo(e.target.value as TypeOfInfo)}
             >
-                <option value={'logging_issue'}>
-                    Important Logging Issue
-                </option>
                 <option value={'other'}>
                     Other
+                </option>
+                <option value={'logging_issue'}>
+                    Important Logging Issue
                 </option>
             </select>
         </label>
