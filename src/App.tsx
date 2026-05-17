@@ -67,7 +67,10 @@ function App() {
                 current_home_team_batter_index: gameState.currHomeTeamBatter,
                 game_over: !!gameState.isGameOver
             })
-            .eq('id', gameState.gameId);
+            .eq('id', gameState.gameId)
+            .then(({ error }) => {
+                if (error) console.error('Failed to update game state:', error);
+            });
     }, [gameState]);
 
     if (gameState) {

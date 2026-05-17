@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
-import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, type Player, rowToLogEntry, makeFindPlayer } from "../types";
 import AtBat from "./AtBat";
 import PitchingChange from "./PitchingChange";
 import Jumbotron from "./Jumbotron";
@@ -18,29 +18,112 @@ type GameLoggerProps = {
 function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
+    const nextSeqRef = useRef(0);
+    const isSubmittingRef = useRef(false);
 
     useEffect(() => {
-        supabase
-            .from('games')
-            .select('logs')
-            .eq('id', gameData.gameId)
-            .single()
-            .then(({ data }) => {
-                if (data?.logs?.length) setLog(data.logs);
-            });
+        const loadLogs = async () => {
+            // Fetches our database game logs and player information
+            const [{ data: rows }, { data: playersData }] = await Promise.all([
+                supabase
+                    .from('game_logs')
+                    .select(`
+                        id, sequence, type,
+                        at_bat_logs(batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, inning, extra_comments),
+                        pitching_change_logs(team_changing, old_pitcher_id, new_pitcher_id),
+                        additional_information_logs(info, type_of_info),
+                        edit_gamestate_logs(info, new_game_data),
+                        inning_switch_logs(log_id)
+                    `)
+                    .eq('game_id', gameData.gameId)
+                    .order('sequence'),
+
+                supabase.from('players').select('id, first_name, last_name')
+            ]);
+
+            // If we did not fetch data, returns
+            if (!rows?.length || !playersData) return;
+
+            // Gets our players
+            const players: Player[] = playersData.map((p: any) => ({
+                id: p.id,
+                firstName: p.first_name,
+                lastName: p.last_name,
+            }));
+            const findPlayer = makeFindPlayer(players);
+
+            // Sets the log with what is already present in it
+            setLog(rows.map((row: any) => rowToLogEntry(row, findPlayer)));
+            nextSeqRef.current = rows.length;
+        };
+
+        loadLogs();
     }, []);
 
-    useEffect(() => {
-        if (log.length === 0) return;
+    const insertLog = async (entry: GameLogEntry): Promise<void> => {
+        const sequence = nextSeqRef.current;
+        nextSeqRef.current += 1;
 
-        supabase
-            .from('games')
-            .update({ logs: log })
-            .eq('id', gameData.gameId);
-    }, [log])
+        // Creates a new game log entry, and fetches its primary key ID
+        const { data: masterRow, error } = await supabase
+            .from('game_logs')
+            .insert({ game_id: gameData.gameId, sequence, type: entry.type })
+            .select('id')
+            .single();
+
+        // Error catching
+        if (error || !masterRow) {
+            console.error('Failed to insert log entry:', error);
+            return;
+        }
+
+        const logId = masterRow.id;
+
+        // Depending on the type of log, we append a new log
+        switch (entry.type) {
+            case 'atbat':
+                await supabase.from('at_bat_logs').insert({
+                    log_id: logId,
+                    batter_id: entry.batter.id,
+                    pitcher_id: entry.pitcher.id,
+                    outcome_sign: entry.outcomeSign,
+                    rbis: entry.rbis,
+                    recorded_outs: entry.recordedOuts,
+                    inning: gameData.inning,
+                    extra_comments: entry.extraComments ?? '',
+                });
+                break;
+            case 'pitching_change':
+                await supabase.from('pitching_change_logs').insert({
+                    log_id: logId,
+                    team_changing: entry.teamChangingPitchers,
+                    old_pitcher_id: entry.oldPitcher.id,
+                    new_pitcher_id: entry.newPitcher.id,
+                });
+                break;
+            case 'additional_information':
+                await supabase.from('additional_information_logs').insert({
+                    log_id: logId,
+                    info: entry.info,
+                    type_of_info: entry.typeOfInfo,
+                });
+                break;
+            case 'inning_switch':
+                await supabase.from('inning_switch_logs').insert({ log_id: logId });
+                break;
+            case 'edit_gamestate':
+                await supabase.from('edit_gamestate_logs').insert({
+                    log_id: logId,
+                    info: entry.info,
+                    new_game_data: entry.newGameData,
+                });
+                break;
+        }
+    };
 
     const handleLogAtBat = async (atBat: AtBatLog) => {
-        setLog(prev => [...prev, atBat]);
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
 
         let newOuts = gameData.numberOfOuts + atBat.recordedOuts;
         let switchSides = false;
@@ -48,14 +131,24 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         if (newOuts >= 3) {
             switchSides = true;
             newOuts = 0;
-
-            setLog(prev => [...prev, {
-                type: 'inning_switch'
-            }]);
         }
 
+        const awayBatting = gameData.awayTeamBatting;
+        const inning = gameData.inning;
+        const newAwayRuns = gameData.awayRuns + (awayBatting ? atBat.rbis : 0);
+        const newHomeRuns = gameData.homeRuns + (!awayBatting ? atBat.rbis : 0);
+
         let gameJustEnded = false;
-        let homeTeamWon = false;
+        if (!awayBatting && inning >= 3 && newHomeRuns > newAwayRuns) {
+            gameJustEnded = true;
+        }
+        if (switchSides && !gameJustEnded) {
+            if (awayBatting && inning >= 3 && newHomeRuns > newAwayRuns) gameJustEnded = true;
+            if (!awayBatting && inning >= 3 && newAwayRuns !== newHomeRuns) gameJustEnded = true;
+        }
+        const homeTeamWon = newHomeRuns > newAwayRuns;
+
+        setLog(prev => switchSides ? [...prev, atBat, { type: 'inning_switch' }] : [...prev, atBat]);
 
         setGameState(prev => {
             if (!prev) return prev;
@@ -65,52 +158,34 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             // 1. Update outs
             returnGameState.numberOfOuts = newOuts;
 
-            // 2. Update rbis and batters
-            if (prev.awayTeamBatting) {
+            // 2. Update runs and advance batter
+            if (awayBatting) {
                 returnGameState.currAwayTeamBatter = (returnGameState.currAwayTeamBatter + 1) % returnGameState.awayTeamLineup.length;
-                returnGameState.awayRuns += atBat.rbis;
+                returnGameState.awayRuns = newAwayRuns;
             } else {
                 returnGameState.currHomeTeamBatter = (returnGameState.currHomeTeamBatter + 1) % returnGameState.homeTeamLineup.length;
-                returnGameState.homeRuns += atBat.rbis;
-            }
-
-            let isGameOver = false;
-
-            // Check Walk-off
-            if (!prev.awayTeamBatting && returnGameState.inning >= 3 && returnGameState.homeRuns > returnGameState.awayRuns) {
-                isGameOver = true;
+                returnGameState.homeRuns = newHomeRuns;
             }
 
             // 3. Handle switching innings
-            if (switchSides && !isGameOver) {
-                if (prev.awayTeamBatting) {
-                    // Middle of the 3rd or later: if Home is already ahead, game over
-                    if (returnGameState.inning >= 3 && returnGameState.homeRuns > returnGameState.awayRuns) {
-                        isGameOver = true;
-                    }
-                } else {
-                    // End of the 3rd or later: if not tied, game over
-                    if (returnGameState.inning >= 3 && returnGameState.awayRuns !== returnGameState.homeRuns) {
-                        isGameOver = true;
-                    }
+            if (switchSides && !gameJustEnded) {
+                if (!awayBatting) {
+                    returnGameState.inning += 1;
                 }
-
-                if (!isGameOver) {
-                    if (!prev.awayTeamBatting) {
-                        returnGameState.inning += 1;
-                    }
-                    returnGameState.awayTeamBatting = !prev.awayTeamBatting;
-                }
+                returnGameState.awayTeamBatting = !awayBatting;
             }
 
-            if (isGameOver) {
+            if (gameJustEnded) {
                 returnGameState.isGameOver = true;
-                gameJustEnded = true;
-                homeTeamWon = returnGameState.homeRuns > returnGameState.awayRuns;
             }
 
             return returnGameState;
         });
+
+        isSubmittingRef.current = false;
+
+        insertLog(atBat);
+        if (switchSides) insertLog({ type: 'inning_switch' });
 
         const batter = atBat.batter;
         const pitcher = atBat.pitcher;
@@ -227,25 +302,45 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     };
 
     const handleLogPitchingChange = (pitchingChange: PitchingChangeLog) => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
         setLog(prev => [...prev, pitchingChange]);
 
         setGameState(prev => {
             if (!prev) return prev;
-
-            return ((pitchingChange.teamChangingPitchers === 'away')
+            return (pitchingChange.teamChangingPitchers === 'away')
                 ? { ...prev, awayPitcher: pitchingChange.newPitcher }
-                : { ...prev, homePitcher: pitchingChange.newPitcher })
-        })
+                : { ...prev, homePitcher: pitchingChange.newPitcher };
+        });
+
+        isSubmittingRef.current = false;
+
+        insertLog(pitchingChange);
     };
 
     const handleLogAdditionalInformation = (additionalInformation: AdditionalInformationLog) => {
-        setLog(prev => [...prev, additionalInformation])
-    }
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
+        setLog(prev => [...prev, additionalInformation]);
+
+        isSubmittingRef.current = false;
+
+        insertLog(additionalInformation);
+    };
 
     const handleEditGamestate = (editGamestateLog: EditGamestateLog) => {
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
         setLog(prev => [...prev, editGamestateLog]);
         setGameState(editGamestateLog.newGameData);
-    }
+
+        isSubmittingRef.current = false;
+
+        insertLog(editGamestateLog);
+    };
 
     return (
         <div>

@@ -18,6 +18,8 @@ export type Player = {
     lastName: string;
 }
 export const playerName = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`;
+export const makeFindPlayer = (players: Player[]) => (id: number): Player =>
+    players.find(p => p.id === id) ?? { id, firstName: 'Error', lastName: 'Player' };
 export const playerNameShort = (p: { firstName: string; lastName: string }) => `${p.firstName.charAt(0)}. ${p.lastName}`;
 
 export type PlayerGameData = {
@@ -162,6 +164,52 @@ export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationL
 export type HomeAway = 'home' | 'away'
 
 export type statViewTypes = 'default' | 'by_game'
+
+export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): GameLogEntry => {
+    switch (row.type) {
+        case 'atbat': {
+            const ab = row.at_bat_logs;
+            return {
+                type: 'atbat',
+                batter: findPlayer(ab.batter_id),
+                pitcher: findPlayer(ab.pitcher_id),
+                rbis: ab.rbis,
+                recordedOuts: ab.recorded_outs,
+                outcomeSign: ab.outcome_sign as AtBatOutcomeSign,
+                extraComments: ab.extra_comments ?? '',
+            };
+        }
+        case 'pitching_change': {
+            const pc = row.pitching_change_logs;
+            return {
+                type: 'pitching_change',
+                teamChangingPitchers: pc.team_changing as HomeAway,
+                oldPitcher: findPlayer(pc.old_pitcher_id),
+                newPitcher: findPlayer(pc.new_pitcher_id),
+            };
+        }
+        case 'additional_information': {
+            const ai = row.additional_information_logs;
+            return {
+                type: 'additional_information',
+                info: ai.info,
+                typeOfInfo: (ai.type_of_info ?? 'other') as TypeOfInfo,
+            };
+        }
+        case 'inning_switch':
+            return { type: 'inning_switch' };
+        case 'edit_gamestate': {
+            const eg = row.edit_gamestate_logs;
+            return {
+                type: 'edit_gamestate',
+                newGameData: eg.new_game_data,
+                info: eg.info,
+            };
+        }
+        default:
+            throw new Error(`Unknown log type: ${row.type}`);
+    }
+};
 
 export const ordinalNumber = (number: number) => {
     switch (number) {
