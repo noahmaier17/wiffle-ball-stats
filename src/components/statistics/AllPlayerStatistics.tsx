@@ -1,5 +1,5 @@
-import { useEffect, useState, type JSX } from "react";
-import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
+import { useEffect, useState } from "react";
+import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
 import { calculateERA, calculateWHIP, playerName, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
@@ -7,9 +7,12 @@ import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 
-const COUNT_COLS = new Set([
+const BATTING_COUNT_COLS = new Set([
     'at_bats', 'hits', 'singles', 'doubles', 'triples', 'home_runs', 'inside_the_park_home_runs',
     'runs_batted_in', 'walks', 'strikeouts_swinging', 'strikeouts_looking', 'strikeouts', 'tb',
+]);
+
+const PITCHING_COUNT_COLS = new Set([
     'win', 'loss', 'innings_pitched', 'hits_allowed', 'runs_allowed',
     'pitched_walks', 'pitched_strikeouts_swinging', 'pitched_strikeouts_looking', 'pitched_strikeouts',
 ]);
@@ -57,9 +60,13 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
 
 function getSortValue(stats: PlayerGameData, col: string, viewType: statViewTypes): number {
     const raw = getRawSortValue(stats, col);
-    return (viewType === 'by_game' && COUNT_COLS.has(col))
-        ? raw / stats.games_played
-        : raw;
+    if (viewType === 'default') return raw;
+    if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
+
+    if (BATTING_COUNT_COLS.has(col)) return (stats.games_played === 0) ? 0 : raw / stats.games_played;
+    if (PITCHING_COUNT_COLS.has(col)) return (stats.games_pitched === 0) ? 0 : raw / stats.games_pitched;
+
+    return raw; // Cannot be accessed
 }
 
 type AllPlayerStatisticsProps = {
@@ -137,29 +144,34 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
     }) : allStats;
 
     // Creates JSX for every batter
-    const battingJSX: JSX.Element[] = sortedBatterStats.map(stats => {
-        const player = players.find(p => p.id === stats.player_id);
-        return (player && !playerIdsWithoutStats?.has(player.id))
-            ? <BatterStatisticsRow 
-                key={stats.player_id} 
-                pde={stats} 
-                player={player}
+    const battingJSX = sortedBatterStats
+        .filter(stats => {
+            const player = players.find(p => p.id === stats.player_id);
+            return player && !playerIdsWithoutStats?.has(player.id);
+        })
+        .map(stats => (
+            <BatterStatisticsRow
+                key={stats.player_id}
+                pde={stats}
+                player={players.find(p => p.id === stats.player_id)!}
                 viewType={viewType}
             />
-            : <></>
-    });
+        ));
 
     // Creates JSX for every pitcher
-    const pitchingJSX: JSX.Element[] = sortedPitcherStats.map(stats => {
-        const player = players.find(p => p.id === stats.player_id);
-        return (player && !playerIdsWithoutStats?.has(player.id))
-            ? <PitcherStatisticsRow 
-                key={stats.player_id} 
-                pde={stats} 
-                player={player}
-              />
-            : <></>
-    })
+    const pitchingJSX = sortedPitcherStats
+        .filter(stats => {
+            const player = players.find(p => p.id === stats.player_id);
+            return player && !playerIdsWithoutStats?.has(player.id) && stats.games_pitched > 0;
+        })
+        .map(stats => (
+            <PitcherStatisticsRow
+                key={stats.player_id}
+                viewType={viewType}
+                pde={stats}
+                player={players.find(p => p.id === stats.player_id)!}
+            />
+        ));
 
     return (
         <div>
@@ -190,6 +202,7 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
                 <table className="stats-table sticky-first-col">
                     <thead>
                         <PitcherStatisticsTableHeader
+                            viewType={viewType}
                             setSortedColumn={handlePitcherSort}
                             sortedColumn={sortedPitcherColumn}
                             sortDirection={pitcherSortDirection}
@@ -201,7 +214,6 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
             </div>
         </div>
     );
-
 }
 
 export default AllPlayerStatistics

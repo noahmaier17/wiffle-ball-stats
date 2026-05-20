@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { playerName, type Player, type PlayerGameData, type statViewTypes } from "../../types";
-import fetchAllPlayerStatistics from "../../functions/fetchAllPlayerStatistics";
+import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
@@ -41,8 +41,8 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
             <h3>Pitching</h3>
             <div className="table-scroll-container">
                 <table className="stats-table">
-                    <thead><PitcherStatisticsTableHeader/></thead>
-                    <tbody><PitcherStatisticsRow pde={stats}/></tbody>
+                    <thead><PitcherStatisticsTableHeader viewType={viewType}/></thead>
+                    <tbody><PitcherStatisticsRow viewType={viewType} pde={stats}/></tbody>
                 </table>
             </div>
         </div>

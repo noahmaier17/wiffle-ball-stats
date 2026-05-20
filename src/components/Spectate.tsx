@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase-client';
 import type { GameData, GameLogEntry, Player } from '../types';
 import { rowToLogEntry, makeFindPlayer } from '../types';
+import { buildGameDataFromRow } from '../utils/buildGameDataFromRow';
 import Jumbotron from './Jumbotron';
 import GameLog from './GameLog';
 
@@ -9,32 +10,6 @@ type SpectateProps = {
     gameId: number;
     onBack: () => void;
 };
-
-function buildGameData(game: any, players: Player[]): GameData | null {
-    const findPlayer = (id: number) => players.find(p => p.id === id);
-    const awayLineup = (game.away_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
-    const homeLineup = (game.home_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
-    const awayPitcher = findPlayer(game.away_pitcher_id);
-    const homePitcher = findPlayer(game.home_pitcher_id);
-
-    if (!awayPitcher || !homePitcher || awayLineup.length === 0 || homeLineup.length === 0) return null;
-
-    return {
-        gameId: game.id,
-        awayTeamLineup: awayLineup,
-        homeTeamLineup: homeLineup,
-        awayPitcher,
-        homePitcher,
-        awayTeamBatting: game.away_team_is_batting ?? true,
-        inning: game.inning ?? 1,
-        numberOfOuts: game.number_of_outs ?? 0,
-        awayRuns: game.away_score ?? 0,
-        homeRuns: game.home_score ?? 0,
-        currAwayTeamBatter: game.current_away_team_batter_index ?? 0,
-        currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
-        isGameOver: game.game_over ?? false,
-    };
-}
 
 const playPing = () => {
     const ctx = new AudioContext();
@@ -87,7 +62,7 @@ function Spectate({ gameId, onBack }: SpectateProps) {
 
         if (gameError || !gameRow) return;
 
-        const gd = buildGameData(gameRow, playersRef.current);
+        const gd = buildGameDataFromRow(gameRow, playersRef.current);
         if (gd) setGameData(gd);
         if (logRows?.length) setLog(buildLog(logRows));
     };
@@ -112,7 +87,7 @@ function Spectate({ gameId, onBack }: SpectateProps) {
                 lastName: p.last_name,
             }));
 
-            const gd = buildGameData(gameRow, playersRef.current);
+            const gd = buildGameDataFromRow(gameRow, playersRef.current);
             if (!gd) {
                 setError('Game data is incomplete.');
                 setLoading(false);
