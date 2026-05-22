@@ -18,9 +18,15 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     const [viewType, setViewType] = useState<statViewTypes>('default');
     
     useEffect(() => {
-        fetchAllPlayerStatistics({ players: [user] }).then(data => {
-            if (data) setStats(data[0].get(user.id) ?? null);
-        });
+        const fetchStats = () => {
+            fetchAllPlayerStatistics({ players: [user] }).then(data => {
+                if (data) setStats(data[0].get(user.id) ?? null);
+            });
+        };
+
+        fetchStats();
+        const interval = setInterval(fetchStats, 5000);
+        return () => clearInterval(interval);
     }, [user.id]);
 
     if (!stats) return <h3>Loading...</h3>;

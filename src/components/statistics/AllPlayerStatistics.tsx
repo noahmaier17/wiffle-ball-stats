@@ -87,14 +87,20 @@ function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
 
-    // Fetches player statistics
+    // Fetches player statistics, polling every 5 seconds for updates
     useEffect(() => {
-        fetchAllPlayerStatistics({players}).then(data => {
-            if (data) {
-                setAllStats(Array.from(data[0].values()));
-                setPlayerIdsWithoutStats(data[1]);
-            }
-        });
+        const fetchStats = () => {
+            fetchAllPlayerStatistics({players}).then(data => {
+                if (data) {
+                    setAllStats(Array.from(data[0].values()));
+                    setPlayerIdsWithoutStats(data[1]);
+                }
+            });
+        };
+
+        fetchStats();
+        const interval = setInterval(fetchStats, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     // Handles sorting of tables
