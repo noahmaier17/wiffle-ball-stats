@@ -106,6 +106,10 @@ function App() {
                 number_of_outs: gameState.numberOfOuts,
                 current_away_team_batter_index: gameState.currAwayTeamBatter,
                 current_home_team_batter_index: gameState.currHomeTeamBatter,
+
+                number_on_base: gameState.numberOnBase,
+                earned_runs_queue: gameState.earnedRunsQueue,
+
                 game_over: !!gameState.isGameOver
             })
             .eq('id', gameState.gameId)

@@ -22,6 +22,8 @@ export function buildGameDataFromRow(game: any, players: Player[]): GameData | n
         homeRuns: game.home_score ?? 0,
         currAwayTeamBatter: game.current_away_team_batter_index ?? 0,
         currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
+        numberOnBase: game.number_on_base ?? 0,
+        earnedRunsQueue: game.earned_runs_queue ?? [],
         isGameOver: game.game_over ?? false,
     };
 }

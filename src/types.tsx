@@ -30,6 +30,9 @@ export type PlayerGameData = {
     game_id: number,
     games_played: number,
     at_bats: number,
+    hits: number,
+    plate_appearances: number
+    singles: number,
     doubles: number,
     triples: number,
     home_runs: number,
@@ -52,10 +55,7 @@ export type PlayerGameData = {
     hits_allowed: number,
     home_runs_allowed: number,
     innings_pitched: number,
-    pitched_outs: number,
-    hits: number,
-    singles: number,
-    plate_appearances: number
+    pitched_outs: number
 }
 export const calculateERA = (pde: PlayerGameData) => {
     const era = (pde.runs_allowed * 3) / pde.innings_pitched;
@@ -100,7 +100,11 @@ export type GameData = {
     currAwayTeamBatter: number; // index corresponding to next batter in `awayTeamLineup`
     currHomeTeamBatter: number; // index corresponding to next batter in `homeTeamLineup`
 
-    isGameOver?: boolean;
+    numberOnBase: number; // how many players are currently on base; for ERA calculations
+    earnedRunsQueue: [number, number][]; // queue for number of runners responsible for each pitcher id
+                                         // [player_id, number_of_runners]; FIFO
+
+    isGameOver: boolean;
 }
 export const currLineupAndBatterIndex = (gameData: GameData): [Player[], number] => {
     const {

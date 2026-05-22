@@ -109,7 +109,9 @@ function Home({
             currHomeTeamBatter: game.current_home_team_batter_index ?? 0,
             isGameOver: ((game.inning >= 3 && !game.away_team_is_batting && game.home_score > game.away_score) ||
                 (game.inning >= 3 && game.away_team_is_batting && game.number_of_outs >= 3 && game.home_score > game.away_score) ||
-                (game.inning >= 3 && !game.away_team_is_batting && game.number_of_outs >= 3 && game.away_score !== game.home_score))
+                (game.inning >= 3 && !game.away_team_is_batting && game.number_of_outs >= 3 && game.away_score !== game.home_score)),
+            numberOnBase: game.number_on_base,
+            earnedRunsQueue: game.earned_runs_queue
         });
     };
 
@@ -220,6 +222,11 @@ function Home({
 
                 currAwayTeamBatter: 0,
                 currHomeTeamBatter: 0,
+
+                isGameOver: false,
+
+                numberOnBase: 0,
+                earnedRunsQueue: []
             });
         } catch (error: any) {
             console.error("Error creating game:", error);

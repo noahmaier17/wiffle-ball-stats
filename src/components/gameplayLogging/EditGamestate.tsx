@@ -45,6 +45,23 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
     const removeFromLineup = (lineup: 'awayTeamLineup' | 'homeTeamLineup', index: number) =>
         setDraft(prev => ({ ...prev, [lineup]: prev[lineup].filter((_, i) => i !== index) }))
 
+    const addToQueue = () => {
+        const defaultPlayer = draft.awayTeamLineup[0] ?? draft.homeTeamLineup[0]
+        if (!defaultPlayer) return
+        setDraft(prev => ({ ...prev, earnedRunsQueue: [[defaultPlayer.id, 1], ...prev.earnedRunsQueue] }))
+    }
+
+    const removeFromQueue = (index: number) =>
+        setDraft(prev => ({ ...prev, earnedRunsQueue: prev.earnedRunsQueue.filter((_, i) => i !== index) }))
+
+    const setQueueEntry = (index: number, pitcherId: number, count: number) =>
+        setDraft(prev => ({
+            ...prev,
+            earnedRunsQueue: prev.earnedRunsQueue.map((entry, i) =>
+                i === index ? [pitcherId, count] as [number, number] : entry
+            )
+        }))
+
     const handleSubmit = (e: React.SyntheticEvent) => {
         e.preventDefault()
         onUpdate({ type: 'edit_gamestate', newGameData: draft, info })
@@ -66,6 +83,7 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
             <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
                 <label>Inning: <input type="number" value={draft.inning} onChange={e => set('inning', Number(e.target.value))} style={{ width: '4em' }} /></label>
                 <label>Outs: <input type="number" min={0} max={2} value={draft.numberOfOuts} onChange={e => set('numberOfOuts', Number(e.target.value))} style={{ width: '3em' }} /></label>
+                <label>On Base: <input type="number" min={0} max={3} value={draft.numberOnBase} onChange={e => set('numberOnBase', Number(e.target.value))} style={{ width: '3em' }} /></label>
                 <label>Away Team Batting: <input type="checkbox" checked={draft.awayTeamBatting} onChange={e => set('awayTeamBatting', e.target.checked)} /></label>
             </div>
             {(() => {
@@ -123,6 +141,24 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
                     <button type="button" onClick={() => addToLineup(lineupKey)}>+ Add Player</button>
                 </div>
             ))}
+
+            <hr />
+
+            <h4>Earned Runs Queue</h4>
+            <p style={{ color: '#555', margin: '0 0 0.5em' }}>Front (most recent pitcher) → Back (oldest)</p>
+            {draft.earnedRunsQueue.map(([pitcherId, count], i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
+                    <strong>#{i + 1}</strong>
+                    <select value={pitcherId} onChange={e => setQueueEntry(i, Number(e.target.value), count)}>
+                        {[...draft.awayTeamLineup, ...draft.homeTeamLineup].map(p => (
+                            <option key={p.id} value={p.id}>{playerName(p)}</option>
+                        ))}
+                    </select>
+                    <label>Runners: <input type="number" min={1} value={count} onChange={e => setQueueEntry(i, pitcherId, Number(e.target.value))} style={{ width: '3em' }} /></label>
+                    <button type="button" onClick={() => removeFromQueue(i)}>Remove</button>
+                </div>
+            ))}
+            <button type="button" onClick={addToQueue}>+ Add Entry</button>
 
             <hr />
 

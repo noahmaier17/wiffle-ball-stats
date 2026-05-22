@@ -7,6 +7,7 @@ import Jumbotron from "./Jumbotron";
 import AdditionalInformation from "./gameplayLogging/AdditionalInformation";
 import EditGamestate from "./gameplayLogging/EditGamestate";
 import GameLog from "./GameLog";
+import { OUT_IN_PLAY_SIGNS, REACHED_BASE_SIGNS } from "../constants";
 
 type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
 
@@ -20,6 +21,10 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [logType, setLogType] = useState<LogType>('atbat');
     const nextSeqRef = useRef(0);
     const isSubmittingRef = useRef(false);
+
+    useEffect(() => {
+        console.log(gameData.earnedRunsQueue)
+    }, [gameData.earnedRunsQueue]);
 
     useEffect(() => {
         const loadLogs = async () => {
@@ -150,6 +155,30 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
         setLog(prev => switchSides ? [...prev, atBat, { type: 'inning_switch' }] : [...prev, atBat]);
 
+        // Compute queue mutations and earned runs synchronously before any state updates
+        let workingQueue: [number, number][] = gameData.earnedRunsQueue.map(([id, count]) => [id, count]);
+
+        if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) {
+            if (workingQueue.length === 0 || workingQueue[0][0] !== atBat.pitcher.id) {
+                workingQueue = [[atBat.pitcher.id, 1], ...workingQueue];
+            } else {
+                workingQueue = [[workingQueue[0][0], workingQueue[0][1] + 1], ...workingQueue.slice(1)];
+            }
+        }
+
+        const pitcherIdHasEarnedRun: number[] = [];
+        for (let i = 0; i < atBat.rbis; i++) {
+            if (workingQueue.length === 0) break;
+            const [back_pitcher_id, back_on_base] = workingQueue.at(-1)!;
+            pitcherIdHasEarnedRun.push(back_pitcher_id);
+            workingQueue = back_on_base === 1
+                ? workingQueue.slice(0, -1)
+                : [...workingQueue.slice(0, -1), [back_pitcher_id, back_on_base - 1]];
+        }
+
+        const finalQueue = workingQueue;
+
+        // Sets the game state variable
         setGameState(prev => {
             if (!prev) return prev;
 
@@ -167,8 +196,22 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 returnGameState.homeRuns = newHomeRuns;
             }
 
-            // 3. Handle switching innings
+            // 3. Update number on base and earned runs queue
+            let numberOnBase: number = 0;
+
+            // If we reached base, we have 1 more on, minus all that were removed from whatever manner
+            if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) numberOnBase += 1 - atBat.rbis - atBat.recordedOuts;
+            // If we did not reach base but the ball is in play, we exclude removing the runner (so +1) but remove all past them
+            if (OUT_IN_PLAY_SIGNS.has(atBat.outcomeSign)) numberOnBase += 1 - atBat.recordedOuts;
+
+            returnGameState.numberOnBase += numberOnBase;
+            returnGameState.earnedRunsQueue = finalQueue;
+
+            // 4. Handle switching innings
             if (switchSides && !gameJustEnded) {
+                returnGameState.numberOnBase = 0;
+                returnGameState.earnedRunsQueue = [];
+
                 if (!awayBatting) {
                     returnGameState.inning += 1;
                 }
@@ -205,11 +248,32 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             const batterStats = statsData.find((s: any) => s.player_id === batter.id);
             const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
 
+            // Update pitchers with earned runs
+            const earnedRunsPerPitcher = new Map<number, number>();
+            for (const id of pitcherIdHasEarnedRun) {
+                earnedRunsPerPitcher.set(id, (earnedRunsPerPitcher.get(id) ?? 0) + 1);
+            }
+
+            await Promise.all(
+                [...earnedRunsPerPitcher.entries()].map(async ([pitcher_id, count]) => {
+                    const { data } = await supabase
+                        .from('player_game_stats')
+                        .select('id, runs_allowed')
+                        .eq('game_id', gameData.gameId)
+                        .eq('player_id', pitcher_id)
+                        .single();
+                    await supabase
+                        .from('player_game_stats')
+                        .update({ runs_allowed: data!.runs_allowed + count })
+                        .eq('id', data!.id);
+                })
+            );
+
             // Define increments/decrements for db updates
             let batterDelta: any = { runs_batted_in: atBat.rbis };
-            let pitcherDelta: any = { runs_allowed: atBat.rbis };
+            let pitcherDelta: any = { };
 
-            // Stat changes
+            // Calculates stats based on outcome sign
             batterDelta.plate_appearances = 1;
             pitcherDelta.pitched_outs = atBat.recordedOuts
             batterDelta.at_bats = 1; // Except walk
@@ -265,21 +329,20 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
             // Update Batter
             if (batterStats) {
-                const updatedBatter = { ...batterStats };
+                const batterUpdate: any = {};
                 for (const key in batterDelta) {
-                    updatedBatter[key] = (updatedBatter[key] || 0) + batterDelta[key];
+                    batterUpdate[key] = (batterStats[key] || 0) + batterDelta[key];
                 }
-                await supabase.from('player_game_stats').update(updatedBatter).eq('id', batterStats.id);
+                await supabase.from('player_game_stats').update(batterUpdate).eq('id', batterStats.id);
             }
 
             // Update Pitcher
             if (pitcherStats) {
-                const updatedPitcher = { ...pitcherStats };
+                const pitcherUpdate: any = { games_pitched: 1 };
                 for (const key in pitcherDelta) {
-                    updatedPitcher[key] = (updatedPitcher[key] || 0) + pitcherDelta[key];
+                    pitcherUpdate[key] = (pitcherStats[key] || 0) + pitcherDelta[key];
                 }
-                updatedPitcher.games_pitched = 1; // They pitched this game
-                await supabase.from('player_game_stats').update(updatedPitcher).eq('id', pitcherStats.id);
+                await supabase.from('player_game_stats').update(pitcherUpdate).eq('id', pitcherStats.id);
             }
 
             // Update wins/losses for all players when the game ends

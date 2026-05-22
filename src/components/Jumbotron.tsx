@@ -14,12 +14,15 @@ function Jumbotron({ gameData }: JumbotronProps) {
         homeTeamLineup,
         awayRuns,
         homeRuns,
-        numberOfOuts
+        numberOfOuts,
+        numberOnBase
     } = gameData;
 
     return <div style={{ paddingBottom: '1rem' }}>
         <h3>
-            {awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)} Inning with {numberOfOuts ? numberOfOuts : "No"} Out{numberOfOuts === 1 ? "" : "s"}; {awayRuns} - {homeRuns}
+            <span>{awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)} Inning with </span>
+            <span>{numberOnBase} on Base and </span>
+            <span>{numberOfOuts ? numberOfOuts : "No"} Out{numberOfOuts === 1 ? "" : "s"}; {awayRuns} - {homeRuns}</span>
         </h3>
         <h4>
             {awayTeamLineup.map(playerName).join(', ')}
