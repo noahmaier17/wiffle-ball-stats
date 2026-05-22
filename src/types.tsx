@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+import ReverseK from "./components/ReverseK";
 import type { AT_BAT_OUTCOMES } from "./constants";
 
 export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
@@ -211,7 +213,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
     }
 };
 
-export const ordinalNumber = (number: number) => {
+export const ordinalNumber = (number: number): string => {
     switch (number) {
         case 1:
             return "1st"
@@ -222,4 +224,10 @@ export const ordinalNumber = (number: number) => {
         default:
             return number.toString() + "th"
     }
+}
+
+export const outcomeSignToJSXElement = (outcome: string): JSX.Element => {
+    return (outcome === 'reverse-K')
+        ? ReverseK()
+        : <>{outcome}</>
 }

@@ -1,4 +1,4 @@
-import { playerNameShort, type GameLogEntry } from '../types';
+import { outcomeSignToJSXElement, playerNameShort, type GameLogEntry } from '../types';
 
 type GameLogProps = {
     log: GameLogEntry[];
@@ -11,10 +11,10 @@ function GameLog({ log }: GameLogProps) {
                 switch (entry.type) {
                     case 'atbat':
                         return <li key={index}>
-                            <span>{playerNameShort(entry.batter)}: {entry.outcomeSign}</span>
+                            <span>{playerNameShort(entry.batter)}: {outcomeSignToJSXElement(entry.outcomeSign)}</span>
                             <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
                             <span>{(entry.extraComments !== "" ? "; " : "")}</span>
-                            {entry.recordedOuts > 0 && <span>{" (outs: " + entry.recordedOuts + ") "}</span>}
+                            {entry.recordedOuts > 0 && <span>{" (" + entry.recordedOuts + " out" + (entry.recordedOuts > 1 ? "s" : "") + ") "}</span>}
                             <em>{entry.extraComments}</em>
                         </li>
                     case 'pitching_change':

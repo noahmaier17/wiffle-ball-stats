@@ -16,7 +16,7 @@ export const AT_BAT_OUTCOME_LAYOUT = [
         { name: 'Strikeout Looking', sign: 'reverse-K' },
         { name: 'Fielder\'s Choice', sign: 'FC' }
     ],
-]
+] as const
 
 export const AT_BAT_OUTCOMES_STRIKEOUTS = AT_BAT_OUTCOME_LAYOUT.flat().filter(o => STRIKEOUT_SIGNS.has(o.sign))
 export const AT_BAT_OUTCOMES = AT_BAT_OUTCOME_LAYOUT.flat()
