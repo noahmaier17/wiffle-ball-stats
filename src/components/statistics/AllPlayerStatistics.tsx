@@ -8,12 +8,13 @@ import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 
 const BATTING_COUNT_COLS = new Set([
+    'win', 'loss',
     'at_bats', 'hits', 'singles', 'doubles', 'triples', 'home_runs', 'inside_the_park_home_runs',
     'runs_batted_in', 'walks', 'strikeouts_swinging', 'strikeouts_looking', 'strikeouts', 'tb',
 ]);
 
 const PITCHING_COUNT_COLS = new Set([
-    'win', 'loss', 'innings_pitched', 'hits_allowed', 'runs_allowed',
+    'innings_pitched', 'hits_allowed', 'runs_allowed',
     'pitched_walks', 'pitched_strikeouts_swinging', 'pitched_strikeouts_looking', 'pitched_strikeouts',
 ]);
 
