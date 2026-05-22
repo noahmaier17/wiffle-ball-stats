@@ -1,11 +1,39 @@
 import { useState, useEffect } from 'react'
-import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS } from '../../constants'
+import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS, BASE_HIT_SIGNS } from '../../constants'
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../../types'
 import ReverseK from '../ReverseK'
 
 type AtBatProps = {
     gameData: GameData;
     onLogAtBat: (atBat: AtBatLog) => void;
+}
+
+const range = (lo: number, hi: number): number[] =>
+    Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
+
+function validRBIRange(sign: AtBatOutcomeSign | undefined, numberOnBase: number): number[] {
+    if (!sign) return range(0, numberOnBase + 1);
+    if (AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === sign)) return [0];
+    if (sign === 'HR') return [numberOnBase + 1];
+    if (sign === 'BB') return [numberOnBase === 3 ? 1 : 0];
+    if (sign === 'IPHR') return range(1, numberOnBase + 1);
+    if (sign === 'Out') return range(0, numberOnBase);
+    if (sign === 'FC') return range(0, numberOnBase - 1);
+    if (BASE_HIT_SIGNS.has(sign)) return range(0, numberOnBase);
+    return range(0, numberOnBase + 1);
+}
+
+function validOutsRange(sign: AtBatOutcomeSign | undefined, numberOnBase: number, numberOfOuts: number): number[] {
+    const maxOuts = 3 - numberOfOuts;
+    if (!sign) return range(0, maxOuts);
+    if (AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === sign)) return maxOuts >= 1 ? [1] : [];
+    if (sign === 'HR') return [0];
+    if (sign === 'BB') return [0];
+    if (sign === 'IPHR') return range(0, Math.min(numberOnBase, maxOuts));
+    if (sign === 'Out') return range(1, Math.min(numberOnBase + 1, maxOuts));
+    if (sign === 'FC') return range(1, Math.min(numberOnBase, maxOuts));
+    if (BASE_HIT_SIGNS.has(sign)) return range(0, Math.min(numberOnBase, maxOuts));
+    return range(0, maxOuts);
 }
 
 function AtBat({ gameData, onLogAtBat }: AtBatProps) {
@@ -16,7 +44,8 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         homePitcher,
         awayTeamBatting,
         currAwayTeamBatter,
-        currHomeTeamBatter
+        currHomeTeamBatter,
+        numberOnBase
     } = gameData;
 
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
@@ -49,18 +78,32 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         setExtraComments("");
     }
 
-    const displayOutsButton = (number: number) => {
-        const BLACKED_OUT_CSS = "!bg-gray-400 !text-gray-700 !border-gray-400"
-        const GRAYED_OUT_CSS = '!bg-gray-200 !text-gray-400 !border-gray-200'
+    const BLACKED_OUT_CSS = "!bg-gray-400 !text-gray-700 !border-gray-400"
+    const GRAYED_OUT_CSS = '!bg-gray-200 !text-gray-400 !border-gray-200'
 
+    const validR = validRBIRange(outcomeSign, numberOnBase);
+    const validO = validOutsRange(outcomeSign, numberOnBase, gameData.numberOfOuts);
+
+    const displayRBIsButton = (number: number) => {
+        const isBlackedOut = number > numberOnBase + 1;
+        const isGrayedOut = !isBlackedOut && !validR.includes(number);
+
+        return (<label key={number} className={isBlackedOut ? BLACKED_OUT_CSS : isGrayedOut ? GRAYED_OUT_CSS : ""}>
+            <input
+                type="radio"
+                name="rbis"
+                value={number}
+                disabled={isGrayedOut || isBlackedOut}
+                checked={rbis === number}
+                onChange={() => setRbis(number)}
+            />
+            {number}
+        </label>)
+    }
+
+    const displayOutsButton = (number: number) => {
         const isBlackedOut = (gameData.numberOfOuts + number > 3);
-        const isGrayedOut = (
-            (number !== 1 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
-            (number !== 0 && outcomeSign === 'HR') ||
-            (number !== 0 && outcomeSign === 'BB') ||
-            (number === 0 && outcomeSign === 'Out') ||
-            (number === 0 && outcomeSign === 'FC')
-        );
+        const isGrayedOut = !isBlackedOut && !validO.includes(number);
 
         return (
             <label key={number} className={isBlackedOut ? BLACKED_OUT_CSS : isGrayedOut ? GRAYED_OUT_CSS : ""}>
@@ -77,21 +120,17 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
         );
     }
 
-    // If we select specific outcomes, we must change our RBIs and Recorded Outs
     useEffect(() => {
-        if (AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) { // Strikeout
-            setRbis(0);
-            setRecordedOuts(1);
-        } else if (outcomeSign === 'HR') {
-            setRbis(undefined);
-            setRecordedOuts(0);
-        } else if (outcomeSign === 'IPHR') {
-            setRbis(undefined);
-        } else if (outcomeSign === 'BB') {
-            setRbis(undefined);
-            setRecordedOuts(0);
-        } else if (outcomeSign === 'Out' && (recordedOuts === 0 || recordedOuts === undefined)) {
-            setRecordedOuts(1);
+        if (validR.length === 1) {
+            setRbis(validR[0]);
+        } else {
+            setRbis(prev => (prev !== undefined && validR.includes(prev)) ? prev : undefined);
+        }
+
+        if (validO.length === 1) {
+            setRecordedOuts(validO[0]);
+        } else {
+            setRecordedOuts(prev => (prev !== undefined && validO.includes(prev)) ? prev : undefined);
         }
     }, [outcomeSign])
 
@@ -145,21 +184,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                     <label>RBIs: </label>
                     <div className="radio-group radio-group--fill">
                         {[0, 1, 2, 3, 4].map(n => (
-                            <label key={n}>
-                                <input
-                                    type="radio"
-                                    name="rbis"
-                                    value={n}
-                                    disabled={(
-                                        (n !== 0 && AT_BAT_OUTCOMES_STRIKEOUTS.some(o => o.sign === outcomeSign)) ||
-                                        (n === 0 && (outcomeSign === 'HR' || outcomeSign === 'IPHR')) ||
-                                        (n > 1 && outcomeSign === 'BB')
-                                    )}
-                                    checked={rbis === n}
-                                    onChange={() => setRbis(n)}
-                                />
-                                {n}
-                            </label>
+                            displayRBIsButton(n)
                         ))}
                     </div>
                 </div>
@@ -186,7 +211,7 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 <button
                     type="submit"
                     className="submit-btn"
-                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined)}
+                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined || rbis + recordedOuts > (BASE_HIT_SIGNS.has(outcomeSign) || outcomeSign === 'BB' || outcomeSign === 'FC' ? numberOnBase : numberOnBase + 1))}
 
                     onClick={() => logAtBat()}
                 >Submit</button>
