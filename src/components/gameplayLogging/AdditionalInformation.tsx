@@ -45,6 +45,7 @@ function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInforma
 
         <button
             type='submit'
+            className="submit-btn"
             disabled={info === ""}
             onClick={() => handleOnSubmit()}
         >Submit</button>

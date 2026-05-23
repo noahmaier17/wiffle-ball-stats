@@ -171,7 +171,7 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
 
             <hr />
 
-            <button type="submit" disabled={info.trim() === ""}>Save Changes</button>
+            <button type="submit" className="submit-btn" disabled={info.trim() === ""}>Save Changes</button>
         </form>
     )
 }
