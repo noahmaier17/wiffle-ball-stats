@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
-import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, type Player, rowToLogEntry, makeFindPlayer } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, type Player, rowToLogEntry, makeFindPlayer, atBatLogSummary } from "../types";
 import AtBat from "./gameplayLogging/AtBat";
 import PitchingChange from "./gameplayLogging/PitchingChange";
 import Jumbotron from "./Jumbotron";
@@ -11,6 +11,63 @@ import { OUT_IN_PLAY_SIGNS, REACHED_BASE_SIGNS } from "../constants";
 
 type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
 
+function computeAtBatDeltas(outcomeSign: string, rbis: number, recordedOuts: number) {
+    const batterDelta: Record<string, number> = { plate_appearances: 1, at_bats: 1, runs_batted_in: rbis };
+    const pitcherDelta: Record<string, number> = { pitched_outs: recordedOuts };
+
+    switch (outcomeSign) {
+        case 'reverse-K':
+            batterDelta.strikeouts = 1;
+            batterDelta.strikeouts_looking = 1;
+            pitcherDelta.pitched_strikeouts = 1;
+            pitcherDelta.pitched_strikeouts_looking = 1;
+            break;
+        case 'K':
+            batterDelta.strikeouts = 1;
+            batterDelta.strikeouts_swinging = 1;
+            pitcherDelta.pitched_strikeouts = 1;
+            pitcherDelta.pitched_strikeouts_swinging = 1;
+            break;
+        case 'BB':
+            batterDelta.at_bats = 0;
+            batterDelta.walks = 1;
+            pitcherDelta.pitched_walks = 1;
+            break;
+        case '1B':
+            batterDelta.hits = 1;
+            batterDelta.singles = 1;
+            pitcherDelta.hits_allowed = 1;
+            break;
+        case '2B':
+            batterDelta.hits = 1;
+            batterDelta.doubles = 1;
+            pitcherDelta.hits_allowed = 1;
+            break;
+        case '3B':
+            batterDelta.hits = 1;
+            batterDelta.triples = 1;
+            pitcherDelta.hits_allowed = 1;
+            break;
+        case 'HR':
+            batterDelta.hits = 1;
+            batterDelta.home_runs = 1;
+            pitcherDelta.hits_allowed = 1;
+            pitcherDelta.home_runs_allowed = 1;
+            break;
+        case 'IPHR':
+            batterDelta.hits = 1;
+            batterDelta.home_runs = 1;
+            batterDelta.inside_the_park_home_runs = 1;
+            pitcherDelta.hits_allowed = 1;
+            break;
+        case 'FC':
+            batterDelta.fielders_choice = 1;
+            break;
+    }
+
+    return { batterDelta, pitcherDelta };
+}
+
 type GameLoggerProps = {
     gameData: GameData;
     setGameState: React.Dispatch<React.SetStateAction<GameData | null>>;
@@ -19,6 +76,7 @@ type GameLoggerProps = {
 function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
+    const [editingLog, setEditingLog] = useState<{ index: number; entry: AtBatLog } | null>(null);
     const nextSeqRef = useRef(0);
     const isSubmittingRef = useRef(false);
 
@@ -65,7 +123,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         loadLogs();
     }, []);
 
-    const insertLog = async (entry: GameLogEntry): Promise<void> => {
+    const insertLog = async (entry: GameLogEntry): Promise<number> => {
         const sequence = nextSeqRef.current;
         nextSeqRef.current += 1;
 
@@ -79,7 +137,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         // Error catching
         if (error || !masterRow) {
             console.error('Failed to insert log entry:', error);
-            return;
+            return -1;
         }
 
         const logId = masterRow.id;
@@ -124,6 +182,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 });
                 break;
         }
+
+        return logId;
     };
 
     const handleLogAtBat = async (atBat: AtBatLog) => {
@@ -227,8 +287,11 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
         isSubmittingRef.current = false;
 
-        insertLog(atBat);
+        const logId = await insertLog(atBat);
         if (switchSides) insertLog({ type: 'inning_switch' });
+
+        // Patch the log entry in state with the real DB logId
+        setLog(prev => prev.map(e => (e === atBat ? { ...e, logId } : e)));
 
         const batter = atBat.batter;
         const pitcher = atBat.pitcher;
@@ -269,63 +332,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 })
             );
 
-            // Define increments/decrements for db updates
-            let batterDelta: any = { runs_batted_in: atBat.rbis };
-            let pitcherDelta: any = { };
-
-            // Calculates stats based on outcome sign
-            batterDelta.plate_appearances = 1;
-            pitcherDelta.pitched_outs = atBat.recordedOuts
-            batterDelta.at_bats = 1; // Except walk
-            switch (atBat.outcomeSign) {
-                case 'reverse-K':
-                    batterDelta.strikeouts = 1;
-                    batterDelta.strikeouts_looking = 1;
-                    pitcherDelta.pitched_strikeouts = 1;
-                    pitcherDelta.pitched_strikeouts_looking = 1;
-                    break;
-                case 'K':
-                    batterDelta.strikeouts = 1;
-                    batterDelta.strikeouts_swinging = 1;
-                    pitcherDelta.pitched_strikeouts = 1;
-                    pitcherDelta.pitched_strikeouts_swinging = 1;
-                    break;
-                case 'BB':
-                    batterDelta.at_bats = 0; // 0 for a walk
-                    batterDelta.walks = 1;
-                    pitcherDelta.pitched_walks = 1;
-                    break;
-                case '1B':
-                    batterDelta.hits = 1;
-                    batterDelta.singles = 1;
-                    pitcherDelta.hits_allowed = 1;
-                    break;
-                case '2B':
-                    batterDelta.hits = 1;
-                    batterDelta.doubles = 1;
-                    pitcherDelta.hits_allowed = 1;
-                    break;
-                case '3B':
-                    batterDelta.hits = 1;
-                    batterDelta.triples = 1;
-                    pitcherDelta.hits_allowed = 1;
-                    break;
-                case 'HR':
-                    batterDelta.hits = 1;
-                    batterDelta.home_runs = 1;
-                    pitcherDelta.hits_allowed = 1;
-                    pitcherDelta.home_runs_allowed = 1;
-                    break
-                case 'IPHR':
-                    batterDelta.hits = 1;
-                    batterDelta.home_runs = 1;
-                    batterDelta.inside_the_park_home_runs = 1;
-                    pitcherDelta.hits_allowed = 1;
-                    // Home runs allowed does not count IPHR
-                    break;
-                case 'FC':
-                    batterDelta.fielders_choice = 1;
-            }
+            const { batterDelta, pitcherDelta } = computeAtBatDeltas(atBat.outcomeSign, atBat.rbis, atBat.recordedOuts);
 
             // Update Batter
             if (batterStats) {
@@ -393,6 +400,61 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         insertLog(additionalInformation);
     };
 
+    const handleStartEditAtBat = (index: number, entry: AtBatLog) => {
+        setEditingLog({ index, entry });
+    };
+
+    const handleSaveAtBatEdit = async (newAtBat: AtBatLog) => {
+        if (!editingLog) return;
+        const { index, entry: oldAtBat } = editingLog;
+
+        const editNote = `Edited: ${atBatLogSummary(oldAtBat)}`;
+        const appendedComments = newAtBat.extraComments
+            ? `${newAtBat.extraComments}; ${editNote}`
+            : editNote;
+        const finalAtBat = { ...newAtBat, extraComments: appendedComments };
+
+        setLog(prev => prev.map((e, i) => i === index ? finalAtBat : e));
+        setEditingLog(null);
+
+        await supabase.from('at_bat_logs').update({
+            outcome_sign: finalAtBat.outcomeSign,
+            rbis: finalAtBat.rbis,
+            recorded_outs: finalAtBat.recordedOuts,
+            extra_comments: finalAtBat.extraComments,
+        }).eq('log_id', oldAtBat.logId);
+
+        const oldDeltas = computeAtBatDeltas(oldAtBat.outcomeSign, oldAtBat.rbis, oldAtBat.recordedOuts);
+        const newDeltas = computeAtBatDeltas(newAtBat.outcomeSign, newAtBat.rbis, newAtBat.recordedOuts);
+
+        const { data: statsData } = await supabase
+            .from('player_game_stats')
+            .select('*')
+            .eq('game_id', gameData.gameId)
+            .in('player_id', [oldAtBat.batter.id, oldAtBat.pitcher.id]);
+
+        const batterStats = statsData?.find((s: any) => s.player_id === oldAtBat.batter.id);
+        const pitcherStats = statsData?.find((s: any) => s.player_id === oldAtBat.pitcher.id);
+
+        if (batterStats) {
+            const update: any = {};
+            const allKeys = new Set([...Object.keys(oldDeltas.batterDelta), ...Object.keys(newDeltas.batterDelta)]);
+            for (const key of allKeys) {
+                update[key] = (batterStats[key] || 0) - (oldDeltas.batterDelta[key] || 0) + (newDeltas.batterDelta[key] || 0);
+            }
+            await supabase.from('player_game_stats').update(update).eq('id', batterStats.id);
+        }
+
+        if (pitcherStats) {
+            const update: any = {};
+            const allKeys = new Set([...Object.keys(oldDeltas.pitcherDelta), ...Object.keys(newDeltas.pitcherDelta)]);
+            for (const key of allKeys) {
+                update[key] = (pitcherStats[key] || 0) - (oldDeltas.pitcherDelta[key] || 0) + (newDeltas.pitcherDelta[key] || 0);
+            }
+            await supabase.from('player_game_stats').update(update).eq('id', pitcherStats.id);
+        }
+    };
+
     const handleEditGamestate = (editGamestateLog: EditGamestateLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
@@ -433,79 +495,93 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 </div>
             )}
 
-            <div style={{ paddingBottom: "1em" }}>
-                <h3>Types of logs: </h3>
-                <div className="radio-group radio-group--fill">
-                    <label>
-                        <input
-                            type="radio"
-                            name="logType"
-                            value="atbat"
-                            checked={logType === 'atbat'}
-                            onChange={() => setLogType('atbat')}
-                        />
-                        At Bat
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="logType"
-                            value="pitching_change"
-                            checked={logType === 'pitching_change'}
-                            onChange={() => setLogType('pitching_change')}
-                        />
-                        Pitching Change
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="logType"
-                            value="additional_information"
-                            checked={logType === 'additional_information'}
-                            onChange={() => setLogType('additional_information')}
-                        />
-                        Additional Information
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="logType"
-                            value="edit_gamestate"
-                            checked={logType === 'edit_gamestate'}
-                            onChange={() => setLogType('edit_gamestate')}
-                        />
-                        Edit Gamestate
-                    </label>
-                </div>
-            </div>
-
-            <hr></hr>
-
-            {logType === 'atbat' && (
+            {editingLog !== null ? (
                 <AtBat
                     gameData={gameData}
                     onLogAtBat={handleLogAtBat}
+                    editMode={{
+                        initialValues: editingLog.entry,
+                        onEditAtBat: handleSaveAtBatEdit,
+                        onCancel: () => setEditingLog(null),
+                    }}
                 />
-            )}
-            {logType === 'pitching_change' && (
-                <PitchingChange
-                    gameData={gameData}
-                    onLogPitchingChange={handleLogPitchingChange}
-                />
-            )}
-            {logType === 'additional_information' && (
-                <AdditionalInformation
-                    onLogAdditionalInformation={handleLogAdditionalInformation}
-                />
-            )}
-            {logType === 'edit_gamestate' && (
-                <EditGamestate
-                    gameData={gameData}
-                    onUpdate={handleEditGamestate}
-                />
+            ) : (
+                <>
+                    <div style={{ paddingBottom: "1em" }}>
+                        <h3>Types of logs: </h3>
+                        <div className="radio-group radio-group--fill">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="logType"
+                                    value="atbat"
+                                    checked={logType === 'atbat'}
+                                    onChange={() => setLogType('atbat')}
+                                />
+                                At Bat
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="logType"
+                                    value="pitching_change"
+                                    checked={logType === 'pitching_change'}
+                                    onChange={() => setLogType('pitching_change')}
+                                />
+                                Pitching Change
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="logType"
+                                    value="additional_information"
+                                    checked={logType === 'additional_information'}
+                                    onChange={() => setLogType('additional_information')}
+                                />
+                                Additional Information
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="logType"
+                                    value="edit_gamestate"
+                                    checked={logType === 'edit_gamestate'}
+                                    onChange={() => setLogType('edit_gamestate')}
+                                />
+                                Edit Gamestate
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr></hr>
+
+                    {logType === 'atbat' && (
+                        <AtBat
+                            gameData={gameData}
+                            onLogAtBat={handleLogAtBat}
+                        />
+                    )}
+                    {logType === 'pitching_change' && (
+                        <PitchingChange
+                            gameData={gameData}
+                            onLogPitchingChange={handleLogPitchingChange}
+                        />
+                    )}
+                    {logType === 'additional_information' && (
+                        <AdditionalInformation
+                            onLogAdditionalInformation={handleLogAdditionalInformation}
+                        />
+                    )}
+                    {logType === 'edit_gamestate' && (
+                        <EditGamestate
+                            gameData={gameData}
+                            onUpdate={handleEditGamestate}
+                        />
+                    )}
+                </>
             )}
 
-            <GameLog log={log} />
+            <GameLog log={log} onEditAtBat={handleStartEditAtBat} editingActive={editingLog !== null} editingIndex={editingLog?.index} />
         </div>
     );
 }

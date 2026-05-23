@@ -1,16 +1,20 @@
-import { outcomeSignToJSXElement, playerNameShort, type GameLogEntry } from '../types';
+import { outcomeSignToJSXElement, playerNameShort, type AtBatLog, type GameLogEntry } from '../types';
 
 type GameLogProps = {
     log: GameLogEntry[];
+    onEditAtBat?: (index: number, entry: AtBatLog) => void;
+    editingActive?: boolean;
+    editingIndex?: number;
 };
 
-function GameLog({ log }: GameLogProps) {
+function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps) {
     return (
         <ul>
             {log.map((entry, index) => {
                 switch (entry.type) {
                     case 'atbat':
-                        return <li key={index}>
+                        return <li key={index} style={index === editingIndex ? { backgroundColor: '#bfdbfe', borderRadius: '4px', padding: '2px 4px' } : undefined}>
+                            {onEditAtBat && <><button disabled={editingActive} onClick={() => onEditAtBat(index, entry)}>Edit</button>{" "}</>}
                             <span>{playerNameShort(entry.batter)}: {outcomeSignToJSXElement(entry.outcomeSign)}</span>
                             <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
                             <span>{(entry.extraComments !== "" ? "; " : "")}</span>

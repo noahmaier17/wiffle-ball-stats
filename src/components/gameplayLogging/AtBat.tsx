@@ -3,9 +3,24 @@ import { AT_BAT_OUTCOME_LAYOUT, AT_BAT_OUTCOMES_STRIKEOUTS, BASE_HIT_SIGNS } fro
 import { type AtBatOutcomeSign, type AtBatLog, type GameData, playerName, type Player, ordinalNumber } from '../../types'
 import ReverseK from '../ReverseK'
 
+type EditModeProps = {
+    initialValues: {
+        logId: number;
+        batter: Player;
+        pitcher: Player;
+        outcomeSign: AtBatOutcomeSign;
+        rbis: number;
+        recordedOuts: number;
+        extraComments: string;
+    };
+    onEditAtBat: (atBat: AtBatLog) => void;
+    onCancel: () => void;
+};
+
 type AtBatProps = {
     gameData: GameData;
     onLogAtBat: (atBat: AtBatLog) => void;
+    editMode?: EditModeProps;
 }
 
 const range = (lo: number, hi: number): number[] =>
@@ -36,7 +51,7 @@ function validOutsRange(sign: AtBatOutcomeSign | undefined, numberOnBase: number
     return range(0, maxOuts);
 }
 
-function AtBat({ gameData, onLogAtBat }: AtBatProps) {
+function AtBat({ gameData, onLogAtBat, editMode }: AtBatProps) {
     const {
         awayTeamLineup,
         homeTeamLineup,
@@ -51,25 +66,33 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
     const pitcherName = awayTeamBatting ? homePitcher : awayPitcher;
 
-    const [batterName, setBatterName] = useState<Player>(currentBatter);
+    const displayBatter = editMode ? editMode.initialValues.batter : currentBatter;
+    const displayPitcher = editMode ? editMode.initialValues.pitcher : pitcherName;
+
+    const [batterName, setBatterName] = useState<Player>(displayBatter);
 
     useEffect(() => {
-        setBatterName(currentBatter);
+        if (!editMode) setBatterName(currentBatter);
     }, [currentBatter]);
 
     // Parameters for the logged occurance
-    const [rbis, setRbis] = useState<number | undefined>(undefined) // Default undefined until changed
-    const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign | undefined>(undefined) // Default undefined until changed
-    const [recordedOuts, setRecordedOuts] = useState<number | undefined>(undefined) // Default undefined until changed
-    const [extraComments, setExtraComments] = useState<string>("")
+    const [rbis, setRbis] = useState<number | undefined>(editMode?.initialValues.rbis)
+    const [outcomeSign, setOutcomeSign] = useState<AtBatOutcomeSign | undefined>(editMode?.initialValues.outcomeSign)
+    const [recordedOuts, setRecordedOuts] = useState<number | undefined>(editMode?.initialValues.recordedOuts)
+    const [extraComments, setExtraComments] = useState<string>(editMode?.initialValues.extraComments ?? "")
 
     // Function to log an at bat
     const logAtBat = () => {
         // Type guard; we cannot handleSubmit unless the button is enabled
         if (rbis === undefined || !outcomeSign || recordedOuts === undefined) return;
 
+        if (editMode) {
+            editMode.onEditAtBat({ type: 'atbat', logId: editMode.initialValues.logId, batter: displayBatter, pitcher: displayPitcher, rbis, recordedOuts, outcomeSign, extraComments });
+            return;
+        }
+
         // Updates our log
-        onLogAtBat({ type: 'atbat', batter: batterName, pitcher: pitcherName, rbis, recordedOuts, outcomeSign, extraComments });
+        onLogAtBat({ type: 'atbat', logId: 0, batter: batterName, pitcher: pitcherName, rbis, recordedOuts, outcomeSign, extraComments });
 
         // Resets the values for the form
         setRbis(undefined);
@@ -85,6 +108,12 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     const validO = validOutsRange(outcomeSign, numberOnBase, gameData.numberOfOuts);
 
     const displayRBIsButton = (number: number) => {
+        if (editMode) {
+            return (<label key={number}>
+                <input type="radio" name="rbis" value={number} checked={rbis === number} onChange={() => setRbis(number)} />
+                {number}
+            </label>);
+        }
         const isBlackedOut = number > numberOnBase + 1;
         const isGrayedOut = !isBlackedOut && !validR.includes(number);
 
@@ -102,6 +131,14 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
     }
 
     const displayOutsButton = (number: number) => {
+        if (editMode) {
+            return (
+                <label key={number}>
+                    <input type="radio" name="recorded outs" value={number} checked={recordedOuts === number} onChange={() => setRecordedOuts(number)} />
+                    {number}
+                </label>
+            );
+        }
         const isBlackedOut = (gameData.numberOfOuts + number > 3);
         const isGrayedOut = !isBlackedOut && !validO.includes(number);
 
@@ -145,19 +182,19 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
 
     return (<>
         <div>
-            <h1>Log At Bat</h1>
+            <h1>{editMode ? "Edit At Bat" : "Log At Bat"}</h1>
             <form
                 className="at-bat-form"
                 onSubmit={(e) => e.preventDefault()}
             >
                 <div style={{ whiteSpace: 'pre-wrap' }}>
-                    <label><b><u>Batting {ordinalNumber((awayTeamBatting ? currAwayTeamBatter : currHomeTeamBatter) + 1)}:{"\t"}</u></b></label>
-                    {playerName(batterName)}
+                    <label><b><u>{editMode ? `Batting:\t\t` : `Batting ${ordinalNumber((awayTeamBatting ? currAwayTeamBatter : currHomeTeamBatter) + 1)}:  \t`}</u></b></label>
+                    {playerName(displayBatter)}
                 </div>
 
                 <div style={{ whiteSpace: 'pre-wrap' }}>
                     <label><b><u>Pitcher:{"\t\t"}</u></b></label>
-                    {playerName(pitcherName)}
+                    {playerName(displayPitcher)}
                 </div>
 
                 <div>
@@ -211,10 +248,12 @@ function AtBat({ gameData, onLogAtBat }: AtBatProps) {
                 <button
                     type="submit"
                     className="submit-btn"
-                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined || rbis + recordedOuts > (BASE_HIT_SIGNS.has(outcomeSign) || outcomeSign === 'BB' || outcomeSign === 'FC' ? numberOnBase : numberOnBase + 1))}
-
+                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined || (!editMode && rbis + recordedOuts > (BASE_HIT_SIGNS.has(outcomeSign) || outcomeSign === 'BB' || outcomeSign === 'FC' ? numberOnBase : numberOnBase + 1)))}
                     onClick={() => logAtBat()}
-                >Submit</button>
+                >{editMode ? "Save Edit" : "Submit"}</button>
+                {editMode && (
+                    <button type="button" className="submit-btn" onClick={() => editMode.onCancel()}>Cancel</button>
+                )}
             </form>
         </div>
     </>)

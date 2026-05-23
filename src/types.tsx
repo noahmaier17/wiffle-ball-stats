@@ -6,6 +6,7 @@ export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
 
 export type AtBatLog = {
     type: 'atbat',
+    logId: number,
     batter: Player,
     pitcher: Player,
     rbis: number,
@@ -177,6 +178,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
             const ab = row.at_bat_logs;
             return {
                 type: 'atbat',
+                logId: row.id,
                 batter: findPlayer(ab.batter_id),
                 pitcher: findPlayer(ab.pitcher_id),
                 rbis: ab.rbis,
@@ -235,3 +237,11 @@ export const outcomeSignToJSXElement = (outcome: string): JSX.Element => {
         ? ReverseK()
         : <>{outcome}</>
 }
+
+export const atBatLogSummary = (entry: AtBatLog): string => {
+    const rbiPart = entry.rbis > 0 ? `, ${entry.rbis} RBI` : '';
+    const outsPart = entry.recordedOuts > 0
+        ? ` (${entry.recordedOuts} out${entry.recordedOuts > 1 ? 's' : ''})`
+        : '';
+    return `${entry.outcomeSign}${rbiPart}${outsPart}`;
+};
