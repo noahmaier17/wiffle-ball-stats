@@ -12,12 +12,16 @@ body {
   flex-direction: column;
   align-items: left;
   gap: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .radio-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .radio-group--fill {
@@ -40,6 +44,14 @@ body {
   cursor: pointer;
   font-size: 1rem;
   user-select: none;
+}
+
+@media (max-width: 640px) {
+  .radio-group--fill label {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 4px;
+  }
 }
 
 .submit-btn {
