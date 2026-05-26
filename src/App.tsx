@@ -3,9 +3,10 @@ import './App.css';
 import Home from './components/Home.tsx';
 import GameLogger from './components/GameLogger.tsx';
 import Spectate from './components/Spectate.tsx';
-import PlayerStatisticsDepot from './components/statistics/PlayerStatisticsSelection.tsx';
+import PlayerStatisticsSelection from './components/statistics/PlayerStatisticsSelection.tsx';
 import type { GameData, Player } from './types';
 import { supabase } from "./supabase-client.ts";
+import PlayersContext from './contexts/PlayersContext.tsx';
 import { buildGameDataFromRow } from './utils/buildGameDataFromRow.ts';
 import type { Session } from '@supabase/supabase-js';
 
@@ -131,34 +132,27 @@ function App() {
         }
     }, [gameState, spectateGameId, showStatistics, loadingFromHash]);
 
-    if (loadingFromHash) {
-        return <div style={{ padding: '2rem' }}>Loading game...</div>;
-    }
-
-    if (gameState) {
-        return <GameLogger
-            gameData={gameState}
-            setGameState={setGameState}
-        />;
-    }
-
-    if (spectateGameId !== null) {
-        return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
-    }
-
-    if (showStatistics) {
-        return <PlayerStatisticsDepot players={players} onBack={() => setShowStatistics(false)} />;
-    }
+    const content = (() => {
+        if (loadingFromHash) return <div style={{ padding: '2rem' }}>Loading game...</div>;
+        if (gameState) return <GameLogger gameData={gameState} setGameState={setGameState} />;
+        if (spectateGameId !== null) return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
+        if (showStatistics) return <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} />;
+        return (
+            <Home
+                players={players}
+                loading={playersLoading}
+                onStartGame={setGameState}
+                onSpectateGame={setSpectateGameId}
+                onViewStatistics={() => setShowStatistics(true)}
+                isAuthenticated={!!session}
+            />
+        );
+    })();
 
     return (
-        <Home
-            players={players}
-            loading={playersLoading}
-            onStartGame={setGameState}
-            onSpectateGame={setSpectateGameId}
-            onViewStatistics={() => setShowStatistics(true)}
-            isAuthenticated={!!session}
-        />
+        <PlayersContext.Provider value={players}>
+            {content}
+        </PlayersContext.Provider>
     );
 }
 

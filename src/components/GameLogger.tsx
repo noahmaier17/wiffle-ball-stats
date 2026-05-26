@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
-import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, type Player, rowToLogEntry, makeFindPlayer, atBatLogSummary } from "../types";
+import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, atBatLogSummary } from "../types";
+import { fetchGameLogs } from "../utils/fetchGame";
+import { usePlayers } from "../contexts/PlayersContext";
 import AtBat from "./gameplayLogging/AtBat";
 import PitchingChange from "./gameplayLogging/PitchingChange";
 import Jumbotron from "./Jumbotron";
@@ -74,6 +76,7 @@ type GameLoggerProps = {
 }
 
 function GameLogger({ gameData, setGameState }: GameLoggerProps) {
+    const players = usePlayers();
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [logType, setLogType] = useState<LogType>('atbat');
     const [editingLog, setEditingLog] = useState<{ index: number; entry: AtBatLog } | null>(null);
@@ -86,38 +89,10 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
     useEffect(() => {
         const loadLogs = async () => {
-            // Fetches our database game logs and player information
-            const [{ data: rows }, { data: playersData }] = await Promise.all([
-                supabase
-                    .from('game_logs')
-                    .select(`
-                        id, sequence, type,
-                        at_bat_logs(batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, inning, extra_comments),
-                        pitching_change_logs(team_changing, old_pitcher_id, new_pitcher_id),
-                        additional_information_logs(info, type_of_info),
-                        edit_gamestate_logs(info, new_game_data),
-                        inning_switch_logs(log_id)
-                    `)
-                    .eq('game_id', gameData.gameId)
-                    .order('sequence'),
-
-                supabase.from('players').select('id, first_name, last_name')
-            ]);
-
-            // If we did not fetch data, returns
-            if (!rows?.length || !playersData) return;
-
-            // Gets our players
-            const players: Player[] = playersData.map((p: any) => ({
-                id: p.id,
-                firstName: p.first_name,
-                lastName: p.last_name,
-            }));
-            const findPlayer = makeFindPlayer(players);
-
-            // Sets the log with what is already present in it
-            setLog(rows.map((row: any) => rowToLogEntry(row, findPlayer)));
-            nextSeqRef.current = rows.length;
+            const logs = await fetchGameLogs(gameData.gameId, players);
+            if (!logs.length) return;
+            setLog(logs);
+            nextSeqRef.current = logs.length;
         };
 
         loadLogs();

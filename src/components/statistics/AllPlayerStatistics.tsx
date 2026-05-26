@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
-import { calculateERA, calculateWHIP, playerName, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import { calculateERA, calculateWHIP, playerName, type PlayerGameData, type statViewTypes } from "../../types";
+import { usePlayers } from "../../contexts/PlayersContext";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
@@ -71,11 +72,11 @@ function getSortValue(stats: PlayerGameData, col: string, viewType: statViewType
 }
 
 type AllPlayerStatisticsProps = {
-    players: Player[];
     onBack: () => void;
 }
 
-function AllPlayerStatistics({ players, onBack }: AllPlayerStatisticsProps) {
+function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
+    const players = usePlayers();
     const [allStats, setAllStats] = useState<PlayerGameData[] | null>(null);
     const [playerIdsWithoutStats, setPlayerIdsWithoutStats] = useState<Set<number> | null>(null);
 

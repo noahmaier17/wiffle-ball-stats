@@ -1,4 +1,5 @@
-import { outcomeSignToJSXElement, playerNameShort, type AtBatLog, type GameLogEntry } from '../types';
+import { playerNameShort, type AtBatLog, type GameLogEntry } from '../types';
+import LogRow from './gameplayLogging/LogRow';
 
 type GameLogProps = {
     log: GameLogEntry[];
@@ -15,11 +16,7 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                     case 'atbat':
                         return <li key={index} style={index === editingIndex ? { backgroundColor: '#bfdbfe', borderRadius: '4px', padding: '2px 4px' } : undefined}>
                             {onEditAtBat && <><button disabled={editingActive} onClick={() => onEditAtBat(index, entry)}>Edit</button>{" "}</>}
-                            <span>{playerNameShort(entry.batter)}: {outcomeSignToJSXElement(entry.outcomeSign)}</span>
-                            <span>{(entry.rbis > 0) ? ", " + entry.rbis + " RBI" : ""}</span>
-                            <span>{(entry.extraComments !== "" ? "; " : "")}</span>
-                            {entry.recordedOuts > 0 && <span>{" (" + entry.recordedOuts + " out" + (entry.recordedOuts > 1 ? "s" : "") + ") "}</span>}
-                            <em>{entry.extraComments}</em>
+                            <LogRow atBat={entry}/>
                         </li>
                     case 'pitching_change':
                         return <li key={index}>Pitching change: {playerNameShort(entry.newPitcher)} in for {playerNameShort(entry.oldPitcher)}</li>

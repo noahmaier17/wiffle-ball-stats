@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase-client';
-import type { GameData, GameLogEntry, Player } from '../types';
-import { rowToLogEntry, makeFindPlayer } from '../types';
-import { buildGameDataFromRow } from '../utils/buildGameDataFromRow';
+import type { GameData, GameLogEntry } from '../types';
+import { fetchGame } from '../utils/fetchGame';
+import { usePlayers } from '../contexts/PlayersContext';
 import Jumbotron from './Jumbotron';
 import GameLog from './GameLog';
 
@@ -26,11 +26,12 @@ const playPing = () => {
 };
 
 function Spectate({ gameId, onBack }: SpectateProps) {
+    const players = usePlayers();
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [log, setLog] = useState<GameLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const playersRef = useRef<Player[]>([]);
+    const playersRef = useRef(players);
     const prevLogLengthRef = useRef(0);
 
     useEffect(() => {
@@ -40,62 +41,23 @@ function Spectate({ gameId, onBack }: SpectateProps) {
         prevLogLengthRef.current = log.length;
     }, [log]);
 
-    const LOG_SELECT = `
-        id, sequence, type,
-        at_bat_logs(batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, inning, extra_comments),
-        pitching_change_logs(team_changing, old_pitcher_id, new_pitcher_id),
-        additional_information_logs(info, type_of_info),
-        edit_gamestate_logs(info, new_game_data),
-        inning_switch_logs(log_id)
-    `;
-
-    const buildLog = (rows: any[]): GameLogEntry[] => {
-        const findPlayer = makeFindPlayer(playersRef.current);
-        return rows.map(row => rowToLogEntry(row, findPlayer));
-    };
-
-    const fetchGame = async () => {
-        const [{ data: gameRow, error: gameError }, { data: logRows }] = await Promise.all([
-            supabase.from('games').select('*').eq('id', gameId).single(),
-            supabase.from('game_logs').select(LOG_SELECT).eq('game_id', gameId).order('sequence'),
-        ]);
-
-        if (gameError || !gameRow) return;
-
-        const gd = buildGameDataFromRow(gameRow, playersRef.current);
-        if (gd) setGameData(gd);
-        if (logRows?.length) setLog(buildLog(logRows));
+    const refresh = async () => {
+        const result = await fetchGame(gameId, playersRef.current);
+        if (!result) return;
+        setGameData(result.gameData);
+        setLog(result.log);
     };
 
     useEffect(() => {
         const load = async () => {
-            const [{ data: playersData }, { data: gameRow, error: gameError }, { data: logRows }] = await Promise.all([
-                supabase.from('players').select('id, first_name, last_name'),
-                supabase.from('games').select('*').eq('id', gameId).single(),
-                supabase.from('game_logs').select(LOG_SELECT).eq('game_id', gameId).order('sequence'),
-            ]);
-
-            if (gameError || !gameRow || !playersData) {
+            const result = await fetchGame(gameId, playersRef.current);
+            if (!result) {
                 setError('Could not load game.');
                 setLoading(false);
                 return;
             }
-
-            playersRef.current = playersData.map((p: any) => ({
-                id: p.id,
-                firstName: p.first_name,
-                lastName: p.last_name,
-            }));
-
-            const gd = buildGameDataFromRow(gameRow, playersRef.current);
-            if (!gd) {
-                setError('Game data is incomplete.');
-                setLoading(false);
-                return;
-            }
-
-            setGameData(gd);
-            if (logRows?.length) setLog(buildLog(logRows));
+            setGameData(result.gameData);
+            setLog(result.log);
             setLoading(false);
         };
 
@@ -105,11 +67,11 @@ function Spectate({ gameId, onBack }: SpectateProps) {
             .channel(`game-${gameId}`)
             .on('postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
-                () => fetchGame()
+                () => refresh()
             )
             .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'game_logs', filter: `game_id=eq.${gameId}` },
-                () => fetchGame()
+                () => refresh()
             )
             .subscribe();
 

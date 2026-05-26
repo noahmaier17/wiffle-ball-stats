@@ -6,6 +6,7 @@ import BatterStatisticsRow from "./BatterStatisticsRow";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
+import PlayersPlayByPlay from "./PlayersPlayByPlay";
 
 type PlayerStatisticsProps = {
     user: Player;
@@ -51,6 +52,12 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
                     <tbody><PitcherStatisticsRow viewType={viewType} pde={stats}/></tbody>
                 </table>
             </div>
+
+            <h3>Batter Play by Play</h3>
+            <PlayersPlayByPlay player={user} forBatting={true}/>
+
+            <h3>Pitcher Play by Play</h3>
+            <PlayersPlayByPlay player={user} forBatting={false}/>
         </div>
     );
 }

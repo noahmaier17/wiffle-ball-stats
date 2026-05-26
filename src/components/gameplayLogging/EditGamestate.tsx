@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type { EditGamestateLog, GameData } from "../../types"
 import { playerName } from "../../types"
-import { supabase } from "../../supabase-client"
-import type { Player } from "../../types"
+import { usePlayers } from "../../contexts/PlayersContext"
 
 type EditGamestateProps = {
     gameData: GameData
@@ -10,15 +9,9 @@ type EditGamestateProps = {
 }
 
 function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
+    const allPlayers = usePlayers();
     const [draft, setDraft] = useState<GameData>(gameData)
-    const [allPlayers, setAllPlayers] = useState<Player[]>([])
-    const [info, setInfo] = useState<string>("");
-
-    useEffect(() => {
-        supabase.from('players').select('id, first_name, last_name').then(({ data }) => {
-            if (data) setAllPlayers(data.map(p => ({ id: p.id, firstName: p.first_name, lastName: p.last_name })))
-        })
-    }, [])
+    const [info, setInfo] = useState<string>("")
 
     const set = <K extends keyof GameData>(key: K, value: GameData[K]) =>
         setDraft(prev => ({ ...prev, [key]: value }))

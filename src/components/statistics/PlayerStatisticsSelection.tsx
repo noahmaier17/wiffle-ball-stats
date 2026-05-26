@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { playerName, type Player } from '../../types';
+import { usePlayers } from '../../contexts/PlayersContext';
 import PlayerStatistics from './PlayerStatistics';
 import AllPlayerStatistics from './AllPlayerStatistics';
 
-type PlayerStatisticsDepotProps = {
-    players: Player[];
+type PlayerStatisticsSelectionProps = {
     onBack: () => void;
 };
 
-function PlayerStatisticsDepot({ players, onBack }: PlayerStatisticsDepotProps) {
+function PlayerStatisticsSelection({ onBack }: PlayerStatisticsSelectionProps) {
+    const players = usePlayers();
     const [selectedUser, setSelectedUser] = useState<Player | null>(null);
     const [showAllUsers, setShowAllUsers] = useState<boolean>(false);
 
     if (selectedUser) return <PlayerStatistics user={selectedUser} onBack={() => setSelectedUser(null)} />
-    if (showAllUsers) return <AllPlayerStatistics players={players} onBack={() => setShowAllUsers(false)} />
+    if (showAllUsers) return <AllPlayerStatistics onBack={() => setShowAllUsers(false)} />
 
     return (
         <div>
@@ -21,7 +22,7 @@ function PlayerStatisticsDepot({ players, onBack }: PlayerStatisticsDepotProps) 
             <h1>Player Statistics</h1>
 
             <div>
-                <button key={"all button"} onClick={() => setShowAllUsers(true)}>Show All</button>
+                <button key={"all button"} onClick={() => setShowAllUsers(true)} className="radio-group">Show All</button>
                 <hr></hr>
                 {players.map(p => (
                     <button key={p.id} onClick={() => setSelectedUser(p)} className="radio-group">
@@ -33,4 +34,4 @@ function PlayerStatisticsDepot({ players, onBack }: PlayerStatisticsDepotProps) 
     );
 }
 
-export default PlayerStatisticsDepot;
+export default PlayerStatisticsSelection;
