@@ -18,7 +18,9 @@ function PlayersPlayByPlay({ player, forBatting }: PlayersPlayByPlayProps) {
 
     useEffect(() => {
         const load = async () => {
-            const data = (forBatting) ? await fetchPlayerBatterLogs(player.id, players) : await fetchPlayerPitcherLogs(player.id, players);
+            const data = (forBatting) 
+                ? await fetchPlayerBatterLogs(player.id, players, { dropFlaggedBatterLogs: true }) 
+                : await fetchPlayerPitcherLogs(player.id, players, { dropFlaggedPitcherLogs: true });
             const reversed = [...data].reverse();
             // const gameIds = [...new Set(reversed.map(l => l.gameId))];
             // const [fetchedGames] = await Promise.all([fetchGamesByIds(gameIds)]);

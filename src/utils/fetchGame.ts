@@ -30,13 +30,20 @@ export type PlayerAtBat = AtBatLog & { gameId: number };
 
 export async function fetchPlayerBatterLogs(
     playerId: number,
-    players: Player[]
+    players: Player[],
+    options: { dropFlaggedBatterLogs?: boolean } = {}
 ): Promise<PlayerAtBat[]> {
-    const { data: rows } = await supabase
+    let query = supabase
         .from('at_bat_logs')
         .select('batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, extra_comments, game_logs(id, game_id, sequence)')
         .eq('batter_id', playerId)
         .order('log_id');
+
+    if (options.dropFlaggedBatterLogs) {
+        query = query.not('flagged_batter_row', 'is', true);
+    }
+
+    const { data: rows } = await query;
 
     const findPlayer = makeFindPlayer(players);
     return (rows ?? []).map((row: any) => ({
@@ -54,13 +61,20 @@ export async function fetchPlayerBatterLogs(
 
 export async function fetchPlayerPitcherLogs(
     playerId: number,
-    players: Player[]
+    players: Player[],
+    options: { dropFlaggedPitcherLogs?: boolean } = {}
 ): Promise<PlayerAtBat[]> {
-    const { data: rows } = await supabase
+    let query = supabase
         .from('at_bat_logs')
         .select('batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, extra_comments, game_logs(id, game_id, sequence)')
         .eq('pitcher_id', playerId)
         .order('log_id');
+
+    if (options.dropFlaggedPitcherLogs) {
+        query = query.not('flagged_pitcher_row', 'is', true);
+    }
+
+    const { data: rows } = await query;
 
     const findPlayer = makeFindPlayer(players);
     return (rows ?? []).map((row: any) => ({
