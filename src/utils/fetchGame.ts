@@ -39,9 +39,11 @@ export async function fetchGameLogs(
 
     for (const row of (logRows ?? [])) {
         for (let missing = expectedSeq; missing < row.sequence; missing++) {
-            entries.push({ type: 'additional_information', info: `Missing log (seq: ${missing})`, typeOfInfo: 'gamestate_reply_issue' });
+            entries.push({ type: 'additional_information', info: `Missing log (seq: ${missing})`, typeOfInfo: 'gamestate_replay_issue' });
         }
-        entries.push(rowToLogEntry(row, findPlayer));
+        const entry = rowToLogEntry(row, findPlayer);
+        (entry as any)._seq = row.sequence;
+        entries.push(entry);
         expectedSeq = row.sequence + 1;
     }
 
