@@ -6,9 +6,10 @@ import { usePlayers } from "../../contexts/PlayersContext"
 type EditGamestateProps = {
     gameData: GameData
     onUpdate: (updated: EditGamestateLog) => void
+    isSubmitting: boolean
 }
 
-function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
+function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps) {
     const allPlayers = usePlayers();
     const [draft, setDraft] = useState<GameData>(gameData)
     const [info, setInfo] = useState<string>("")
@@ -164,7 +165,7 @@ function EditGamestate({ gameData, onUpdate }: EditGamestateProps) {
 
             <hr />
 
-            <button type="submit" className="submit-btn" disabled={info.trim() === ""}>Save Changes</button>
+            <button type="submit" className="submit-btn" disabled={isSubmitting || info.trim() === ""}>Save Changes</button>
         </form>
     )
 }

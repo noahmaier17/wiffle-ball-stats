@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
 import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, atBatLogSummary } from "../types";
-import { fetchGameLogs } from "../utils/fetchGame";
+import { fetchGameLogs, fetchMaxGameLogSequence } from "../utils/fetchGame";
+import { retrySupabase } from "../utils/retrySupabase";
 import { usePlayers } from "../contexts/PlayersContext";
 import AtBat from "./gameplayLogging/AtBat";
 import PitchingChange from "./gameplayLogging/PitchingChange";
@@ -82,36 +83,43 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const [editingLog, setEditingLog] = useState<{ index: number; entry: AtBatLog } | null>(null);
     const nextSeqRef = useRef(0);
     const isSubmittingRef = useRef(false);
-
-    useEffect(() => {
-        console.log(gameData.earnedRunsQueue)
-    }, [gameData.earnedRunsQueue]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const loadLogs = async () => {
-            const logs = await fetchGameLogs(gameData.gameId, players);
+            const [logs, nextSeq] = await Promise.all([
+                fetchGameLogs(gameData.gameId, players),
+                fetchMaxGameLogSequence(gameData.gameId),
+            ]);
             if (!logs.length) return;
             setLog(logs);
-            nextSeqRef.current = logs.length;
+            nextSeqRef.current = nextSeq;
         };
 
         loadLogs();
     }, []);
+
+    const retryInsert = async (table: string, data: object): Promise<boolean> => {
+        const { error } = await retrySupabase(
+            () => supabase.from(table).insert(data),
+            table
+        );
+        return !error;
+    };
 
     const insertLog = async (entry: GameLogEntry): Promise<number> => {
         const sequence = nextSeqRef.current;
         nextSeqRef.current += 1;
 
         // Creates a new game log entry, and fetches its primary key ID
-        const { data: masterRow, error } = await supabase
-            .from('game_logs')
-            .insert({ game_id: gameData.gameId, sequence, type: entry.type })
-            .select('id')
-            .single();
+        const { data: masterRow, error } = await retrySupabase<{ id: number }>(
+            () => supabase.from('game_logs').insert({ game_id: gameData.gameId, sequence, type: entry.type }).select('id').single(),
+            "Insert Log"
+        );
 
         // Error catching
         if (error || !masterRow) {
-            console.error('Failed to insert log entry:', error);
+            console.error('Failed to insert log entry after 10 attempts:', error);
             return -1;
         }
 
@@ -120,7 +128,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         // Depending on the type of log, we append a new log
         switch (entry.type) {
             case 'atbat':
-                await supabase.from('at_bat_logs').insert({
+                await retryInsert('at_bat_logs', {
                     log_id: logId,
                     batter_id: entry.batter.id,
                     pitcher_id: entry.pitcher.id,
@@ -132,7 +140,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 });
                 break;
             case 'pitching_change':
-                await supabase.from('pitching_change_logs').insert({
+                await retryInsert('pitching_change_logs', {
                     log_id: logId,
                     team_changing: entry.teamChangingPitchers,
                     old_pitcher_id: entry.oldPitcher.id,
@@ -140,17 +148,17 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 });
                 break;
             case 'additional_information':
-                await supabase.from('additional_information_logs').insert({
+                await retryInsert('additional_information_logs', {
                     log_id: logId,
                     info: entry.info,
                     type_of_info: entry.typeOfInfo,
                 });
                 break;
             case 'inning_switch':
-                await supabase.from('inning_switch_logs').insert({ log_id: logId });
+                await retryInsert('inning_switch_logs', { log_id: logId });
                 break;
             case 'edit_gamestate':
-                await supabase.from('edit_gamestate_logs').insert({
+                await retryInsert('edit_gamestate_logs', {
                     log_id: logId,
                     info: entry.info,
                     new_game_data: entry.newGameData,
@@ -164,6 +172,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const handleLogAtBat = async (atBat: AtBatLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
+        setIsSubmitting(true);
 
         let newOuts = gameData.numberOfOuts + atBat.recordedOuts;
         let switchSides = false;
@@ -260,95 +269,114 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             return returnGameState;
         });
 
-        isSubmittingRef.current = false;
-
-        const logId = await insertLog(atBat);
-        if (switchSides) insertLog({ type: 'inning_switch' });
-
-        // Patch the log entry in state with the real DB logId
-        setLog(prev => prev.map(e => (e === atBat ? { ...e, logId } : e)));
-
-        const batter = atBat.batter;
-        const pitcher = atBat.pitcher;
-
-        if (!batter || !pitcher) return;
-
         try {
-            // Fetch current stats for both players in this game
-            const { data: statsData, error: statsError } = await supabase
-                .from('player_game_stats')
-                .select('*')
-                .eq('game_id', gameData.gameId)
-                .in('player_id', [batter.id, pitcher.id]);
+            const logId = await insertLog(atBat);
+            if (switchSides) await insertLog({ type: 'inning_switch' });
 
-            if (statsError) throw statsError;
+            // Patch the log entry in state with the real DB logId
+            setLog(prev => prev.map(e => (e === atBat ? { ...e, logId } : e)));
 
-            const batterStats = statsData.find((s: any) => s.player_id === batter.id);
-            const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
+            const batter = atBat.batter;
+            const pitcher = atBat.pitcher;
 
-            // Update pitchers with earned runs
-            const earnedRunsPerPitcher = new Map<number, number>();
-            for (const id of pitcherIdHasEarnedRun) {
-                earnedRunsPerPitcher.set(id, (earnedRunsPerPitcher.get(id) ?? 0) + 1);
-            }
+            if (!batter || !pitcher) return;
 
-            await Promise.all(
-                [...earnedRunsPerPitcher.entries()].map(async ([pitcher_id, count]) => {
-                    const { data } = await supabase
+            try {
+                // Fetch current stats for both players in this game
+                const { data: statsData, error: statsError } = await supabase
+                    .from('player_game_stats')
+                    .select('*')
+                    .eq('game_id', gameData.gameId)
+                    .in('player_id', [batter.id, pitcher.id]);
+
+                if (statsError) throw statsError;
+
+                const batterStats = statsData.find((s: any) => s.player_id === batter.id);
+                const pitcherStats = statsData.find((s: any) => s.player_id === pitcher.id);
+
+                // Update pitchers with earned runs
+                const earnedRunsPerPitcher = new Map<number, number>();
+                for (const id of pitcherIdHasEarnedRun) {
+                    earnedRunsPerPitcher.set(id, (earnedRunsPerPitcher.get(id) ?? 0) + 1);
+                }
+
+                await Promise.all(
+                    [...earnedRunsPerPitcher.entries()].map(async ([pitcher_id, count]) => {
+                        const { data } = await supabase
+                            .from('player_game_stats')
+                            .select('id, runs_allowed')
+                            .eq('game_id', gameData.gameId)
+                            .eq('player_id', pitcher_id)
+                            .single();
+                        await retrySupabase(() => supabase
+                            .from('player_game_stats')
+                            .update({ runs_allowed: data!.runs_allowed + count })
+                            .eq('id', data!.id),
+                            "Set runs allowed");
+                    })
+                );
+
+                const { batterDelta, pitcherDelta } = computeAtBatDeltas(atBat.outcomeSign, atBat.rbis, atBat.recordedOuts);
+
+                // Update Batter
+                if (batterStats) {
+                    const batterUpdate: any = {};
+                    for (const key in batterDelta) {
+                        batterUpdate[key] = (batterStats[key] || 0) + batterDelta[key];
+                    }
+                    await retrySupabase(() => supabase
                         .from('player_game_stats')
-                        .select('id, runs_allowed')
+                        .update(batterUpdate)
+                        .eq('id', batterStats.id),
+                        "Update batter"
+                    );
+                }
+
+                // Update Pitcher
+                if (pitcherStats) {
+                    const pitcherUpdate: any = { games_pitched: 1 };
+                    for (const key in pitcherDelta) {
+                        pitcherUpdate[key] = (pitcherStats[key] || 0) + pitcherDelta[key];
+                    }
+                    await retrySupabase(() => supabase
+                        .from('player_game_stats')
+                        .update(pitcherUpdate)
+                        .eq('id', pitcherStats.id),
+                        "Update pitcher"
+                    );
+                }
+
+                // Update wins/losses for all players when the game ends
+                if (gameJustEnded) {
+                    const winnerLineup = homeTeamWon ? gameData.homeTeamLineup : gameData.awayTeamLineup;
+                    const loserLineup = homeTeamWon ? gameData.awayTeamLineup : gameData.homeTeamLineup;
+                    await retrySupabase(() => supabase.from('player_game_stats')
+                        .update({ win: 1 })
                         .eq('game_id', gameData.gameId)
-                        .eq('player_id', pitcher_id)
-                        .single();
-                    await supabase
-                        .from('player_game_stats')
-                        .update({ runs_allowed: data!.runs_allowed + count })
-                        .eq('id', data!.id);
-                })
-            );
-
-            const { batterDelta, pitcherDelta } = computeAtBatDeltas(atBat.outcomeSign, atBat.rbis, atBat.recordedOuts);
-
-            // Update Batter
-            if (batterStats) {
-                const batterUpdate: any = {};
-                for (const key in batterDelta) {
-                    batterUpdate[key] = (batterStats[key] || 0) + batterDelta[key];
+                        .in('player_id', winnerLineup.map(p => p.id)),
+                        "Update wins"
+                    );
+                    await retrySupabase(() => supabase.from('player_game_stats')
+                        .update({ loss: 1 })
+                        .eq('game_id', gameData.gameId)
+                        .in('player_id', loserLineup.map(p => p.id)),
+                        "Update losses"
+                    );
                 }
-                await supabase.from('player_game_stats').update(batterUpdate).eq('id', batterStats.id);
-            }
 
-            // Update Pitcher
-            if (pitcherStats) {
-                const pitcherUpdate: any = { games_pitched: 1 };
-                for (const key in pitcherDelta) {
-                    pitcherUpdate[key] = (pitcherStats[key] || 0) + pitcherDelta[key];
-                }
-                await supabase.from('player_game_stats').update(pitcherUpdate).eq('id', pitcherStats.id);
+            } catch (error) {
+                console.error("Error updating stats:", error);
             }
-
-            // Update wins/losses for all players when the game ends
-            if (gameJustEnded) {
-                const winnerLineup = homeTeamWon ? gameData.homeTeamLineup : gameData.awayTeamLineup;
-                const loserLineup = homeTeamWon ? gameData.awayTeamLineup : gameData.homeTeamLineup;
-                await supabase.from('player_game_stats')
-                    .update({ win: 1 })
-                    .eq('game_id', gameData.gameId)
-                    .in('player_id', winnerLineup.map(p => p.id));
-                await supabase.from('player_game_stats')
-                    .update({ loss: 1 })
-                    .eq('game_id', gameData.gameId)
-                    .in('player_id', loserLineup.map(p => p.id));
-            }
-
-        } catch (error) {
-            console.error("Error updating stats:", error);
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
         }
     };
 
-    const handleLogPitchingChange = (pitchingChange: PitchingChangeLog) => {
+    const handleLogPitchingChange = async (pitchingChange: PitchingChangeLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
+        setIsSubmitting(true);
 
         setLog(prev => [...prev, pitchingChange]);
 
@@ -359,20 +387,27 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 : { ...prev, homePitcher: pitchingChange.newPitcher };
         });
 
-        isSubmittingRef.current = false;
-
-        insertLog(pitchingChange);
+        try {
+            await insertLog(pitchingChange);
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+        }
     };
 
-    const handleLogAdditionalInformation = (additionalInformation: AdditionalInformationLog) => {
+    const handleLogAdditionalInformation = async (additionalInformation: AdditionalInformationLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
+        setIsSubmitting(true);
 
         setLog(prev => [...prev, additionalInformation]);
 
-        isSubmittingRef.current = false;
-
-        insertLog(additionalInformation);
+        try {
+            await insertLog(additionalInformation);
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+        }
     };
 
     const handleStartEditAtBat = (index: number, entry: AtBatLog) => {
@@ -392,12 +427,15 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setLog(prev => prev.map((e, i) => i === index ? finalAtBat : e));
         setEditingLog(null);
 
-        await supabase.from('at_bat_logs').update({
-            outcome_sign: finalAtBat.outcomeSign,
-            rbis: finalAtBat.rbis,
-            recorded_outs: finalAtBat.recordedOuts,
-            extra_comments: finalAtBat.extraComments,
-        }).eq('log_id', oldAtBat.logId);
+        await retrySupabase(
+            () => supabase.from('at_bat_logs').update({
+                outcome_sign: finalAtBat.outcomeSign,
+                rbis: finalAtBat.rbis,
+                recorded_outs: finalAtBat.recordedOuts,
+                extra_comments: finalAtBat.extraComments,
+            }).eq('log_id', oldAtBat.logId),
+            "Edit at bat"
+        );
 
         const oldDeltas = computeAtBatDeltas(oldAtBat.outcomeSign, oldAtBat.rbis, oldAtBat.recordedOuts);
         const newDeltas = computeAtBatDeltas(newAtBat.outcomeSign, newAtBat.rbis, newAtBat.recordedOuts);
@@ -417,7 +455,13 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             for (const key of allKeys) {
                 update[key] = (batterStats[key] || 0) - (oldDeltas.batterDelta[key] || 0) + (newDeltas.batterDelta[key] || 0);
             }
-            await supabase.from('player_game_stats').update(update).eq('id', batterStats.id);
+            await retrySupabase(
+                () => supabase
+                    .from('player_game_stats')
+                    .update(update)
+                    .eq('id', batterStats.id),
+                "Update batter stats on edit"
+            );
         }
 
         if (pitcherStats) {
@@ -426,20 +470,30 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             for (const key of allKeys) {
                 update[key] = (pitcherStats[key] || 0) - (oldDeltas.pitcherDelta[key] || 0) + (newDeltas.pitcherDelta[key] || 0);
             }
-            await supabase.from('player_game_stats').update(update).eq('id', pitcherStats.id);
+            await retrySupabase(
+                () => supabase
+                    .from('player_game_stats')
+                    .update(update)
+                    .eq('id', pitcherStats.id),
+                "Update pitcher stats on edit"
+            );
         }
     };
 
-    const handleEditGamestate = (editGamestateLog: EditGamestateLog) => {
+    const handleEditGamestate = async (editGamestateLog: EditGamestateLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
+        setIsSubmitting(true);
 
         setLog(prev => [...prev, editGamestateLog]);
         setGameState(editGamestateLog.newGameData);
 
-        isSubmittingRef.current = false;
-
-        insertLog(editGamestateLog);
+        try {
+            await insertLog(editGamestateLog);
+        } finally {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -474,6 +528,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 <AtBat
                     gameData={gameData}
                     onLogAtBat={handleLogAtBat}
+                    isSubmitting={isSubmitting}
                     editMode={{
                         initialValues: editingLog.entry,
                         onEditAtBat: handleSaveAtBatEdit,
@@ -534,29 +589,33 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                         <AtBat
                             gameData={gameData}
                             onLogAtBat={handleLogAtBat}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                     {logType === 'pitching_change' && (
                         <PitchingChange
                             gameData={gameData}
                             onLogPitchingChange={handleLogPitchingChange}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                     {logType === 'additional_information' && (
                         <AdditionalInformation
                             onLogAdditionalInformation={handleLogAdditionalInformation}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                     {logType === 'edit_gamestate' && (
                         <EditGamestate
                             gameData={gameData}
                             onUpdate={handleEditGamestate}
+                            isSubmitting={isSubmitting}
                         />
                     )}
                 </>
             )}
 
-            <GameLog log={log} onEditAtBat={handleStartEditAtBat} editingActive={editingLog !== null} editingIndex={editingLog?.index} />
+            <GameLog log={log} onEditAtBat={handleStartEditAtBat} editingActive={editingLog !== null || isSubmitting} editingIndex={editingLog?.index} />
         </div>
     );
 }

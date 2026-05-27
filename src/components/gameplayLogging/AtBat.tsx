@@ -21,6 +21,7 @@ type AtBatProps = {
     gameData: GameData;
     onLogAtBat: (atBat: AtBatLog) => void;
     editMode?: EditModeProps;
+    isSubmitting: boolean;
 }
 
 const range = (lo: number, hi: number): number[] =>
@@ -51,7 +52,7 @@ function validOutsRange(sign: AtBatOutcomeSign | undefined, numberOnBase: number
     return range(0, maxOuts);
 }
 
-function AtBat({ gameData, onLogAtBat, editMode }: AtBatProps) {
+function AtBat({ gameData, onLogAtBat, editMode, isSubmitting }: AtBatProps) {
     const {
         awayTeamLineup,
         homeTeamLineup,
@@ -248,7 +249,7 @@ function AtBat({ gameData, onLogAtBat, editMode }: AtBatProps) {
                 <button
                     type="submit"
                     className="submit-btn"
-                    disabled={(rbis === undefined || outcomeSign === undefined || recordedOuts === undefined || (!editMode && rbis + recordedOuts > (BASE_HIT_SIGNS.has(outcomeSign) || outcomeSign === 'BB' || outcomeSign === 'FC' ? numberOnBase : numberOnBase + 1)))}
+                    disabled={isSubmitting || (rbis === undefined || outcomeSign === undefined || recordedOuts === undefined || (!editMode && rbis + recordedOuts > (BASE_HIT_SIGNS.has(outcomeSign) || outcomeSign === 'BB' || outcomeSign === 'FC' ? numberOnBase : numberOnBase + 1)))}
                     onClick={() => logAtBat()}
                 >{editMode ? "Save Edit" : "Submit"}</button>
                 {editMode && (

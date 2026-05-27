@@ -3,9 +3,10 @@ import type { AdditionalInformationLog, TypeOfInfo } from "../../types";
 
 type AdditionalInformationProps = {
     onLogAdditionalInformation: (additionalInformation: AdditionalInformationLog) => void;
+    isSubmitting: boolean;
 }
 
-function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInformationProps) {
+function AdditionalInformation({ onLogAdditionalInformation, isSubmitting }: AdditionalInformationProps) {
     const [info, setInfo] = useState<string>("");
     const [typeOfInfo, setTypeOfInfo] = useState<TypeOfInfo>('other');
 
@@ -46,7 +47,7 @@ function AdditionalInformation({ onLogAdditionalInformation }: AdditionalInforma
         <button
             type='submit'
             className="submit-btn"
-            disabled={info === ""}
+            disabled={isSubmitting || info === ""}
             onClick={() => handleOnSubmit()}
         >Submit</button>
 

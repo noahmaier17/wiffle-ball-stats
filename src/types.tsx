@@ -176,7 +176,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
     switch (row.type) {
         case 'atbat': {
             const ab = row.at_bat_logs;
-            if (!ab) return { type: 'additional_information', info: `Missing at bat — log_id: ${row.id}, seq: ${row.sequence}`, typeOfInfo: 'gamestate_reply_issue' };
+            if (!ab) return { type: 'additional_information', info: `Missing at bat`, typeOfInfo: 'gamestate_reply_issue' };
             return {
                 type: 'atbat',
                 logId: row.id,
@@ -190,7 +190,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
         }
         case 'pitching_change': {
             const pc = row.pitching_change_logs;
-            if (!pc) return { type: 'additional_information', info: `Missing pitching change — log_id: ${row.id}, seq: ${row.sequence}`, typeOfInfo: 'logging_issue' };
+            if (!pc) return { type: 'additional_information', info: `Missing pitching change`, typeOfInfo: 'gamestate_reply_issue' };
             return {
                 type: 'pitching_change',
                 teamChangingPitchers: pc.team_changing as HomeAway,
@@ -200,7 +200,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
         }
         case 'additional_information': {
             const ai = row.additional_information_logs;
-            if (!ai) return { type: 'additional_information', info: `Missing additional info — log_id: ${row.id}, seq: ${row.sequence}`, typeOfInfo: 'logging_issue' };
+            if (!ai) return { type: 'additional_information', info: `Missing additional info`, typeOfInfo: 'gamestate_reply_issue' };
             return {
                 type: 'additional_information',
                 info: ai.info,
@@ -211,7 +211,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
             return { type: 'inning_switch' };
         case 'edit_gamestate': {
             const eg = row.edit_gamestate_logs;
-            if (!eg) return { type: 'additional_information', info: `Missing edit gamestate log — log_id: ${row.id}, seq: ${row.sequence}`, typeOfInfo: 'logging_issue' };
+            if (!eg) return { type: 'additional_information', info: `Missing edit gamestate log`, typeOfInfo: 'gamestate_reply_issue' };
             return {
                 type: 'edit_gamestate',
                 newGameData: eg.new_game_data,

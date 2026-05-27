@@ -12,6 +12,17 @@ export const LOG_SELECT = `
     inning_switch_logs(log_id)
 `;
 
+export async function fetchMaxGameLogSequence(gameId: number): Promise<number> {
+    const { data } = await supabase
+        .from('game_logs')
+        .select('sequence')
+        .eq('game_id', gameId)
+        .order('sequence', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    return data ? data.sequence + 1 : 0;
+}
+
 export async function fetchGameLogs(
     gameId: number, 
     players: Player[]
@@ -23,7 +34,18 @@ export async function fetchGameLogs(
         .order('sequence');
 
     const findPlayer = makeFindPlayer(players);
-    return (logRows ?? []).map((row: any) => rowToLogEntry(row, findPlayer));
+    const entries: GameLogEntry[] = [];
+    let expectedSeq = 0;
+
+    for (const row of (logRows ?? [])) {
+        for (let missing = expectedSeq; missing < row.sequence; missing++) {
+            entries.push({ type: 'additional_information', info: `Missing log (seq: ${missing})`, typeOfInfo: 'gamestate_reply_issue' });
+        }
+        entries.push(rowToLogEntry(row, findPlayer));
+        expectedSeq = row.sequence + 1;
+    }
+
+    return entries;
 }
 
 export type PlayerAtBat = AtBatLog & { gameId: number };

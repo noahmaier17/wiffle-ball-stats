@@ -4,9 +4,10 @@ import { type HomeAway, playerName, type GameData, type PitchingChangeLog, type 
 type PitchingChangeProps = {
     gameData: GameData;
     onLogPitchingChange: (pitchingChange: PitchingChangeLog) => void;
+    isSubmitting: boolean;
 }
 
-function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) {
+function PitchingChange({ gameData, onLogPitchingChange, isSubmitting }: PitchingChangeProps) {
     const {
         awayTeamLineup,
         homeTeamLineup,
@@ -94,7 +95,7 @@ function PitchingChange({ gameData, onLogPitchingChange }: PitchingChangeProps) 
             <button
                 type="submit"
                 className="submit-btn"
-                disabled={newPitcher === undefined}
+                disabled={isSubmitting || newPitcher === undefined}
                 onClick={() => handleSubmit()}
             >Submit</button>
         </form>
