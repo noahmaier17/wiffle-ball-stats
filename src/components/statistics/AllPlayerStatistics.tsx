@@ -23,6 +23,7 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
     const tb = stats.singles + stats.doubles * 2 + stats.triples * 3 + stats.home_runs * 4;
     switch (col) {
         case 'at_bats': return stats.at_bats;
+        case 'plate_appearances': return stats.plate_appearances;
         case 'games_played': return stats.games_played;
         case 'hits': return stats.hits;
         case 'singles': return stats.singles;
@@ -32,6 +33,7 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
         case 'inside_the_park_home_runs': return stats.inside_the_park_home_runs;
         case 'runs_batted_in': return stats.runs_batted_in;
         case 'walks': return stats.walks;
+        case 'fielders_choice': return stats.fielders_choice;
         case 'strikeouts_swinging': return stats.strikeouts_swinging;
         case 'strikeouts_looking': return stats.strikeouts_looking;
         case 'strikeouts': return stats.strikeouts;
@@ -62,13 +64,23 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
 
 function getSortValue(stats: PlayerGameData, col: string, viewType: statViewTypes): number {
     const raw = getRawSortValue(stats, col);
-    if (viewType === 'default') return raw;
-    if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
+    if (viewType === 'default') {
+        return raw;
+    } else if (viewType === 'by_game') {
+        if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
 
-    if (BATTING_COUNT_COLS.has(col)) return (stats.games_played === 0) ? 0 : raw / stats.games_played;
-    if (PITCHING_COUNT_COLS.has(col)) return (stats.games_pitched === 0) ? 0 : raw / stats.games_pitched;
+        if (BATTING_COUNT_COLS.has(col)) return (stats.games_played === 0) ? 0 : raw / stats.games_played;
+        if (PITCHING_COUNT_COLS.has(col)) return (stats.games_pitched === 0) ? 0 : raw / stats.games_pitched;
+    } else if (viewType === 'by_plate_appearance') {
+        if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
 
-    return raw; // Cannot be accessed
+        if (col === 'win' || col === 'loss' || col === 'plate_appearances') return raw;
+
+        if (BATTING_COUNT_COLS.has(col)) return (stats.plate_appearances === 0) ? 0 : raw / stats.plate_appearances;
+        if (PITCHING_COUNT_COLS.has(col)) return (stats.pitched_outs === 0) ? 0 : raw / stats.pitched_outs;
+    }
+
+    return raw; // Fall through case, often accessed for stats like ERA 
 }
 
 type AllPlayerStatisticsProps = {

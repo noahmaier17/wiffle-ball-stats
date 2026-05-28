@@ -16,7 +16,9 @@ function PitcherStatisticsRow({ viewType, pde, player }: PitcherStatisticsRowPro
     const display = (value: number) => {
         return (viewType === 'by_game')
             ? ((pde.games_pitched === 0) ? 0 : (value / pde.games_pitched).toFixed(2))
-            : value
+            : (viewType === 'by_plate_appearance')
+                ? ((pde.pitched_outs === 0) ? 0 : (3 * value / pde.pitched_outs).toFixed(3))
+                : value 
     }
 
     return (

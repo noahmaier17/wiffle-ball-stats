@@ -27,7 +27,9 @@ function PitcherStatisticsTableHeader({
     const display = (label: ReactNode) => {
         return (viewType === 'by_game')
             ? <>{label}/G</>
-            : label
+            : (viewType === 'by_plate_appearance' && !(label === 'IP'))
+                ? <>{label}/IP</>
+                : label
     }
 
     return (

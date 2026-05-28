@@ -50,6 +50,7 @@ async function fetchAllPlayerStatistics({ players }: FetchAllPlayerStatisticsPro
             inside_the_park_home_runs: sum('inside_the_park_home_runs'),
             runs_batted_in: sum('runs_batted_in'),
             walks: sum('walks'),
+            fielders_choice: sum('fielders_choice'),
             strikeouts_swinging: sum('strikeouts_swinging'),
             strikeouts_looking: sum('strikeouts_looking'),
             strikeouts: sum('strikeouts'),

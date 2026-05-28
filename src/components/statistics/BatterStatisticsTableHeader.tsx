@@ -27,7 +27,9 @@ function BatterStatisticsTableHeader({
     const display = (label: ReactNode) => {
         return (viewType === 'by_game')
             ? <>{label}/G</>
-            : label
+            : (viewType === 'by_plate_appearance' && !(label === 'W' || label === 'L' || label === 'PA'))
+                ? <>{label}/PA</>
+                : label
     }
  
     return (
@@ -40,6 +42,7 @@ function BatterStatisticsTableHeader({
             {th('G', 'games_played')}
             {th(display('W'), 'win')}
             {th(display('L'), 'loss')}
+            {th(display('PA'), 'plate_appearances')}
             {th(display('AB'), 'at_bats')}
             {th(display('H'), 'hits')}
             {th(display('1B'), 'singles')}
@@ -52,6 +55,7 @@ function BatterStatisticsTableHeader({
             {th(display('K'), 'strikeouts_swinging')}
             {th(display(<ReverseK/>), 'strikeouts_looking')}
             {th(display('SO'), 'strikeouts')}
+            {th(display('FC'), 'fielders_choice')}
             {th(display('TB'), 'tb')}
             {th('BA', 'ba')}
             {th('OBP', 'obp')}

@@ -28,6 +28,16 @@ function HandleStatisticsViewToggle({ viewType, setViewType }: HandleStatisticsV
             />
             Per Game
         </label>
+        <label>
+            <input
+                type="radio"
+                name="view type"
+                value="by_plate_appearance"
+                checked={viewType === "by_plate_appearance"}
+                onChange={(e) => setViewType(e.target.value as statViewTypes)}
+            />
+            By PA/IP
+        </label>
     </div>)
 }
 

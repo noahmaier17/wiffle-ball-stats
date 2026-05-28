@@ -13,10 +13,12 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             : 0
     }
 
-    const display = (value: number) => { // , isGameGranularityStatistic: boolean = false) => {
+    const display = (value: number, { isGameGranularityStatistic = false, isPlateAppearances = false }: { isGameGranularityStatistic?: boolean, isPlateAppearances?: boolean } = {}) => {
         return (viewType === 'by_game') 
-            ? (value / pdeWithZeroes.games_played).toFixed(2) 
-            : value
+            ? (value / pdeWithZeroes.games_played).toFixed(2)
+            : (viewType === 'by_plate_appearance' && !isGameGranularityStatistic && !isPlateAppearances)
+                ? (value / pdeWithZeroes.plate_appearances).toFixed(3)
+                : value
     }
 
     // Fixes all malformed values by setting them to zero
@@ -45,8 +47,9 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
         <tr>
             {player && <td>{playerNameShort(player)}</td>}
             <td>{pdeWithZeroes.games_played}</td>
-            <td>{display(pdeWithZeroes.win)}</td>
-            <td>{display(pdeWithZeroes.loss)}</td>
+            <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
+            <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>
+            <td>{display(pdeWithZeroes.plate_appearances, { isPlateAppearances: true })}</td>
             <td>{display(pdeWithZeroes.at_bats)}</td>
             <td>{display(pdeWithZeroes.hits)}</td>
             <td>{display(pdeWithZeroes.singles)}</td>
@@ -59,6 +62,7 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             <td>{display(pdeWithZeroes.strikeouts_swinging)}</td>
             <td>{display(pdeWithZeroes.strikeouts_looking)}</td>
             <td>{display(pdeWithZeroes.strikeouts)}</td>
+            <td>{display(pdeWithZeroes.fielders_choice)}</td>
             <td>{display(totalBases)}</td>
             <td>{battingAverage}</td>
             <td>{onBasePercentage}</td>
