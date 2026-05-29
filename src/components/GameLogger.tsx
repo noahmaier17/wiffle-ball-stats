@@ -23,7 +23,10 @@ type GameLoggerProps = {
 function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     const players = usePlayers();
     const [log, setLog] = useState<GameLogEntry[]>([]);
-    const [logType, setLogType] = useState<LogType>('atbat');
+    const [logType, setLogType] = useState<LogType>(() => {
+        const initPitcher = gameData.awayTeamBatting ? gameData.homePitcher : gameData.awayPitcher;
+        return initPitcher ? 'atbat' : 'pitching_change';
+    });
     const [editingLog, setEditingLog] = useState<{ index: number; entry: AtBatLog } | null>(null);
     const nextSeqRef = useRef(0);
     const isSubmittingRef = useRef(false);
@@ -87,7 +90,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 await retryInsert('pitching_change_logs', {
                     log_id: logId,
                     team_changing: entry.teamChangingPitchers,
-                    old_pitcher_id: entry.oldPitcher.id,
+                    old_pitcher_id: entry.oldPitcher?.id ?? null,
                     new_pitcher_id: entry.newPitcher.id,
                 });
                 break;
@@ -213,6 +216,10 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             return returnGameState;
         });
 
+        if (switchSides && !gameJustEnded) {
+            goToNextView({ ...gameData, awayTeamBatting: !awayBatting });
+        }
+
         try {
             const logId = await insertLog(atBat);
             if (switchSides) await insertLog({ type: 'inning_switch' });
@@ -317,6 +324,11 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         }
     };
 
+    const goToNextView = (nextGameData: GameData) => {
+        const fieldingPitcher = nextGameData.awayTeamBatting ? nextGameData.homePitcher : nextGameData.awayPitcher;
+        setLogType(fieldingPitcher ? 'atbat' : 'pitching_change');
+    };
+
     const handleLogPitchingChange = async (pitchingChange: PitchingChangeLog) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
@@ -324,12 +336,20 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
         setLog(prev => [...prev, pitchingChange]);
 
+        const nextGameData: GameData = {
+            ...gameData,
+            awayPitcher: pitchingChange.teamChangingPitchers === 'away' ? pitchingChange.newPitcher : gameData.awayPitcher,
+            homePitcher: pitchingChange.teamChangingPitchers === 'home' ? pitchingChange.newPitcher : gameData.homePitcher,
+        };
+
         setGameState(prev => {
             if (!prev) return prev;
             return (pitchingChange.teamChangingPitchers === 'away')
                 ? { ...prev, awayPitcher: pitchingChange.newPitcher }
                 : { ...prev, homePitcher: pitchingChange.newPitcher };
         });
+
+        goToNextView(nextGameData);
 
         try {
             await insertLog(pitchingChange);
@@ -345,6 +365,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setIsSubmitting(true);
 
         setLog(prev => [...prev, additionalInformation]);
+
+        goToNextView(gameData);
 
         try {
             await insertLog(additionalInformation);
@@ -432,6 +454,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setLog(prev => [...prev, editGamestateLog]);
         setGameState(editGamestateLog.newGameData);
 
+        goToNextView(editGamestateLog.newGameData);
+
         try {
             await insertLog(editGamestateLog);
         } finally {
@@ -439,6 +463,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             setIsSubmitting(false);
         }
     };
+
 
     return (
         <div>
@@ -490,6 +515,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                                     name="logType"
                                     value="atbat"
                                     checked={logType === 'atbat'}
+                                    disabled={!(gameData.awayTeamBatting ? gameData.homePitcher : gameData.awayPitcher)}
                                     onChange={() => setLogType('atbat')}
                                 />
                                 At Bat

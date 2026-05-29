@@ -11,6 +11,8 @@ function PitchingChange({ gameData, onLogPitchingChange, isSubmitting }: Pitchin
     const {
         awayTeamLineup,
         homeTeamLineup,
+        awayAlltimeDefensePlayers,
+        homeAlltimeDefensePlayers,
         awayPitcher,
         homePitcher,
         awayTeamBatting
@@ -18,9 +20,11 @@ function PitchingChange({ gameData, onLogPitchingChange, isSubmitting }: Pitchin
 
     // Needed to initalize the pitcher
     const getFirstValidPitcher = (t: HomeAway) => {
-        const lineup = t === 'away' ? awayTeamLineup : homeTeamLineup;
+        const pool = t === 'away'
+            ? [...awayTeamLineup, ...awayAlltimeDefensePlayers]
+            : [...homeTeamLineup, ...homeAlltimeDefensePlayers];
         const currentPitcher = t === 'away' ? awayPitcher : homePitcher;
-        const first = lineup.find(p => p !== currentPitcher);
+        const first = pool.find(p => p !== currentPitcher);
         return first;
     };
 
@@ -68,13 +72,15 @@ function PitchingChange({ gameData, onLogPitchingChange, isSubmitting }: Pitchin
 
             <div>
                 <label>Current Pitcher: </label>
-                {team === 'away' ? playerName(awayPitcher) : playerName(homePitcher)}
+                {(team === 'away' ? awayPitcher : homePitcher) ? playerName((team === 'away' ? awayPitcher : homePitcher)!) : 'None'}
             </div>
 
             <div>
                 <label>New Pitcher: </label>
                 <div className="radio-group">
-                    {(team === 'away' ? [...awayTeamLineup] : [...homeTeamLineup])
+                    {(team === 'away'
+                        ? [...awayTeamLineup, ...awayAlltimeDefensePlayers]
+                        : [...homeTeamLineup, ...homeAlltimeDefensePlayers])
                         .filter(p => p !== awayPitcher && p !== homePitcher)
                         .map(p => (
                             <label key={p.id}>

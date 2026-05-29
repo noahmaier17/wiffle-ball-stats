@@ -25,7 +25,10 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                             <LogRow atBat={entry}/>
                         </li>
                     case 'pitching_change':
-                        return <li key={index}>{seq(entry)}Pitching change: {playerNameShort(entry.newPitcher)} in for {playerNameShort(entry.oldPitcher)}</li>
+                        return <li key={index}>
+                            <span>{seq(entry)}{`Pitching change: ${playerNameShort(entry.newPitcher)} in for `}</span>
+                            <span>{entry.oldPitcher ? playerNameShort(entry.oldPitcher) : `the ${entry.teamChangingPitchers.charAt(0).toUpperCase() + entry.teamChangingPitchers.slice(1)} team`}</span> 
+                        </li>
                     case 'additional_information':
                         return <div key={index}>{seq(entry)}<em>{entry.info}</em></div>
                     case 'inning_switch':

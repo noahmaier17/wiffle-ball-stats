@@ -89,8 +89,10 @@ export type GameData = {
     gameId: number;
     awayTeamLineup: Player[]; // The away team lineup; does not change once set
     homeTeamLineup: Player[]; // The home team lineup; does not change once set
-    awayPitcher: Player;
-    homePitcher: Player;
+    awayAlltimeDefensePlayers: Player[]; // Pitcher-only players for away team; not in batting order
+    homeAlltimeDefensePlayers: Player[]; // Pitcher-only players for home team; not in batting order
+    awayPitcher: Player | null;
+    homePitcher: Player | null;
 
     awayTeamBatting: boolean;
     inning: number;
@@ -146,7 +148,7 @@ export const currInHole = (gameData: GameData) => {
 export type PitchingChangeLog = {
     type: 'pitching_change';
     teamChangingPitchers: HomeAway;
-    oldPitcher: Player;
+    oldPitcher: Player | null;
     newPitcher: Player;
 }
 

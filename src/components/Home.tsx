@@ -39,12 +39,16 @@ function Home({
     // Lineup state
     const [awayTeamLineup, setAwayTeamLineup] = useState<Player[]>([]);
     const [homeTeamLineup, setHomeTeamLineup] = useState<Player[]>([]);
+    const [awayAlltimeDefensePlayers, setAwayAlltimeDefensePlayers] = useState<Player[]>([]);
+    const [homeAlltimeDefensePlayers, setHomeAlltimeDefensePlayers] = useState<Player[]>([]);
     const [awayPitcher, setAwayPitcher] = useState<Player | null>(null);
     const [homePitcher, setHomePitcher] = useState<Player | null>(null);
 
     const [lineupError, setLineupError] = useState<string | null>(null);
     const [isAddingAway, setIsAddingAway] = useState(false);
     const [isAddingHome, setIsAddingHome] = useState(false);
+    const [isAddingAwayDefense, setIsAddingAwayDefense] = useState(false);
+    const [isAddingHomeDefense, setIsAddingHomeDefense] = useState(false);
     const [isStartingGame, setIsStartingGame] = useState(false);
 
     const [showResumePopup, setShowResumePopup] = useState(false);
@@ -86,6 +90,8 @@ function Home({
 
         const awayLineup = (game.away_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
         const homeLineup = (game.home_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+        const awayDefensePlayers = (game.away_alltime_defense_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+        const homeDefensePlayers = (game.home_alltime_defense_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
         const awayPitcherPlayer = findPlayer(game.away_pitcher_id);
         const homePitcherPlayer = findPlayer(game.home_pitcher_id);
 
@@ -98,6 +104,8 @@ function Home({
             gameId: game.id,
             awayTeamLineup: awayLineup,
             homeTeamLineup: homeLineup,
+            awayAlltimeDefensePlayers: awayDefensePlayers,
+            homeAlltimeDefensePlayers: homeDefensePlayers,
             awayPitcher: awayPitcherPlayer,
             homePitcher: homePitcherPlayer,
             awayTeamBatting: game.away_team_is_batting ?? true,
@@ -173,11 +181,6 @@ function Home({
      */
     const handleStartGameSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
-        if (awayPitcher === null || homePitcher === null) {
-            setLineupError('Both teams must have a starting pitcher selected.');
-            return;
-        }
-
         setIsStartingGame(true);
         setLineupError(null);
 
@@ -193,10 +196,12 @@ function Home({
 
             const gameId = gameData.id;
 
-            // 2. Create player_game_stats rows for all players in both lineups
+            // 2. Create player_game_stats rows for all players in both lineups and defense slots
             const statsToInsert = [
                 ...awayTeamLineup.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 })),
-                ...homeTeamLineup.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 }))
+                ...homeTeamLineup.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 })),
+                ...awayAlltimeDefensePlayers.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 })),
+                ...homeAlltimeDefensePlayers.map(p => ({ player_id: p.id, game_id: gameId, games_played: 1 })),
             ];
 
             const { error: statsError } = await supabase
@@ -210,6 +215,8 @@ function Home({
                 gameId,
                 awayTeamLineup,
                 homeTeamLineup,
+                awayAlltimeDefensePlayers,
+                homeAlltimeDefensePlayers,
                 awayPitcher,
                 homePitcher,
 
@@ -286,96 +293,107 @@ function Home({
         }
     };
 
-    /**
-     * Handles the start of a drag operation.
-     * 
-     * @param e - The drag event.
-     * @param team - The team the dragged player belongs to ('away' or 'home').
-     * @param index - The index of the dragged player in the lineup array.
-     * 
-     * @remarks
-     * - Stores the `team` and `index` in the event's data transfer object, which will be used 
-     *   in the `handleDrop` event to identify the dragged item.
-     */
-    const handleDragStart = (e: React.DragEvent, team: 'away' | 'home', index: number) => {
-        e.dataTransfer.setData('team', team);
-        e.dataTransfer.setData('index', index.toString());
-    };
-
-    /**
-     * Handles the drag over event.
-     * 
-     * @param e - The drag event.
-     * 
-     * @remarks
-     * - Prevents the default behavior of the drag over event, which is necessary to allow
-     *   dropping the dragged item in the drop zone.
-     */
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault(); // Necessary to allow dropping
-    };
-
-    /**
-     * Handles the drop event.
-     * 
-     * @param e - The drag event.
-     * @param team - The team to drop the player on.
-     * @param dropIndex - The index to drop the player at.
-     */
-    const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const draggedTeam = e.dataTransfer.getData('team') as 'away' | 'home';
-        const dragIndex = parseInt(e.dataTransfer.getData('index'), 10);
-
-        if (draggedTeam === team) {
-            if (dragIndex === dropIndex) return;
-
-            if (team === 'away') {
-                const newLineup = [...awayTeamLineup];
-                const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-                newLineup.splice(dropIndex, 0, draggedPlayer);
-                setAwayTeamLineup(newLineup);
-            } else {
-                const newLineup = [...homeTeamLineup];
-                const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-                newLineup.splice(dropIndex, 0, draggedPlayer);
-                setHomeTeamLineup(newLineup);
+    const addPlayerToDefense = (team: 'away' | 'home', player: Player) => {
+        setLineupError(null);
+        if (team === 'away') {
+            if (homeTeamLineup.some(p => p.id === player.id) || homeAlltimeDefensePlayers.some(p => p.id === player.id)) {
+                setLineupError(`${player.firstName} ${player.lastName} is already on the Home team.`);
+                return;
+            }
+            if (!awayTeamLineup.some(p => p.id === player.id) && !awayAlltimeDefensePlayers.some(p => p.id === player.id)) {
+                setAwayAlltimeDefensePlayers(prev => [...prev, player]);
             }
         } else {
-            // Cross-team drag
-            if (draggedTeam === 'away') {
-                const newAwayLineup = [...awayTeamLineup];
-                const [draggedPlayer] = newAwayLineup.splice(dragIndex, 1);
-
-                // Clear pitcher if necessary
-                if (awayPitcher?.id === draggedPlayer.id) setAwayPitcher(null);
-
-                const newHomeLineup = [...homeTeamLineup];
-                newHomeLineup.splice(dropIndex, 0, draggedPlayer);
-
-                setAwayTeamLineup(newAwayLineup);
-                setHomeTeamLineup(newHomeLineup);
-            } else {
-                const newHomeLineup = [...homeTeamLineup];
-                const [draggedPlayer] = newHomeLineup.splice(dragIndex, 1);
-
-                // Clear pitcher if necessary
-                if (homePitcher?.id === draggedPlayer.id) setHomePitcher(null);
-
-                const newAwayLineup = [...awayTeamLineup];
-                newAwayLineup.splice(dropIndex, 0, draggedPlayer);
-
-                setHomeTeamLineup(newHomeLineup);
-                setAwayTeamLineup(newAwayLineup);
+            if (awayTeamLineup.some(p => p.id === player.id) || awayAlltimeDefensePlayers.some(p => p.id === player.id)) {
+                setLineupError(`${player.firstName} ${player.lastName} is already on the Away team.`);
+                return;
+            }
+            if (!homeTeamLineup.some(p => p.id === player.id) && !homeAlltimeDefensePlayers.some(p => p.id === player.id)) {
+                setHomeAlltimeDefensePlayers(prev => [...prev, player]);
             }
         }
     };
 
-    // Calculate available players dynamically by filtering out anyone already in a lineup
+    const removePlayerFromDefense = (team: 'away' | 'home', index: number) => {
+        if (team === 'away') {
+            const removed = awayAlltimeDefensePlayers[index];
+            if (awayPitcher?.id === removed.id) setAwayPitcher(null);
+            setAwayAlltimeDefensePlayers(prev => prev.filter((_, i) => i !== index));
+        } else {
+            const removed = homeAlltimeDefensePlayers[index];
+            if (homePitcher?.id === removed.id) setHomePitcher(null);
+            setHomeAlltimeDefensePlayers(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    // const handleDragStart = (e: React.DragEvent, team: 'away' | 'home', index: number) => {
+    //     e.dataTransfer.setData('team', team);
+    //     e.dataTransfer.setData('index', index.toString());
+    // };
+
+    // const handleDragOver = (e: React.DragEvent) => {
+    //     e.preventDefault();
+    // };
+
+    // const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+    //     const draggedTeam = e.dataTransfer.getData('team') as 'away' | 'home';
+    //     const dragIndex = parseInt(e.dataTransfer.getData('index'), 10);
+    //     if (draggedTeam === team) {
+    //         if (dragIndex === dropIndex) return;
+    //         if (team === 'away') {
+    //             const newLineup = [...awayTeamLineup];
+    //             const [draggedPlayer] = newLineup.splice(dragIndex, 1);
+    //             newLineup.splice(dropIndex, 0, draggedPlayer);
+    //             setAwayTeamLineup(newLineup);
+    //         } else {
+    //             const newLineup = [...homeTeamLineup];
+    //             const [draggedPlayer] = newLineup.splice(dragIndex, 1);
+    //             newLineup.splice(dropIndex, 0, draggedPlayer);
+    //             setHomeTeamLineup(newLineup);
+    //         }
+    //     } else {
+    //         if (draggedTeam === 'away') {
+    //             const newAwayLineup = [...awayTeamLineup];
+    //             const [draggedPlayer] = newAwayLineup.splice(dragIndex, 1);
+    //             if (awayPitcher?.id === draggedPlayer.id) setAwayPitcher(null);
+    //             const newHomeLineup = [...homeTeamLineup];
+    //             newHomeLineup.splice(dropIndex, 0, draggedPlayer);
+    //             setAwayTeamLineup(newAwayLineup);
+    //             setHomeTeamLineup(newHomeLineup);
+    //         } else {
+    //             const newHomeLineup = [...homeTeamLineup];
+    //             const [draggedPlayer] = newHomeLineup.splice(dragIndex, 1);
+    //             if (homePitcher?.id === draggedPlayer.id) setHomePitcher(null);
+    //             const newAwayLineup = [...awayTeamLineup];
+    //             newAwayLineup.splice(dropIndex, 0, draggedPlayer);
+    //             setHomeTeamLineup(newHomeLineup);
+    //             setAwayTeamLineup(newAwayLineup);
+    //         }
+    //     }
+    // };
+
+    const movePlayer = (team: 'away' | 'home', index: number, direction: 'up' | 'down') => {
+        const swap = (arr: Player[], i: number, j: number) => {
+            const next = [...arr];
+            [next[i], next[j]] = [next[j], next[i]];
+            return next;
+        };
+        const j = direction === 'up' ? index - 1 : index + 1;
+        if (team === 'away') {
+            setAwayTeamLineup(prev => swap(prev, index, j));
+        } else {
+            setHomeTeamLineup(prev => swap(prev, index, j));
+        }
+    };
+
+    // Calculate available players dynamically by filtering out anyone already in a lineup or defense slot
     const availablePlayers = players.filter(p =>
         !awayTeamLineup.some(lp => lp.id === p.id) &&
-        !homeTeamLineup.some(lp => lp.id === p.id)
+        !homeTeamLineup.some(lp => lp.id === p.id) &&
+        !awayAlltimeDefensePlayers.some(lp => lp.id === p.id) &&
+        !homeAlltimeDefensePlayers.some(lp => lp.id === p.id)
     );
 
     const renderTeamSection = (
@@ -387,27 +405,37 @@ function Home({
     ) => {
         const isAdding = team === 'away' ? isAddingAway : isAddingHome;
         const setIsAdding = team === 'away' ? setIsAddingAway : setIsAddingHome;
+        const isAddingDefense = team === 'away' ? isAddingAwayDefense : isAddingHomeDefense;
+        const setIsAddingDefense = team === 'away' ? setIsAddingAwayDefense : setIsAddingHomeDefense;
+        const alltimeDefensePlayers = team === 'away' ? awayAlltimeDefensePlayers : homeAlltimeDefensePlayers;
 
         return (
             <div style={{ flex: '1 1 250px' }}>
-                <h3 style={{ color: '#9ca3af' }}>{title}</h3>
+                <h3 style={{ color: '#9ca3af', marginBottom: '4px' }}>{title}</h3>
+                <span style={{
+                    display: 'inline-block',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.05em',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    marginBottom: '16px',
+                    backgroundColor: team === 'away' ? '#14532d' : '#1e3a5f',
+                    color: team === 'away' ? '#86efac' : '#93c5fd',
+                }}>
+                    {team === 'away' ? 'BATS FIRST' : 'PITCHES FIRST'}
+                </span>
 
                 <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Lineup</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Batting Order</label>
                     <div
-                        style={{ minHeight: '150px', backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, team, lineup.length)}
+                        style={{ backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}
                     >
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                             {lineup.map((player, index) => {
                                 return (
                                     <li
                                         key={player.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, team, index)}
-                                        onDragOver={handleDragOver}
-                                        onDrop={(e) => handleDrop(e, team, index)}
                                         style={{
                                             padding: '8px',
                                             marginBottom: '5px',
@@ -416,41 +444,57 @@ function Home({
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
-                                            cursor: 'grab'
                                         }}
                                     >
                                         <span style={{ display: 'flex', alignItems: 'center' }}>
-                                            <span style={{ color: '#9ca3af', marginRight: '8px', userSelect: 'none' }}>⋮⋮</span>
                                             <span style={{ color: '#9ca3af', marginRight: '10px', width: '20px', display: 'inline-block' }}>{index + 1}.</span>
                                             {`${player.firstName} ${player.lastName}`}
                                         </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => removePlayerFromLineup(team, index)}
-                                            style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontWeight: 'bold' }}
-                                        >
-                                            X
-                                        </button>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => movePlayer(team, index, 'up')}
+                                                disabled={index === 0}
+                                                style={{ background: 'none', border: 'none', color: index === 0 ? '#6b7280' : '#9ca3af', cursor: index === 0 ? 'default' : 'pointer', fontSize: '1.1rem', padding: '4px 8px' }}
+                                            >
+                                                ▲
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => movePlayer(team, index, 'down')}
+                                                disabled={index === lineup.length - 1}
+                                                style={{ background: 'none', border: 'none', color: index === lineup.length - 1 ? '#6b7280' : '#9ca3af', cursor: index === lineup.length - 1 ? 'default' : 'pointer', fontSize: '1.1rem', padding: '4px 8px' }}
+                                            >
+                                                ▼
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => removePlayerFromLineup(team, index)}
+                                                style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', padding: '4px 8px' }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </span>
                                     </li>
                                 );
                             })}
                         </ul>
 
                         {!isAdding ? (
-                            <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
-                                <div
-                                    onClick={() => setIsAdding(true)}
-                                    style={{
-                                        textAlign: 'center', color: '#9ca3af', fontSize: lineup.length === 0
-                                            ? '2.5rem' : '1.2rem', padding: '5px', borderRadius: '4px', transition: 'background-color 0.2s',
-                                        cursor: 'pointer',
-                                        ...(lineup.length > 0 ? { border: '1px dashed #4b5563' } : {})
-                                    }}>
-                                    + {lineup.length > 0 && <span style={{ fontSize: '1rem' }}></span>}
-                                </div>
+                            <div
+                                onClick={() => setIsAdding(true)}
+                                style={{
+                                    textAlign: 'center', color: '#9ca3af',
+                                    fontSize: lineup.length === 0 ? '1.5rem' : '1.2rem',
+                                    padding: '5px', borderRadius: '4px', cursor: 'pointer',
+                                    marginTop: lineup.length > 0 ? '10px' : '0',
+                                    border: '1px dashed #4b5563'
+                                }}
+                            >
+                                +
                             </div>
                         ) : (
-                            <div style={{ marginTop: lineup.length === 0 ? '45px' : '10px' }}>
+                            <div style={{ marginTop: lineup.length === 0 ? '0' : '10px' }}>
                                 <Select
                                     autoFocus
                                     menuIsOpen={true}
@@ -509,7 +553,79 @@ function Home({
                 </div>
 
                 <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Alltime Defense Players</label>
+                    <div style={{ backgroundColor: '#374151', borderRadius: '6px', padding: '10px', border: '1px solid #4b5563' }}>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                            {alltimeDefensePlayers.map((player, index) => (
+                                <li
+                                    key={player.id}
+                                    style={{
+                                        padding: '8px',
+                                        marginBottom: '5px',
+                                        backgroundColor: '#4b5563',
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <span>{`${player.firstName} ${player.lastName}`}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removePlayerFromDefense(team, index)}
+                                        style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', padding: '4px 8px' }}
+                                    >
+                                        ✕
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                        {!isAddingDefense ? (
+                            <div
+                                onClick={() => setIsAddingDefense(true)}
+                                style={{
+                                    textAlign: 'center', color: '#9ca3af',
+                                    fontSize: alltimeDefensePlayers.length === 0 ? '1.5rem' : '1.2rem',
+                                    padding: '5px', borderRadius: '4px', cursor: 'pointer',
+                                    marginTop: alltimeDefensePlayers.length > 0 ? '10px' : '0',
+                                    border: '1px dashed #4b5563'
+                                }}
+                            >
+                                +
+                            </div>
+                        ) : (
+                            <div style={{ marginTop: '10px' }}>
+                                <Select
+                                    autoFocus
+                                    menuIsOpen={true}
+                                    placeholder="Search Player..."
+                                    options={availablePlayers.map(p => ({
+                                        value: p.id,
+                                        label: `${p.firstName} ${p.lastName}`
+                                    }))}
+                                    onChange={(selectedOption: any) => {
+                                        if (selectedOption) {
+                                            const player = players.find(p => p.id === selectedOption.value);
+                                            if (player) addPlayerToDefense(team, player);
+                                            setIsAddingDefense(false);
+                                        }
+                                    }}
+                                    onBlur={() => setIsAddingDefense(false)}
+                                    styles={{
+                                        control: (base) => ({ ...base, backgroundColor: '#4b5563', borderColor: '#6b7280', color: 'white', boxShadow: 'none', '&:hover': { borderColor: '#9ca3af' } }),
+                                        menu: (base) => ({ ...base, backgroundColor: '#374151', color: 'white', zIndex: 9999 }),
+                                        option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#4b5563' : '#374151', color: 'white', cursor: 'pointer', ':active': { backgroundColor: '#4b5563' } }),
+                                        singleValue: (base) => ({ ...base, color: 'white' }),
+                                        input: (base) => ({ ...base, color: 'white' }),
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Starting Pitcher (optional)</label>
                     <Select
                         placeholder="Select Pitcher"
                         value={pitcher ? {
@@ -517,10 +633,10 @@ function Home({
                             label: `${pitcher.firstName} ${pitcher.lastName}`
                         } : null}
                         onChange={(selectedOption: any) => {
-                            const player = lineup.find(p => p.id === selectedOption?.value);
+                            const player = [...lineup, ...alltimeDefensePlayers].find(p => p.id === selectedOption?.value);
                             setPitcher(player || null);
                         }}
-                        options={lineup.map(p => ({
+                        options={[...lineup, ...alltimeDefensePlayers].map(p => ({
                             value: p.id,
                             label: `${p.firstName} ${p.lastName}`
                         }))}

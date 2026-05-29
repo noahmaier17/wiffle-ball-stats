@@ -39,6 +39,37 @@ function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps)
     const removeFromLineup = (lineup: 'awayTeamLineup' | 'homeTeamLineup', index: number) =>
         setDraft(prev => ({ ...prev, [lineup]: prev[lineup].filter((_, i) => i !== index) }))
 
+    const setDefensePlayer = (
+        key: 'awayAlltimeDefensePlayers' | 'homeAlltimeDefensePlayers',
+        index: number,
+        playerId: number
+    ) => {
+        const player = allPlayers.find(p => p.id === playerId)
+        if (!player) return
+        setDraft(prev => ({
+            ...prev,
+            [key]: prev[key].map((p, i) => i === index ? player : p)
+        }))
+    }
+
+    const addToDefense = (key: 'awayAlltimeDefensePlayers' | 'homeAlltimeDefensePlayers') => {
+        const defaultPlayer = allPlayers[0]
+        if (!defaultPlayer) return
+        setDraft(prev => ({ ...prev, [key]: [...prev[key], defaultPlayer] }))
+    }
+
+    const removeFromDefense = (key: 'awayAlltimeDefensePlayers' | 'homeAlltimeDefensePlayers', index: number) =>
+        setDraft(prev => ({ ...prev, [key]: prev[key].filter((_, i) => i !== index) }))
+
+    const setPitcher = (team: 'away' | 'home', playerId: string) => {
+        const player = playerId ? allPlayers.find(p => p.id === Number(playerId)) ?? null : null
+        setDraft(prev => ({
+            ...prev,
+            awayPitcher: team === 'away' ? player : prev.awayPitcher,
+            homePitcher: team === 'home' ? player : prev.homePitcher,
+        }))
+    }
+
     const addToQueue = () => {
         const defaultPlayer = draft.awayTeamLineup[0] ?? draft.homeTeamLineup[0]
         if (!defaultPlayer) return
@@ -118,6 +149,30 @@ function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps)
 
             <hr />
 
+            <h4>Pitchers</h4>
+            <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
+                <label>
+                    Away Pitcher:&nbsp;
+                    <select value={draft.awayPitcher?.id ?? ''} onChange={e => setPitcher('away', e.target.value)}>
+                        <option value="">— None —</option>
+                        {allPlayers.map(p => (
+                            <option key={p.id} value={p.id}>{playerName(p)}</option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Home Pitcher:&nbsp;
+                    <select value={draft.homePitcher?.id ?? ''} onChange={e => setPitcher('home', e.target.value)}>
+                        <option value="">— None —</option>
+                        {allPlayers.map(p => (
+                            <option key={p.id} value={p.id}>{playerName(p)}</option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+
+            <hr />
+
             {(['awayTeamLineup', 'homeTeamLineup'] as const).map(lineupKey => (
                 <div key={lineupKey}>
                     <h4>{lineupKey === 'awayTeamLineup' ? 'Away' : 'Home'} Team Lineup</h4>
@@ -138,13 +193,34 @@ function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps)
 
             <hr />
 
+            {(['awayAlltimeDefensePlayers', 'homeAlltimeDefensePlayers'] as const).map(key => (
+                <div key={key}>
+                    <h4>{key === 'awayAlltimeDefensePlayers' ? 'Away' : 'Home'} Alltime Defense Players</h4>
+                    {draft[key].map((player, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
+                            <select value={player.id} onChange={e => setDefensePlayer(key, i, Number(e.target.value))}>
+                                {allPlayers.map(p => (
+                                    <option key={p.id} value={p.id}>{playerName(p)}</option>
+                                ))}
+                            </select>
+                            <button type="button" onClick={() => removeFromDefense(key, i)}>Remove</button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={() => addToDefense(key)}>+ Add Player</button>
+                </div>
+            ))}
+
+            <hr />
+
             <h4>Earned Runs Queue</h4>
             <p style={{ color: '#555', margin: '0 0 0.5em' }}>Front (most recent pitcher) → Back (oldest)</p>
             {draft.earnedRunsQueue.map(([pitcherId, count], i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
                     <strong>#{i + 1}</strong>
                     <select value={pitcherId} onChange={e => setQueueEntry(i, Number(e.target.value), count)}>
-                        {[...draft.awayTeamLineup, ...draft.homeTeamLineup].map(p => (
+                        {[...draft.awayTeamLineup, ...draft.homeTeamLineup, ...draft.awayAlltimeDefensePlayers, ...draft.homeAlltimeDefensePlayers]
+                            .filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx)
+                            .map(p => (
                             <option key={p.id} value={p.id}>{playerName(p)}</option>
                         ))}
                     </select>

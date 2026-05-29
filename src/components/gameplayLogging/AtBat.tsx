@@ -65,10 +65,10 @@ function AtBat({ gameData, onLogAtBat, editMode, isSubmitting }: AtBatProps) {
     } = gameData;
 
     const currentBatter = awayTeamBatting ? awayTeamLineup[currAwayTeamBatter] : homeTeamLineup[currHomeTeamBatter];
-    const pitcherName = awayTeamBatting ? homePitcher : awayPitcher;
+    const pitcherName = (awayTeamBatting ? homePitcher : awayPitcher) as Player;
 
     const displayBatter = editMode ? editMode.initialValues.batter : currentBatter;
-    const displayPitcher = editMode ? editMode.initialValues.pitcher : pitcherName;
+    const displayPitcher: Player = editMode ? editMode.initialValues.pitcher : pitcherName;
 
     const [batterName, setBatterName] = useState<Player>(displayBatter);
 

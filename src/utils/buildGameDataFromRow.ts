@@ -4,15 +4,19 @@ export function buildGameDataFromRow(game: any, players: Player[]): GameData | n
     const findPlayer = (id: number) => players.find(p => p.id === id);
     const awayLineup = (game.away_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
     const homeLineup = (game.home_team_lineup_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
-    const awayPitcher = findPlayer(game.away_pitcher_id);
-    const homePitcher = findPlayer(game.home_pitcher_id);
+    const awayDefensePlayers = (game.away_alltime_defense_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+    const homeDefensePlayers = (game.home_alltime_defense_ids || []).map((id: number) => findPlayer(id)).filter(Boolean) as Player[];
+    const awayPitcher = findPlayer(game.away_pitcher_id) ?? null;
+    const homePitcher = findPlayer(game.home_pitcher_id) ?? null;
 
-    if (!awayPitcher || !homePitcher || awayLineup.length === 0 || homeLineup.length === 0) return null;
+    if (awayLineup.length === 0 || homeLineup.length === 0) return null;
 
     return {
         gameId: game.id,
         awayTeamLineup: awayLineup,
         homeTeamLineup: homeLineup,
+        awayAlltimeDefensePlayers: awayDefensePlayers,
+        homeAlltimeDefensePlayers: homeDefensePlayers,
         awayPitcher,
         homePitcher,
         awayTeamBatting: game.away_team_is_batting ?? true,
