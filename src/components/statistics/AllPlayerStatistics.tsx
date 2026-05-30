@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
-import { calculateERA, calculateWHIP, playerName, type PlayerGameData, type statViewTypes } from "../../types";
+import { calculateERA, calculateWHIP, playerName, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import { usePlayers } from "../../contexts/PlayersContext";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
+import HandleStatisticsVersusPitcherToggle from "./HandleStatisticsVersusPitcherToggle";
+import fetchBattersVersusPitcher from "../../utils/fetchBattersVersusPitcher";
 
 const BATTING_COUNT_COLS = new Set([
     'win', 'loss',
@@ -38,10 +40,10 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
         case 'strikeouts_looking': return stats.strikeouts_looking;
         case 'strikeouts': return stats.strikeouts;
 
-        case 'ba': return stats.hits / stats.at_bats;
-        case 'obp': return (stats.hits + stats.walks) / stats.plate_appearances;
-        case 'slg': return tb / stats.at_bats;
-        case 'ops': return (stats.hits + stats.walks) / stats.plate_appearances + tb / stats.at_bats;
+        case 'ba': return stats.at_bats === 0 ? 0 : stats.hits / stats.at_bats;
+        case 'obp': return stats.plate_appearances === 0 ? 0 : (stats.hits + stats.walks) / stats.plate_appearances;
+        case 'slg': return stats.at_bats === 0 ? 0 : tb / stats.at_bats;
+        case 'ops': return stats.plate_appearances === 0 || stats.at_bats === 0 ? 0 : (stats.hits + stats.walks) / stats.plate_appearances + tb / stats.at_bats;
         case 'tb': return tb;
 
         case 'win': return stats.win;
@@ -90,6 +92,7 @@ type AllPlayerStatisticsProps = {
 function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     const players = usePlayers();
     const [allStats, setAllStats] = useState<PlayerGameData[] | null>(null);
+    const [selectedStats, setSelectedStats] = useState<PlayerGameData[] | null>(null);
     const [playerIdsWithoutStats, setPlayerIdsWithoutStats] = useState<Set<number> | null>(null);
 
     const [sortedBatterColumn, setSortedBatterColumn] = useState<string | null>(null);
@@ -99,22 +102,39 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     const [pitcherSortDirection, setPitcherSortDirection] = useState<'asc' | 'desc'>('desc');
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
+    // If null, that means we are looking at facing against all players
+    const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
 
     // Fetches player statistics, polling every 5 seconds for updates
     useEffect(() => {
-        const fetchStats = () => {
-            fetchAllPlayerStatistics({players}).then(data => {
-                if (data) {
-                    setAllStats(Array.from(data[0].values()));
-                    setPlayerIdsWithoutStats(data[1]);
+        const fetchStats = async () => {
+            // First, we get all the data we have for all players
+            const allData = await fetchAllPlayerStatistics({batterIds: players});
+            if (allData) {
+                setAllStats(Array.from(allData[0].values()));
+            }
+
+            // We have 3 variables to set: allStats, playerIdsWithoutStats, and selectedStats
+            if (selectedPitcherId === null) {
+                // If we are facing against all pitchers, selectedStats === allStats
+                if (allData) {
+                    setSelectedStats(Array.from(allData[0].values()));
+                    setPlayerIdsWithoutStats(allData[1]);
                 }
-            });
+            } else {
+                // Here, we need to fetch selectedStats from the fetchBattersVersusPitcher call
+                const selectedStatsData = await fetchBattersVersusPitcher({ batterIds: players, pitcherIds: [selectedPitcherId] });
+                if (selectedStatsData) {
+                    setSelectedStats(Array.from(selectedStatsData[0].values()));
+                    setPlayerIdsWithoutStats(selectedStatsData[1]);
+                }
+            }
         };
 
         fetchStats();
         const interval = setInterval(fetchStats, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedPitcherId]);
 
     // Handles sorting of tables
     const handleBatterSort = (col: string) => {
@@ -139,10 +159,10 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     }
 
     // If we don't have our stats yet, returns "Loading..."
-    if (!allStats) return <h3>Loading...</h3>
+    if (!allStats || !selectedStats) return <h3>Loading...</h3>
 
     // Sorts the batters based on our sorting parameter
-    const sortedBatterStats = sortedBatterColumn ? [...allStats].sort((a, b) => {
+    const sortedBatterStats = sortedBatterColumn ? [...selectedStats].sort((a, b) => {
         if (sortedBatterColumn === 'name') {
             const nameA = playerName(players.find(p => p.id === a.player_id) ?? { firstName: '', lastName: '' });
             const nameB = playerName(players.find(p => p.id === b.player_id) ?? { firstName: '', lastName: '' });
@@ -150,7 +170,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
         }
         const diff = getSortValue(a, sortedBatterColumn, viewType) - getSortValue(b, sortedBatterColumn, viewType);
         return batterSortDirection === 'asc' ? diff : -diff;
-    }) : allStats;
+    }) : selectedStats;
 
     // Sorts the pitchers based on our sorting parameter
     const sortedPitcherStats = sortedPitcherColumn ? [...allStats].sort((a, b) => {
@@ -163,12 +183,9 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
         return pitcherSortDirection === 'asc' ? diff : -diff;
     }) : allStats;
 
-    // Creates JSX for every batter
+    // Creates JSX for every batter from our selected data
     const battingJSX = sortedBatterStats
-        .filter(stats => {
-            const player = players.find(p => p.id === stats.player_id);
-            return player && !playerIdsWithoutStats?.has(player.id);
-        })
+        .filter(stats => !playerIdsWithoutStats?.has(stats.player_id))
         .map(stats => (
             <BatterStatisticsRow
                 key={stats.player_id}
@@ -178,12 +195,13 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             />
         ));
 
-    // Creates JSX for every pitcher
-    const pitchingJSX = sortedPitcherStats
-        .filter(stats => {
-            const player = players.find(p => p.id === stats.player_id);
-            return player && !playerIdsWithoutStats?.has(player.id) && stats.games_pitched > 0;
-        })
+    // Gets a list of all pitchers (people that have pitched > 0 games) from all of the data
+    const pitcherPlayers: Player[] = players
+        .filter(p => sortedPitcherStats.some(s => s.player_id === p.id && s.games_pitched > 0))
+
+    // Creates JSX for every pitcher that has played in at least 1 game from our selected data
+    const pitchingJSX = allStats
+        .filter(stats => (stats.games_pitched > 0))
         .map(stats => (
             <PitcherStatisticsRow
                 key={stats.player_id}
@@ -201,7 +219,12 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                 viewType={viewType}
                 setViewType={setViewType}
             />
-            <h3>Batting</h3>
+            <HandleStatisticsVersusPitcherToggle 
+                allPitcherIds={pitcherPlayers}
+                selectedPitcherId={selectedPitcherId}
+                setSelectedPitcherId={setSelectedPitcherId}
+            />
+            <h3>Batting {selectedPitcherId && ` facing ${players.filter(p => p.id === selectedPitcherId).map(p => playerNameShort(p))}`}</h3>
             <div className="table-scroll-container">
                 <table className="stats-table sticky-first-col">
                     <thead>

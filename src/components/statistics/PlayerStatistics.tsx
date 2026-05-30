@@ -17,10 +17,13 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     const [stats, setStats] = useState<PlayerGameData | null>(null);
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
+
+    const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     
+    // Fet5ches the stats for this player
     useEffect(() => {
         const fetchStats = () => {
-            fetchAllPlayerStatistics({ players: [user] }).then(data => {
+            fetchAllPlayerStatistics({ batterIds: [user] }).then(data => {
                 if (data) setStats(data[0].get(user.id) ?? null);
             });
         };
@@ -30,6 +33,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
         return () => clearInterval(interval);
     }, [user.id]);
 
+    // Shows loading if not yet fetched
     if (!stats) return <h3>Loading...</h3>;
 
     return (
