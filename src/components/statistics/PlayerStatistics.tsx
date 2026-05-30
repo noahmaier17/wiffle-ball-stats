@@ -18,7 +18,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
 
-    const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
+    // const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     
     // Fet5ches the stats for this player
     useEffect(() => {
