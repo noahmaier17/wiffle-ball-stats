@@ -105,8 +105,7 @@ export type GameData = {
     currHomeTeamBatter: number; // index corresponding to next batter in `homeTeamLineup`
 
     numberOnBase: number; // how many players are currently on base; for ERA calculations
-    earnedRunsQueue: [number, number][]; // queue for number of runners responsible for each pitcher id
-                                         // [player_id, number_of_runners]; FIFO
+    earnedRunsQueue: number[]; // each entry is a pitcherId; index i = pitcher responsible for ith next run scored
 
     isGameOver: boolean;
 }

@@ -89,38 +89,6 @@ function App() {
             });
     }, [pendingGameId, playersLoading, sessionLoading]);
 
-    // Updates to supabase whenever our gameState changes
-    useEffect(() => {
-        if (!gameState) return;
-
-        supabase
-            .from('games')
-            .update({
-                home_score: gameState.homeRuns,
-                away_score: gameState.awayRuns,
-                away_pitcher_id: gameState.awayPitcher?.id ?? null,
-                home_pitcher_id: gameState.homePitcher?.id ?? null,
-                away_team_lineup_ids: gameState.awayTeamLineup.map(atl => atl.id),
-                home_team_lineup_ids: gameState.homeTeamLineup.map(htl => htl.id),
-                away_alltime_defense_ids: gameState.awayAlltimeDefensePlayers.map(p => p.id),
-                home_alltime_defense_ids: gameState.homeAlltimeDefensePlayers.map(p => p.id),
-                away_team_is_batting: gameState.awayTeamBatting,
-                inning: gameState.inning,
-                number_of_outs: gameState.numberOfOuts,
-                current_away_team_batter_index: gameState.currAwayTeamBatter,
-                current_home_team_batter_index: gameState.currHomeTeamBatter,
-
-                number_on_base: gameState.numberOnBase,
-                earned_runs_queue: gameState.earnedRunsQueue,
-
-                game_over: !!gameState.isGameOver
-            })
-            .eq('id', gameState.gameId)
-            .then(({ error }) => {
-                if (error) console.error('Failed to update game state:', error);
-            });
-    }, [gameState]);
-
     // Keep URL hash in sync with the current page
     useEffect(() => {
         if (gameState) {

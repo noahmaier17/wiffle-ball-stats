@@ -1,3 +1,5 @@
+import { supabase } from "../supabase-client";
+
 const RETRY_DELAYS = [500, 1000, 2000, 4000, 8000, 10000, 10000, 10000, 10000];
 
 // TEST ONLY — set window.__retryTestFailures = N in the browser console to force N failures before succeeding
@@ -30,4 +32,12 @@ export async function retrySupabase<T>(
     }
 
     return lastResult;
+}
+
+export async function retryInsert(table: string, data: object): Promise<boolean> {
+    const { error } = await retrySupabase(
+        () => supabase.from(table).insert(data),
+        table
+    );
+    return !error;
 }

@@ -73,18 +73,16 @@ function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps)
     const addToQueue = () => {
         const defaultPlayer = draft.awayTeamLineup[0] ?? draft.homeTeamLineup[0]
         if (!defaultPlayer) return
-        setDraft(prev => ({ ...prev, earnedRunsQueue: [[defaultPlayer.id, 1], ...prev.earnedRunsQueue] }))
+        setDraft(prev => ({ ...prev, earnedRunsQueue: [...prev.earnedRunsQueue, defaultPlayer.id] }))
     }
 
     const removeFromQueue = (index: number) =>
         setDraft(prev => ({ ...prev, earnedRunsQueue: prev.earnedRunsQueue.filter((_, i) => i !== index) }))
 
-    const setQueueEntry = (index: number, pitcherId: number, count: number) =>
+    const setQueueEntry = (index: number, pitcherId: number) =>
         setDraft(prev => ({
             ...prev,
-            earnedRunsQueue: prev.earnedRunsQueue.map((entry, i) =>
-                i === index ? [pitcherId, count] as [number, number] : entry
-            )
+            earnedRunsQueue: prev.earnedRunsQueue.map((entry, i) => i === index ? pitcherId : entry)
         }))
 
     const handleSubmit = (e: React.SyntheticEvent) => {
@@ -213,18 +211,17 @@ function EditGamestate({ gameData, onUpdate, isSubmitting }: EditGamestateProps)
             <hr />
 
             <h4>Earned Runs Queue</h4>
-            <p style={{ color: '#555', margin: '0 0 0.5em' }}>Front (most recent pitcher) → Back (oldest)</p>
-            {draft.earnedRunsQueue.map(([pitcherId, count], i) => (
+            <p style={{ color: '#555', margin: '0 0 0.5em' }}>Index 0 = next run scored → ... → Last = most recently added runner</p>
+            {draft.earnedRunsQueue.map((pitcherId, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '0.25em' }}>
                     <strong>#{i + 1}</strong>
-                    <select value={pitcherId} onChange={e => setQueueEntry(i, Number(e.target.value), count)}>
+                    <select value={pitcherId} onChange={e => setQueueEntry(i, Number(e.target.value))}>
                         {[...draft.awayTeamLineup, ...draft.homeTeamLineup, ...draft.awayAlltimeDefensePlayers, ...draft.homeAlltimeDefensePlayers]
                             .filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx)
                             .map(p => (
                             <option key={p.id} value={p.id}>{playerName(p)}</option>
                         ))}
                     </select>
-                    <label>Runners: <input type="number" min={1} value={count} onChange={e => setQueueEntry(i, pitcherId, Number(e.target.value))} style={{ width: '3em' }} /></label>
                     <button type="button" onClick={() => removeFromQueue(i)}>Remove</button>
                 </div>
             ))}

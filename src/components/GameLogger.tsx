@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase-client";
 import { type AtBatLog, type PitchingChangeLog, type GameData, type GameLogEntry, type AdditionalInformationLog, type EditGamestateLog, atBatLogSummary } from "../types";
 import { fetchGameLogs, fetchMaxGameLogSequence } from "../utils/fetchGame";
-import { retrySupabase } from "../utils/retrySupabase";
+import { retrySupabase, retryInsert } from "../utils/retrySupabase";
 import { usePlayers } from "../contexts/PlayersContext";
 import AtBat from "./gameplayLogging/AtBat";
 import PitchingChange from "./gameplayLogging/PitchingChange";
@@ -10,8 +10,9 @@ import Jumbotron from "./Jumbotron";
 import AdditionalInformation from "./gameplayLogging/AdditionalInformation";
 import EditGamestate from "./gameplayLogging/EditGamestate";
 import GameLog from "./GameLog";
-import { OUT_IN_PLAY_SIGNS, REACHED_BASE_SIGNS } from "../constants";
+import { OUT_IN_PLAY_SIGNS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from "../constants";
 import { computeAtBatDeltas } from "../utils/computeAtBatDeltas";
+import { addToQueue, dequeueRun } from "../utils/earnedRunsQueueUtils";
 
 type LogType = 'atbat' | 'pitching_change' | 'additional_information' | 'edit_gamestate';
 
@@ -46,15 +47,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         loadLogs();
     }, []);
 
-    const retryInsert = async (table: string, data: object): Promise<boolean> => {
-        const { error } = await retrySupabase(
-            () => supabase.from(table).insert(data),
-            table
-        );
-        return !error;
-    };
-
-    const insertLog = async (entry: GameLogEntry): Promise<number> => {
+    const insertLogToDB = async (entry: GameLogEntry): Promise<number> => {
         const sequence = nextSeqRef.current;
         nextSeqRef.current += 1;
 
@@ -116,11 +109,37 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         return logId;
     };
 
+    const updateGameStateInDB = async (state: GameData) => {
+        await retrySupabase(
+            () => supabase.from('games').update({
+                home_score: state.homeRuns,
+                away_score: state.awayRuns,
+                away_pitcher_id: state.awayPitcher?.id ?? null,
+                home_pitcher_id: state.homePitcher?.id ?? null,
+                away_team_lineup_ids: state.awayTeamLineup.map(p => p.id),
+                home_team_lineup_ids: state.homeTeamLineup.map(p => p.id),
+                away_alltime_defense_ids: state.awayAlltimeDefensePlayers.map(p => p.id),
+                home_alltime_defense_ids: state.homeAlltimeDefensePlayers.map(p => p.id),
+                away_team_is_batting: state.awayTeamBatting,
+                inning: state.inning,
+                number_of_outs: state.numberOfOuts,
+                current_away_team_batter_index: state.currAwayTeamBatter,
+                current_home_team_batter_index: state.currHomeTeamBatter,
+                number_on_base: state.numberOnBase,
+                earned_runs_queue: state.earnedRunsQueue,
+                game_over: state.isGameOver,
+            }).eq('id', state.gameId),
+            "Update game state"
+        );
+    };
+
     const handleLogAtBat = async (atBat: AtBatLog) => {
+        // We do not log an at bat if we are still actively submitting
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         setIsSubmitting(true);
 
+        // Calculates new outs totals and if we are switching sides
         let newOuts = gameData.numberOfOuts + atBat.recordedOuts;
         let switchSides = false;
 
@@ -129,11 +148,13 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             newOuts = 0;
         }
 
+        // Variables
         const awayBatting = gameData.awayTeamBatting;
         const inning = gameData.inning;
         const newAwayRuns = gameData.awayRuns + (awayBatting ? atBat.rbis : 0);
         const newHomeRuns = gameData.homeRuns + (!awayBatting ? atBat.rbis : 0);
 
+        // Handles if the game ended or not
         let gameJustEnded = false;
         if (!awayBatting && inning >= 3 && newHomeRuns > newAwayRuns) {
             gameJustEnded = true;
@@ -144,88 +165,93 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         }
         const homeTeamWon = newHomeRuns > newAwayRuns;
 
+        // Handles if we have an inning switch
         setLog(prev => switchSides ? [...prev, atBat, { type: 'inning_switch' }] : [...prev, atBat]);
 
-        // Compute queue mutations and earned runs synchronously before any state updates
-        let workingQueue: [number, number][] = gameData.earnedRunsQueue.map(([id, count]) => [id, count]);
-
-        if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) {
-            if (workingQueue.length === 0 || workingQueue[0][0] !== atBat.pitcher.id) {
-                workingQueue = [[atBat.pitcher.id, 1], ...workingQueue];
-            } else {
-                workingQueue = [[workingQueue[0][0], workingQueue[0][1] + 1], ...workingQueue.slice(1)];
-            }
-        }
-
+        // Compute queue mutations and earned runs synchronously before any state updates in our setGameState call
+        let workingQueue: number[] = [...gameData.earnedRunsQueue];
         const pitcherIdHasEarnedRun: number[] = [];
-        for (let i = 0; i < atBat.rbis; i++) {
-            if (workingQueue.length === 0) break;
-            const [back_pitcher_id, back_on_base] = workingQueue.at(-1)!;
-            pitcherIdHasEarnedRun.push(back_pitcher_id);
-            workingQueue = back_on_base === 1
-                ? workingQueue.slice(0, -1)
-                : [...workingQueue.slice(0, -1), [back_pitcher_id, back_on_base - 1]];
+
+        // If someone reached base, a earned run gets enqueued
+        if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) {
+            workingQueue = addToQueue(workingQueue, atBat.pitcher.id);
         }
 
-        const finalQueue = workingQueue;
+        // For every RBI scored, we give corresponding pitchers runs allowed
+        for (let i = 0; i < atBat.rbis; i++) {
+            const { pitcherId, queue } = dequeueRun(workingQueue);
+            if (pitcherId === null) break;
+            pitcherIdHasEarnedRun.push(pitcherId);
+            workingQueue = queue;
+        }
 
-        // Sets the game state variable
-        setGameState(prev => {
-            if (!prev) return prev;
+        // For every OUT, depending on the play, we remove base runners
+        for (let i = 0; i < atBat.recordedOuts; i++) {
+            // We SOs, simply ignore the 1 out
+            if (STRIKEOUT_SIGNS.has(atBat.outcomeSign)) {
+                continue
 
-            let returnGameState: GameData = { ...prev };
+            // For OUT plays, we ignore the first out but dequeue past it
+            } else if (OUT_IN_PLAY_SIGNS.has(atBat.outcomeSign) && i > 0) {
+                workingQueue = dequeueRun(workingQueue).queue;
 
-            // 1. Update outs
-            returnGameState.numberOfOuts = newOuts;
-
-            // 2. Update runs and advance batter
-            if (awayBatting) {
-                returnGameState.currAwayTeamBatter = (returnGameState.currAwayTeamBatter + 1) % returnGameState.awayTeamLineup.length;
-                returnGameState.awayRuns = newAwayRuns;
-            } else {
-                returnGameState.currHomeTeamBatter = (returnGameState.currHomeTeamBatter + 1) % returnGameState.homeTeamLineup.length;
-                returnGameState.homeRuns = newHomeRuns;
+            // For all other plays, (so the REACHED_BASE_SIGNS), we remove all base runners for all outs
+            } else if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) {
+                workingQueue = dequeueRun(workingQueue).queue;
             }
+        }
 
-            // 3. Update number on base and earned runs queue
-            let numberOnBase: number = 0;
+        // Compute the next game state
+        let nextState: GameData = { ...gameData };
 
-            // If we reached base, we have 1 more on, minus all that were removed from whatever manner
-            if (REACHED_BASE_SIGNS.has(atBat.outcomeSign)) numberOnBase += 1 - atBat.rbis - atBat.recordedOuts;
-            // If we did not reach base but the ball is in play, we exclude removing the runner (so +1) but remove all past them
-            if (OUT_IN_PLAY_SIGNS.has(atBat.outcomeSign)) numberOnBase += 1 - atBat.recordedOuts;
+        // 1. Update outs
+        nextState.numberOfOuts = newOuts;
 
-            returnGameState.numberOnBase += numberOnBase;
-            returnGameState.earnedRunsQueue = finalQueue;
+        // 2. Update runs and advance batter
+        if (awayBatting) {
+            nextState.currAwayTeamBatter = (nextState.currAwayTeamBatter + 1) % nextState.awayTeamLineup.length;
+            nextState.awayRuns = newAwayRuns;
+        } else {
+            nextState.currHomeTeamBatter = (nextState.currHomeTeamBatter + 1) % nextState.homeTeamLineup.length;
+            nextState.homeRuns = newHomeRuns;
+        }
 
-            // 4. Handle switching innings
-            if (switchSides && !gameJustEnded) {
-                returnGameState.numberOnBase = 0;
-                returnGameState.earnedRunsQueue = [];
+        // 4. Changes number on base and earnedRunsQueue
+        //  These values also can potentially be overwritten in `3.`
+        nextState.numberOnBase += workingQueue.length;
+        nextState.earnedRunsQueue = workingQueue;
 
-                if (!awayBatting) {
-                    returnGameState.inning += 1;
-                }
-                returnGameState.awayTeamBatting = !awayBatting;
+        // 3. Handle switching innings
+        if (switchSides && !gameJustEnded) {
+            nextState.numberOnBase = 0;
+            nextState.earnedRunsQueue = [];
+
+            if (!awayBatting) {
+                nextState.inning += 1;
             }
+            nextState.awayTeamBatting = !awayBatting;
+        }
 
-            if (gameJustEnded) {
-                returnGameState.isGameOver = true;
-            }
+        if (gameJustEnded) {
+            nextState.isGameOver = true;
+        }
 
-            return returnGameState;
-        });
+        setGameState(nextState);
 
+        // Potentially changes our UI view if we switched sides
         if (switchSides && !gameJustEnded) {
             goToNextView({ ...gameData, awayTeamBatting: !awayBatting });
         }
 
+        // Handles database queries
         try {
-            const logId = await insertLog(atBat);
-            if (switchSides) await insertLog({ type: 'inning_switch' });
+            const logId = await insertLogToDB(atBat);
+            if (switchSides) await insertLogToDB({ type: 'inning_switch' });
 
             // Patch the log entry in state with the real DB logId
             setLog(prev => prev.map(e => (e === atBat ? { ...e, logId } : e)));
+
+            await updateGameStateInDB(nextState);
 
             const batter = atBat.batter;
             const pitcher = atBat.pitcher;
@@ -342,17 +368,13 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             homePitcher: pitchingChange.teamChangingPitchers === 'home' ? pitchingChange.newPitcher : gameData.homePitcher,
         };
 
-        setGameState(prev => {
-            if (!prev) return prev;
-            return (pitchingChange.teamChangingPitchers === 'away')
-                ? { ...prev, awayPitcher: pitchingChange.newPitcher }
-                : { ...prev, homePitcher: pitchingChange.newPitcher };
-        });
+        setGameState(nextGameData);
 
         goToNextView(nextGameData);
 
         try {
-            await insertLog(pitchingChange);
+            await insertLogToDB(pitchingChange);
+            await updateGameStateInDB(nextGameData);
         } finally {
             isSubmittingRef.current = false;
             setIsSubmitting(false);
@@ -369,7 +391,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         goToNextView(gameData);
 
         try {
-            await insertLog(additionalInformation);
+            await insertLogToDB(additionalInformation);
         } finally {
             isSubmittingRef.current = false;
             setIsSubmitting(false);
@@ -457,7 +479,8 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         goToNextView(editGamestateLog.newGameData);
 
         try {
-            await insertLog(editGamestateLog);
+            await insertLogToDB(editGamestateLog);
+            await updateGameStateInDB(editGamestateLog.newGameData);
         } finally {
             isSubmittingRef.current = false;
             setIsSubmitting(false);
