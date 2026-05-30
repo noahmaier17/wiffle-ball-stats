@@ -15,16 +15,25 @@ function Jumbotron({ gameData }: JumbotronProps) {
 
     const currentPitcher = awayTeamBatting ? homePitcher : awayPitcher;
 
+    const positionText = (text: string, isBatting: boolean) => {
+        return (isBatting)
+            ? text.charAt(0).toUpperCase() + text.slice(1)
+            : "Next " + text;
+    }
+
     const renderTeam = (
-        label: string, isBatting: boolean,
-        lineup: Player[], currIdx: number, defensePlayers: Player[]
+        label: string, 
+        isBatting: boolean,
+        lineup: Player[], 
+        currIdx: number, 
+        defensePlayers: Player[]
     ) => (
         <div>
             <h4 style={{ margin: '0 0 0.25em' }}>{label} ({isBatting ? 'Batting' : 'Fielding'})</h4>
             <div>
-                <span>Next at bat: {playerName(lineup[currIdx % lineup.length])} | </span>
-                <span>Next on deck: {playerName(lineup[(currIdx + 1) % lineup.length])} | </span>
-                <span>Next in hole: {playerName(lineup[(currIdx + 2) % lineup.length])}</span>
+                <span>{positionText("at bat:", isBatting)} {playerName(lineup[currIdx % lineup.length])} | </span>
+                <span>{positionText("on deck:", isBatting)} {playerName(lineup[(currIdx + 1) % lineup.length])} | </span>
+                <span>{positionText("in hole:", isBatting)} {playerName(lineup[(currIdx + 2) % lineup.length])}</span>
             </div>
             <div>
                 <strong>Order:</strong>{' '}

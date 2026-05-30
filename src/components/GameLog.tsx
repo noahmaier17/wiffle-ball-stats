@@ -32,7 +32,7 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                     case 'additional_information':
                         return <div key={index}>{seq(entry)}<em>{entry.info}</em></div>
                     case 'inning_switch':
-                        return <div key={index}>{seq(entry)}<strong>Switching innings</strong></div>
+                        return <div key={index}>{seq(entry)}<br /><strong>Switching sides</strong></div>
                     case 'edit_gamestate':
                         return <div key={index}>{seq(entry)}<b><i>Edited Gamestate: {entry.info}</i></b></div>
                 }
