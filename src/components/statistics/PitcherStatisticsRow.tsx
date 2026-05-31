@@ -15,10 +15,10 @@ function PitcherStatisticsRow({ viewType, pde, player }: PitcherStatisticsRowPro
 
     const display = (value: number) => {
         return (viewType === 'by_game')
-            ? ((pde.games_pitched === 0) ? 0 : (value / pde.games_pitched).toFixed(2))
+            ? ((pde.games_pitched === 0) ? '--' : (value / pde.games_pitched).toFixed(2))
             : (viewType === 'by_plate_appearance')
-                ? ((pde.pitched_outs === 0) ? 0 : (3 * value / pde.pitched_outs).toFixed(3))
-                : value 
+                ? ((pde.pitched_outs === 0) ? '--' : (3 * value / pde.pitched_outs).toFixed(3))
+                : value
     }
 
     return (
@@ -26,6 +26,7 @@ function PitcherStatisticsRow({ viewType, pde, player }: PitcherStatisticsRowPro
             {player && <td>{playerNameShort(player)}</td>}
             <td>{pde.games_pitched}</td>
             <td>{displayInningsPitched()}</td>
+            <td>{display(pde.batters_faced)}</td>
             {/* <td>{displayInningsPitched(pde.innings_pitched).toFixed(1)}</td> */}
             <td>{display(pde.hits_allowed)}</td>
             <td>{display(pde.runs_allowed)}</td>

@@ -66,7 +66,8 @@ async function fetchAllPlayerStatistics({ batterIds }: FetchAllPlayerStatisticsP
             runs_allowed: sum('runs_allowed'),
             games_pitched: sum('games_pitched'),
             win: sum('win'),
-            loss: sum('loss')
+            loss: sum('loss'),
+            batters_faced: sum('batters_faced')
         })
     }
 

@@ -42,6 +42,7 @@ function PitcherStatisticsTableHeader({
 
             {th('G', 'games_pitched')}
             {th(display('IP'), 'innings_pitched')}
+            {th(display('BF'), 'batters_faced')}
             {th(display('H'), 'hits_allowed')}
             {th(display('R'), 'runs_allowed')}
             {th(display('BB'), 'pitched_walks')}

@@ -2,18 +2,18 @@ import { supabase } from "../supabase-client";
 import { defaultPlayerGameData, type Player, type PlayerGameData } from "../types";
 
 type FetchBatterVersusPitcherProps = {
-    batterIds: Player[];
-    pitcherIds: number[];
+    batters: Player[];
+    pitchers: Player[];
 }
 
-async function fetchBattersVersusPitcher({ batterIds, pitcherIds }: FetchBatterVersusPitcherProps): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
-    if (pitcherIds.length === 0) return null;
+async function fetchBattersVersusPitcher({ batters, pitchers }: FetchBatterVersusPitcherProps): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+    if (pitchers.length === 0) return null;
 
     const { data, error } = await supabase
         .from('at_bat_logs')
         .select('batter_id, outcome_sign, rbis')
-        .in('batter_id', batterIds.map(b => b.id))
-        .in('pitcher_id', pitcherIds)
+        .in('batter_id', batters.map(b => b.id))
+        .in('pitcher_id', pitchers.map(p => p.id))
         .not('flagged_batter_row', 'is', true)
         .not('flagged_pitcher_row', 'is', true);
 
@@ -32,7 +32,7 @@ async function fetchBattersVersusPitcher({ batterIds, pitcherIds }: FetchBatterV
     const playerIdToAllStats = new Map<number, PlayerGameData>();
     const playerIdsWithNoStats = new Set<number>();
 
-    for (const batter of batterIds) {
+    for (const batter of batters) {
         const rows = rowsByBatter.get(batter.id);
 
         if (!rows || rows.length === 0) {

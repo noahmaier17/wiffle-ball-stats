@@ -109,7 +109,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         return logId;
     };
 
-    const updateGameStateInDB = async (state: GameData) => {
+    const updateGameStateInDB = async (state: GameData, setFinishTime=false) => {
         await retrySupabase(
             () => supabase.from('games').update({
                 home_score: state.homeRuns,
@@ -128,6 +128,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 number_on_base: state.numberOnBase,
                 earned_runs_queue: state.earnedRunsQueue,
                 game_over: state.isGameOver,
+                ...(setFinishTime ? { finish_time: new Date().toISOString() } : {}),
             }).eq('id', state.gameId),
             "Update game state"
         );
@@ -218,7 +219,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
         // 4. Changes number on base and earnedRunsQueue
         //  These values also can potentially be overwritten in `3.`
-        nextState.numberOnBase += workingQueue.length;
+        nextState.numberOnBase = workingQueue.length;
         nextState.earnedRunsQueue = workingQueue;
 
         // 3. Handle switching innings
@@ -251,7 +252,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             // Patch the log entry in state with the real DB logId
             setLog(prev => prev.map(e => (e === atBat ? { ...e, logId } : e)));
 
-            await updateGameStateInDB(nextState);
+            await updateGameStateInDB(nextState, gameJustEnded);
 
             const batter = atBat.batter;
             const pitcher = atBat.pitcher;

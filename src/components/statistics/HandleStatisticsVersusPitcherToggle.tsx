@@ -1,16 +1,16 @@
 import { playerNameShort, type Player } from "../../types"
 
-interface HandleStatisticsVersusPitcherToggleProps {
+interface HandleStatisticsVersusPositionToggleProps {
     allPitcherIds: Player[],
     selectedPitcherId: number | null,
-    setSelectedPitcherId: (id: number | null) => void
-
+    setSelectedPitcherId: (id: number | null) => void,
+    isVerusBatter: boolean
 }
 
-function HandleStatisticsVersusPitcherToggle({ allPitcherIds, selectedPitcherId, setSelectedPitcherId }: HandleStatisticsVersusPitcherToggleProps) {
+function HandleStatisticsVersusPositionToggle({ allPitcherIds, selectedPitcherId, setSelectedPitcherId, isVerusBatter }: HandleStatisticsVersusPositionToggleProps) {
     return (<div>
         <label>
-        Facing Which Pitcher:&nbsp;
+        Facing Which {(isVerusBatter) ? "Batter" : "Pitcher"}:&nbsp;
         <select value={selectedPitcherId ?? "all"} onChange={(e) => setSelectedPitcherId(e.target.value === "all" ? null : Number(e.target.value))}>
             <option value="all">All</option>
             {allPitcherIds.map(p => (
@@ -23,4 +23,4 @@ function HandleStatisticsVersusPitcherToggle({ allPitcherIds, selectedPitcherId,
     </div>)
 }
 
-export default HandleStatisticsVersusPitcherToggle
+export default HandleStatisticsVersusPositionToggle

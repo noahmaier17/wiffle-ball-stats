@@ -14,10 +14,10 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
     }
 
     const display = (value: number, { isGameGranularityStatistic = false, isPlateAppearances = false }: { isGameGranularityStatistic?: boolean, isPlateAppearances?: boolean } = {}) => {
-        return (viewType === 'by_game') 
-            ? (value / pdeWithZeroes.games_played).toFixed(2)
+        return (viewType === 'by_game')
+            ? (pdeWithZeroes.games_played === 0 ? '--' : (value / pdeWithZeroes.games_played).toFixed(2))
             : (viewType === 'by_plate_appearance' && !isGameGranularityStatistic && !isPlateAppearances)
-                ? (value / pdeWithZeroes.plate_appearances).toFixed(3)
+                ? (pdeWithZeroes.plate_appearances === 0 ? '--' : (value / pdeWithZeroes.plate_appearances).toFixed(3))
                 : value
     }
 

@@ -57,7 +57,8 @@ export type PlayerGameData = {
     hits_allowed: number,
     home_runs_allowed: number,
     innings_pitched: number,
-    pitched_outs: number
+    pitched_outs: number,
+    batters_faced: number
 }
 export const calculateERA = (pde: PlayerGameData) => {
     const era = (pde.runs_allowed * 3) / pde.innings_pitched;
@@ -81,8 +82,8 @@ export const defaultPlayerGameData: PlayerGameData = {
     strikeouts_looking: 0, win: 0, loss: 0, games_pitched: 0, runs_allowed: 0,
     pitched_strikeouts: 0, pitched_strikeouts_swinging: 0,
     pitched_strikeouts_looking: 0, pitched_walks: 0, hits_allowed: 0,
-    home_runs_allowed: 0, innings_pitched: 0, pitched_outs: 0, hits: 0, 
-    singles: 0, plate_appearances: 0
+    home_runs_allowed: 0, innings_pitched: 0, pitched_outs: 0, hits: 0,
+    singles: 0, plate_appearances: 0, batters_faced: 0
 };
 
 export type GameData = {
@@ -196,7 +197,7 @@ export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): Gam
             return {
                 type: 'pitching_change',
                 teamChangingPitchers: pc.team_changing as HomeAway,
-                oldPitcher: findPlayer(pc.old_pitcher_id),
+                oldPitcher: pc.old_pitcher_id != null ? findPlayer(pc.old_pitcher_id) : null,
                 newPitcher: findPlayer(pc.new_pitcher_id),
             };
         }
