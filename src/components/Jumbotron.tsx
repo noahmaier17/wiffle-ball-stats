@@ -29,7 +29,7 @@ function Jumbotron({ gameData }: JumbotronProps) {
         defensePlayers: Player[]
     ) => (
         <div>
-            <h4 style={{ margin: '0 0 0.25em' }}>{label} ({isBatting ? 'Batting' : 'Fielding'})</h4>
+            <h4 style={{ margin: '0 0 0.25em' }}>{label} ({isBatting ? 'Batting' : 'Fielding/Pitching'})</h4>
             <div>
                 <span>{positionText("at bat:", isBatting)} {playerName(lineup[currIdx % lineup.length])} | </span>
                 <span>{positionText("on deck:", isBatting)} {playerName(lineup[(currIdx + 1) % lineup.length])} | </span>
