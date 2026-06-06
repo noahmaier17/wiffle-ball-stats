@@ -173,7 +173,7 @@ export type GameLogEntry = AtBatLog | PitchingChangeLog | AdditionalInformationL
 
 export type HomeAway = 'home' | 'away'
 
-export type statViewTypes = 'default' | 'by_game' | 'by_plate_appearance'
+export type statViewTypes = 'default' | 'by_game' | 'by_PA_and_BF' | 'by_AB_and_IP'
 
 export const rowToLogEntry = (row: any, findPlayer: (id: number) => Player): GameLogEntry => {
     switch (row.type) {

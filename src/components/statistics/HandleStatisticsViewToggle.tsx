@@ -32,11 +32,21 @@ function HandleStatisticsViewToggle({ viewType, setViewType }: HandleStatisticsV
             <input
                 type="radio"
                 name="view type"
-                value="by_plate_appearance"
-                checked={viewType === "by_plate_appearance"}
+                value="by_PA_and_BF"
+                checked={viewType === "by_PA_and_BF"}
                 onChange={(e) => setViewType(e.target.value as statViewTypes)}
             />
-            By PA/IP
+            By PA/BF
+        </label>
+        <label>
+            <input
+                type="radio"
+                name="view type"
+                value="by_AB_and_IP"
+                checked={viewType === "by_AB_and_IP"}
+                onChange={(e) => setViewType(e.target.value as statViewTypes)}
+            />
+            By AB/IP
         </label>
     </div>)
 }

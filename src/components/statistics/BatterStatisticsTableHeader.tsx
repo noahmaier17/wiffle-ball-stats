@@ -27,9 +27,12 @@ function BatterStatisticsTableHeader({
     const display = (label: ReactNode) => {
         return (viewType === 'by_game')
             ? <>{label}/G</>
-            : (viewType === 'by_plate_appearance' && !(label === 'W' || label === 'L' || label === 'PA'))
+            : (viewType === 'by_PA_and_BF' && !(label === 'W' || label === 'L' || label === 'PA'))
                 ? <>{label}/PA</>
-                : label
+                : (viewType === 'by_AB_and_IP' && !(label === 'W' || label === 'L' || label == 'AB'))
+                    ? <>{label}/AB</>
+                    : label
+
     }
  
     return (

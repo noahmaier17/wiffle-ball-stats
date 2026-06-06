@@ -71,17 +71,29 @@ function getSortValue(stats: PlayerGameData, col: string, viewType: statViewType
     if (viewType === 'default') {
         return raw;
     } else if (viewType === 'by_game') {
+        // Special handling of innings pitched
         if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
 
+        // All other columns
         if (BATTING_COUNT_COLS.has(col)) return (stats.games_played === 0) ? 0 : raw / stats.games_played;
         if (PITCHING_COUNT_COLS.has(col)) return (stats.games_pitched === 0) ? 0 : raw / stats.games_pitched;
-    } else if (viewType === 'by_plate_appearance') {
-        if (col === 'innings_pitched') return (stats.games_pitched === 0) ? 0 : (stats.pitched_outs / stats.games_pitched) / 3;
+    } else if (viewType === 'by_AB_and_IP') {
+        // We do not alter these columns
+        if (['innings_pitched', 'win', 'loss', 'at_bats'].includes(col)) return raw;
 
-        if (col === 'win' || col === 'loss' || col === 'plate_appearances') return raw;
-
-        if (BATTING_COUNT_COLS.has(col)) return (stats.plate_appearances === 0) ? 0 : raw / stats.plate_appearances;
+        // All other columns
+        if (BATTING_COUNT_COLS.has(col)) return (stats.at_bats === 0) ? 0 : raw / stats.at_bats;
         if (PITCHING_COUNT_COLS.has(col)) return (stats.pitched_outs === 0) ? 0 : raw / stats.pitched_outs;
+    } else if (viewType === 'by_PA_and_BF') {
+        // We do not alter these columns
+        if (['plate_appearances', 'win', 'loss', 'batters_faced'].includes(col)) return raw;
+
+        // Special handling of innings pitched
+        if (col === 'innings_pitched') return (stats.batters_faced === 0) ? 0 : (stats.pitched_outs / stats.batters_faced) / 3;
+
+        // All other columns
+        if (BATTING_COUNT_COLS.has(col)) return (stats.plate_appearances === 0) ? 0 : raw / stats.plate_appearances;
+        if (PITCHING_COUNT_COLS.has(col)) return (stats.batters_faced === 0) ? 0 : raw / stats.batters_faced;
     }
 
     return raw; // Fall through case, often accessed for stats like ERA 

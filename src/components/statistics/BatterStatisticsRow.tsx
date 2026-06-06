@@ -13,12 +13,25 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             : 0
     }
 
-    const display = (value: number, { isGameGranularityStatistic = false, isPlateAppearances = false }: { isGameGranularityStatistic?: boolean, isPlateAppearances?: boolean } = {}) => {
+    const display = (
+        value: number,
+        {
+            isGameGranularityStatistic = false,
+            isPlateAppearances = false,
+            isAtBats = false,
+        }: {
+            isGameGranularityStatistic?: boolean,
+            isPlateAppearances?: boolean,
+            isAtBats?: boolean,
+        } = {}
+    ) => {
         return (viewType === 'by_game')
             ? (pdeWithZeroes.games_played === 0 ? '--' : (value / pdeWithZeroes.games_played).toFixed(2))
-            : (viewType === 'by_plate_appearance' && !isGameGranularityStatistic && !isPlateAppearances)
+            : (viewType === 'by_PA_and_BF' && !isGameGranularityStatistic && !isPlateAppearances)
                 ? (pdeWithZeroes.plate_appearances === 0 ? '--' : (value / pdeWithZeroes.plate_appearances).toFixed(3))
-                : value
+                : (viewType === 'by_AB_and_IP' && !isGameGranularityStatistic && !isAtBats)
+                    ? (pdeWithZeroes.at_bats === 0 ? '--' : (value / pdeWithZeroes.at_bats).toFixed(3))
+                    : value
     }
 
     // Fixes all malformed values by setting them to zero
@@ -50,7 +63,7 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
             <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.plate_appearances, { isPlateAppearances: true })}</td>
-            <td>{display(pdeWithZeroes.at_bats)}</td>
+            <td>{display(pdeWithZeroes.at_bats, { isAtBats: true })}</td>
             <td>{display(pdeWithZeroes.hits)}</td>
             <td>{display(pdeWithZeroes.singles)}</td>
             <td>{display(pdeWithZeroes.doubles)}</td>
