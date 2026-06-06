@@ -16,7 +16,7 @@ function HandleStatisticsViewToggle({ viewType, setViewType }: HandleStatisticsV
                 checked={viewType === "default"}
                 onChange={(e) => setViewType(e.target.value as statViewTypes)}
             />
-            Default
+            None
         </label>
         <label>
             <input
@@ -26,7 +26,7 @@ function HandleStatisticsViewToggle({ viewType, setViewType }: HandleStatisticsV
                 checked={viewType === "by_game"}
                 onChange={(e) => setViewType(e.target.value as statViewTypes)}
             />
-            Per Game
+            By Game
         </label>
         <label>
             <input
