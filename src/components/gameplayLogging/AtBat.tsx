@@ -13,7 +13,7 @@ type EditModeProps = {
         recordedOuts: number;
         extraComments: string;
     };
-    onEditAtBat: (atBat: AtBatLog) => void;
+    onEditAtBat: (formerAtBat: AtBatLog, newAtBat: AtBatLog) => void;
     onCancel: () => void;
 };
 
@@ -87,13 +87,19 @@ function AtBat({ gameData, onLogAtBat, editMode, isSubmitting }: AtBatProps) {
         // Type guard; we cannot handleSubmit unless the button is enabled
         if (rbis === undefined || !outcomeSign || recordedOuts === undefined) return;
 
+        const newLog: AtBatLog = { type: 'atbat', logId: 0, batter: batterName, pitcher: pitcherName, rbis, recordedOuts, outcomeSign, extraComments }
+
+        // If editing, we handle the editing of this bat through the passed in function
         if (editMode) {
-            editMode.onEditAtBat({ type: 'atbat', logId: editMode.initialValues.logId, batter: displayBatter, pitcher: displayPitcher, rbis, recordedOuts, outcomeSign, extraComments });
+            editMode.onEditAtBat(
+                { type: 'atbat', ...editMode.initialValues },
+                { type: 'atbat', logId: editMode.initialValues.logId, batter: displayBatter, pitcher: displayPitcher, rbis, recordedOuts, outcomeSign, extraComments }
+            );
             return;
         }
 
-        // Updates our log
-        onLogAtBat({ type: 'atbat', logId: 0, batter: batterName, pitcher: pitcherName, rbis, recordedOuts, outcomeSign, extraComments });
+        // Updates our log; logId is simply a placeholder until we fetch the real logId from the DB
+        onLogAtBat(newLog);
 
         // Resets the values for the form
         setRbis(undefined);

@@ -403,12 +403,21 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
         setEditingLog({ index, entry });
     };
 
-    const handleSaveAtBatEdit = async (newAtBat: AtBatLog) => {
+    const handleSaveAtBatEdit = async (formerAtBat: AtBatLog, newAtBat: AtBatLog) => {
         if (!editingLog) return;
         const { index, entry: oldAtBat } = editingLog;
 
-        const editNote = `Edited: ${atBatLogSummary(oldAtBat)}`;
-        const appendedComments = newAtBat.extraComments
+        const changedBatOutcome = (
+            formerAtBat.outcomeSign === newAtBat.outcomeSign &&
+            formerAtBat.rbis === newAtBat.rbis &&
+            formerAtBat.recordedOuts === newAtBat.recordedOuts
+        )
+
+        const editNote = !(changedBatOutcome)
+            ? `(Edited from: ${atBatLogSummary(formerAtBat)})`
+            : "";
+        
+        const appendedComments = (newAtBat.extraComments)
             ? `${newAtBat.extraComments}; ${editNote}`
             : editNote;
         const finalAtBat = { ...newAtBat, extraComments: appendedComments };
