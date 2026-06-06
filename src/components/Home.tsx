@@ -95,7 +95,7 @@ function Home({
         const awayPitcherPlayer = findPlayer(game.away_pitcher_id);
         const homePitcherPlayer = findPlayer(game.home_pitcher_id);
 
-        if (!awayPitcherPlayer || !homePitcherPlayer || awayLineup.length === 0 || homeLineup.length === 0) {
+        if (awayLineup.length === 0 || homeLineup.length === 0) {
             setResumeError('This game does not have enough data to resume.');
             return;
         }
@@ -106,8 +106,8 @@ function Home({
             homeTeamLineup: homeLineup,
             awayAlltimeDefensePlayers: awayDefensePlayers,
             homeAlltimeDefensePlayers: homeDefensePlayers,
-            awayPitcher: awayPitcherPlayer,
-            homePitcher: homePitcherPlayer,
+            awayPitcher: awayPitcherPlayer ?? null,
+            homePitcher: homePitcherPlayer ?? null,
             awayTeamBatting: game.away_team_is_batting ?? true,
             inning: game.inning ?? 1,
             numberOfOuts: game.number_of_outs ?? 0,
@@ -325,54 +325,6 @@ function Home({
             setHomeAlltimeDefensePlayers(prev => prev.filter((_, i) => i !== index));
         }
     };
-
-    // const handleDragStart = (e: React.DragEvent, team: 'away' | 'home', index: number) => {
-    //     e.dataTransfer.setData('team', team);
-    //     e.dataTransfer.setData('index', index.toString());
-    // };
-
-    // const handleDragOver = (e: React.DragEvent) => {
-    //     e.preventDefault();
-    // };
-
-    // const handleDrop = (e: React.DragEvent, team: 'away' | 'home', dropIndex: number) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-    //     const draggedTeam = e.dataTransfer.getData('team') as 'away' | 'home';
-    //     const dragIndex = parseInt(e.dataTransfer.getData('index'), 10);
-    //     if (draggedTeam === team) {
-    //         if (dragIndex === dropIndex) return;
-    //         if (team === 'away') {
-    //             const newLineup = [...awayTeamLineup];
-    //             const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-    //             newLineup.splice(dropIndex, 0, draggedPlayer);
-    //             setAwayTeamLineup(newLineup);
-    //         } else {
-    //             const newLineup = [...homeTeamLineup];
-    //             const [draggedPlayer] = newLineup.splice(dragIndex, 1);
-    //             newLineup.splice(dropIndex, 0, draggedPlayer);
-    //             setHomeTeamLineup(newLineup);
-    //         }
-    //     } else {
-    //         if (draggedTeam === 'away') {
-    //             const newAwayLineup = [...awayTeamLineup];
-    //             const [draggedPlayer] = newAwayLineup.splice(dragIndex, 1);
-    //             if (awayPitcher?.id === draggedPlayer.id) setAwayPitcher(null);
-    //             const newHomeLineup = [...homeTeamLineup];
-    //             newHomeLineup.splice(dropIndex, 0, draggedPlayer);
-    //             setAwayTeamLineup(newAwayLineup);
-    //             setHomeTeamLineup(newHomeLineup);
-    //         } else {
-    //             const newHomeLineup = [...homeTeamLineup];
-    //             const [draggedPlayer] = newHomeLineup.splice(dragIndex, 1);
-    //             if (homePitcher?.id === draggedPlayer.id) setHomePitcher(null);
-    //             const newAwayLineup = [...awayTeamLineup];
-    //             newAwayLineup.splice(dropIndex, 0, draggedPlayer);
-    //             setHomeTeamLineup(newHomeLineup);
-    //             setAwayTeamLineup(newAwayLineup);
-    //         }
-    //     }
-    // };
 
     const movePlayer = (team: 'away' | 'home', index: number, direction: 'up' | 'down') => {
         const swap = (arr: Player[], i: number, j: number) => {
