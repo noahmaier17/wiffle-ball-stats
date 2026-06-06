@@ -1,6 +1,6 @@
 export function computeAtBatDeltas(outcomeSign: string, rbis: number, recordedOuts: number) {
     const batterDelta: Record<string, number> = { plate_appearances: 1, at_bats: 1, runs_batted_in: rbis };
-    const pitcherDelta: Record<string, number> = { pitched_outs: recordedOuts };
+    const pitcherDelta: Record<string, number> = { pitched_outs: recordedOuts, batters_faced: 1 };
 
     switch (outcomeSign) {
         case 'reverse-K':
