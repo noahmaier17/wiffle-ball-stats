@@ -290,7 +290,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                 </table>
             </div>
 
-            <h3>Pitching</h3>
+            <h3>Pitching {selectedBatterId && ` facing ${players.filter(p => p.id === selectedBatterId).map(p => playerNameShort(p))}`}</h3>
             <HandleStatisticsVersusPositionToggle
                 allPitcherIds={batterPlayers}
                 selectedPitcherId={selectedBatterId}
