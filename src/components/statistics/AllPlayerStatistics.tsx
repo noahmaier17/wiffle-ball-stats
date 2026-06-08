@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
-import { calculateERA, calculateWHIP, playerName, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import { calculateERA, calculateWHIP, playerName, playerNameShort, type Park, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import { usePlayers } from "../../contexts/PlayersContext";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
@@ -10,6 +10,8 @@ import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 import HandleStatisticsVersusPositionToggle from "./HandleStatisticsVersusPitcherToggle";
 import fetchBattersVersusPitcher from "../../utils/fetchBattersVersusPitcher";
 import fetchPitchersVersusBatter from "../../utils/fetchPitchersVersusBatter";
+import { PARKS } from "../../constants";
+import ParkAndFielderFilters from "./ParkAndFielderFilters";
 
 const BATTING_COUNT_COLS = new Set([
     'win', 'loss',
@@ -121,6 +123,9 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     const [pitcherSortDirection, setPitcherSortDirection] = useState<'asc' | 'desc'>('desc');
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
+
+    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
+
     // If null, that means we are looking at facing against all players
     const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     const [selectedBatterId, setSelectedBatterId] = useState<number | null>(null);
@@ -129,7 +134,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     useEffect(() => {
         const fetchStats = async () => {
             // First, we get all the data we have for all players
-            const allData = await fetchAllPlayerStatistics({batterIds: players});
+            const allData = await fetchAllPlayerStatistics({ batterIds: players, selectedParks });
             if (allData) {
                 setAllStats(Array.from(allData[0].values()));
             }
@@ -146,8 +151,9 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             } else {
                 // Here, we need to fetch selectedBatterStats from the fetchBattersVersusPitcher call
                 const selectedStatsData = await fetchBattersVersusPitcher({
-                    batters: players, 
-                    pitchers: players.filter(p => p.id === selectedPitcherId) 
+                    batters: players,
+                    pitchers: players.filter(p => p.id === selectedPitcherId),
+                    selectedParks,
                 });
                 if (selectedStatsData) {
                     setSelectedBatterStats(Array.from(selectedStatsData[0].values()));
@@ -166,7 +172,8 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                 // Here, we need to fetch selectedBatterStats from the fetchBattersVersusPitcher call
                 const selectedStatsData = await fetchPitchersVersusBatter({
                     batters: players.filter(p => p.id === selectedBatterId),
-                    pitchers: players
+                    pitchers: players,
+                    selectedParks,
                 });
                 if (selectedStatsData) {
                     setSelectedPitcherStats(Array.from(selectedStatsData[0].values()));
@@ -178,7 +185,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
         fetchStats();
         const interval = setInterval(fetchStats, 5000);
         return () => clearInterval(interval);
-    }, [selectedPitcherId, selectedBatterId]);
+    }, [selectedPitcherId, selectedBatterId, selectedParks]);
 
     // Handles sorting of tables
     const handleBatterSort = (col: string) => {
@@ -266,6 +273,10 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             <HandleStatisticsViewToggle
                 viewType={viewType}
                 setViewType={setViewType}
+            />
+            <ParkAndFielderFilters
+                selectedParks={selectedParks}
+                setSelectedParks={setSelectedParks}
             />
             <h3>Batting {selectedPitcherId && ` facing ${players.filter(p => p.id === selectedPitcherId).map(p => playerNameShort(p))}`}</h3>
             <HandleStatisticsVersusPositionToggle 

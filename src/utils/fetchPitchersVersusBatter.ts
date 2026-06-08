@@ -1,22 +1,47 @@
 import { supabase } from "../supabase-client";
 import { computeAtBatDeltas } from "./computeAtBatDeltas";
-import { defaultPlayerGameData, type Player, type PlayerGameData } from "../types";
+import { defaultPlayerGameData, type Park, type Player, type PlayerGameData } from "../types";
+import fetchGameIdsByPark from "./fetchGameIdsByPark";
 
 type FetchPitchersVersusBatterProps = {
     batters: Player[];
     pitchers: Player[];
+    selectedParks?: Set<Park>;
 }
 
-async function fetchPitchersVersusBatter({ batters, pitchers }: FetchPitchersVersusBatterProps): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
-    if (batters.length === 0) return null;
+async function fetchPitchersVersusBatter(
+    { batters, pitchers, selectedParks }: FetchPitchersVersusBatterProps
+): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+    if (batters.length === 0) return [new Map(), new Set()];
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('at_bat_logs')
         .select('pitcher_id, outcome_sign, rbis, recorded_outs')
         .in('batter_id', batters.map(b => b.id))
         .in('pitcher_id', pitchers.map(p => p.id))
         .not('flagged_batter_row', 'is', true)
         .not('flagged_pitcher_row', 'is', true);
+
+    if (selectedParks) {
+        // Resolves selected parks to game IDs
+        const gameIds = await fetchGameIdsByPark(selectedParks);
+        if (gameIds === null) return null;
+        if (gameIds.length === 0) return [new Map(), new Set()];
+
+        // Resolves game IDs to at_bat_logs log IDs
+        const { data: logRows, error: logError } = await supabase
+            .from('game_logs')
+            .select('id')
+            .in('game_id', gameIds);
+        if (logError) return null;
+
+        const logIds = logRows.map(r => r.id);
+        if (logIds.length === 0) return [new Map(), new Set()];
+
+        query = query.in('log_id', logIds);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.log(error.message);

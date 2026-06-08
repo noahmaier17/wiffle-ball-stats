@@ -1,4 +1,11 @@
+// Parks
+export const PARKS = ["wiffco_field", "bowman_field"] as const;
+export const PARK_DISPLAY_NAMES: Record<string, string> = {
+    wiffco_field: "Wiffco Field",
+    bowman_field: "Bowman Field",
+};
 
+// At Bat Outcome Signs
 export const AT_BAT_OUTCOME_LAYOUT = [
     [
         { name: 'Single', sign: '1B' },

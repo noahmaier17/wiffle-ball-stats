@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import ReverseK from "./components/ReverseK";
-import type { AT_BAT_OUTCOMES } from "./constants";
+import type { AT_BAT_OUTCOMES, PARKS } from "./constants";
 
 export type AtBatOutcomeSign = typeof AT_BAT_OUTCOMES[number]['sign']
 
@@ -252,3 +252,6 @@ export const atBatLogSummary = (entry: AtBatLog): string => {
         : '';
     return `${entry.outcomeSign}${rbiPart}${outsPart}`;
 };
+
+// Park Type
+export type Park = typeof PARKS[number]; // add export to front

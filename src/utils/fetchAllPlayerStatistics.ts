@@ -1,16 +1,27 @@
 import { supabase } from "../supabase-client";
-import { defaultPlayerGameData, type Player, type PlayerGameData } from "../types";
+import { defaultPlayerGameData, type Park, type Player, type PlayerGameData } from "../types";
+import fetchGameIdsByPark from "./fetchGameIdsByPark";
 
 type FetchAllPlayerStatisticsProps = {
-    batterIds: Player[]
+    batterIds: Player[],
+    selectedParks?: Set<Park>,
 }
 
-async function fetchAllPlayerStatistics({ batterIds }: FetchAllPlayerStatisticsProps): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+async function fetchAllPlayerStatistics(
+    { batterIds, selectedParks }: FetchAllPlayerStatisticsProps
+): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
 
     // Fetches our data from supabase
-    const { data, error } = await supabase
-        .from('player_game_stats')
-        .select('*');
+    let query = supabase.from('player_game_stats').select('*');
+
+    if (selectedParks) {
+        const gameIds = await fetchGameIdsByPark(selectedParks);
+        if (gameIds === null) return null;
+        if (gameIds.length === 0) return [new Map(), new Set()];
+        query = query.in('game_id', gameIds);
+    }
+
+    const { data, error } = await query;
     const playerGameData = data as PlayerGameData[]; // Type change
 
     if (error) {
