@@ -7,6 +7,7 @@ import PlayerStatisticsSelection from './components/statistics/PlayerStatisticsS
 import type { GameData, Player } from './types';
 import { supabase } from "./supabase-client.ts";
 import PlayersContext from './contexts/PlayersContext.tsx';
+import { StatsDataProvider } from './contexts/StatsDataContext.tsx';
 import { buildGameDataFromRow } from './utils/buildGameDataFromRow.ts';
 import type { Session } from '@supabase/supabase-js';
 
@@ -106,7 +107,12 @@ function App() {
         if (loadingFromHash) return <div style={{ padding: '2rem' }}>Loading game...</div>;
         if (gameState) return <GameLogger gameData={gameState} setGameState={setGameState} />;
         if (spectateGameId !== null) return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
-        if (showStatistics) return <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} />;
+        // StatsDataProvider is scoped to the stats page so polling only runs while stats are visible
+        if (showStatistics) return (
+            <StatsDataProvider>
+                <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} />
+            </StatsDataProvider>
+        );
         return (
             <Home
                 players={players}

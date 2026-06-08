@@ -1,54 +1,39 @@
-import { supabase } from "../supabase-client";
-import { defaultPlayerGameData, type Park, type Player, type PlayerGameData } from "../types";
-import fetchGameIdsByPark from "./fetchGameIdsByPark";
+import { defaultPlayerGameData, type Player, type PlayerGameData } from '../types';
+import type { StatsAtBatLogRow } from '../contexts/StatsDataContext';
 
-type FetchBatterVersusPitcherProps = {
+// Filter out flagged cached at-bat log rows (they are already flagged) and computes
+// batting stats for each batter against the given set of pitchers.
+// Returns in the shape: [map of player_id to PlayerGameData (batting stats only), set of player IDs with zero stats]
+
+type ComputeBattersVersusPitcherProps = {
     batters: Player[];
     pitchers: Player[];
-    selectedParks?: Set<Park>;
-}
+    // When provided, only includes at-bat rows whose log_id is in this set (park filtering).
+    // If undefined, all parks are included.
+    logIds?: number[];
+};
 
-async function fetchBattersVersusPitcher(
-    { batters, pitchers, selectedParks }: FetchBatterVersusPitcherProps
-): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+export function computeBattersVersusPitcher(
+    atBatLogs: StatsAtBatLogRow[],
+    { batters, pitchers, logIds }: ComputeBattersVersusPitcherProps
+): [Map<number, PlayerGameData>, Set<number>] {
     if (pitchers.length === 0) return [new Map(), new Set()];
 
-    let query = supabase
-        .from('at_bat_logs')
-        .select('batter_id, outcome_sign, rbis')
-        .in('batter_id', batters.map(b => b.id))
-        .in('pitcher_id', pitchers.map(p => p.id))
-        .not('flagged_batter_row', 'is', true)
-        .not('flagged_pitcher_row', 'is', true);
+    const batterIdSet = new Set(batters.map(b => b.id));
+    const pitcherIdSet = new Set(pitchers.map(p => p.id));
+    const logIdSet = logIds ? new Set(logIds) : null;
 
-    if (selectedParks) {
-        // Resolves selected parks to game IDs
-        const gameIds = await fetchGameIdsByPark(selectedParks);
-        if (gameIds === null) return null;
-        if (gameIds.length === 0) return [new Map(), new Set()];
+    // Apply all filters at once: batter, pitcher, flagged batter row, and optional park.
+    const filtered = atBatLogs.filter(r =>
+        batterIdSet.has(r.batter_id) &&
+        pitcherIdSet.has(r.pitcher_id) &&
+        r.flagged_batter_row !== true &&
+        (logIdSet === null || logIdSet.has(r.log_id))
+    );
 
-        // Resolves game IDs to at_bat_logs log IDs
-        const { data: logRows, error: logError } = await supabase
-            .from('game_logs')
-            .select('id')
-            .in('game_id', gameIds);
-        if (logError) return null;
-
-        const logIds = logRows.map(r => r.id);
-        if (logIds.length === 0) return [new Map(), new Set()];
-
-        query = query.in('log_id', logIds);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-        console.log(error.message);
-        return null;
-    }
-
-    const rowsByBatter = new Map<number, typeof data>();
-    for (const row of data) {
+    // Group filtered rows by batter for aggregation
+    const rowsByBatter = new Map<number, StatsAtBatLogRow[]>();
+    for (const row of filtered) {
         rowsByBatter.has(row.batter_id)
             ? rowsByBatter.get(row.batter_id)!.push(row)
             : rowsByBatter.set(row.batter_id, [row]);
@@ -66,6 +51,7 @@ async function fetchBattersVersusPitcher(
             continue;
         }
 
+        // Count each outcome type from the raw outcome_sign strings
         const singles = rows.filter(r => r.outcome_sign === '1B').length;
         const doubles = rows.filter(r => r.outcome_sign === '2B').length;
         const triples = rows.filter(r => r.outcome_sign === '3B').length;
@@ -78,6 +64,7 @@ async function fetchBattersVersusPitcher(
         const fielders_choice = rows.filter(r => r.outcome_sign === 'FC').length;
         const runs_batted_in = rows.reduce((acc, r) => acc + r.rbis, 0);
         const plate_appearances = rows.length;
+        // Walks don't count as at-bats
         const at_bats = plate_appearances - walks;
 
         playerIdToAllStats.set(batter.id, {
@@ -102,5 +89,3 @@ async function fetchBattersVersusPitcher(
 
     return [playerIdToAllStats, playerIdsWithNoStats];
 }
-
-export default fetchBattersVersusPitcher;

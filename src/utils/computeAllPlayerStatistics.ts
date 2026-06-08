@@ -1,43 +1,34 @@
-import { supabase } from "../supabase-client";
-import { defaultPlayerGameData, type Park, type Player, type PlayerGameData } from "../types";
-import fetchGameIdsByPark from "./fetchGameIdsByPark";
+import { defaultPlayerGameData, type Player, type PlayerGameData } from '../types';
 
-type FetchAllPlayerStatisticsProps = {
-    batterIds: Player[],
-    selectedParks?: Set<Park>,
-}
+// Fetches player statistics. 
+// Returns in the shape: [map of player_id to aggregated PlayerGameData, set of player IDs with zero stats]
 
-async function fetchAllPlayerStatistics(
-    { batterIds, selectedParks }: FetchAllPlayerStatisticsProps
-): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+type ComputeAllPlayerStatisticsProps = {
+    batterIds: Player[];
+    // When provided, only includes rows for these game IDs (used for park filtering).
+    // If undefined, all games are included.
+    gameIds?: number[];
+};
 
-    // Fetches our data from supabase
-    let query = supabase.from('player_game_stats').select('*');
+export function computeAllPlayerStatistics(
+    playerGameStats: PlayerGameData[],
+    { batterIds, gameIds }: ComputeAllPlayerStatisticsProps
+): [Map<number, PlayerGameData>, Set<number>] {
 
-    if (selectedParks) {
-        const gameIds = await fetchGameIdsByPark(selectedParks);
-        if (gameIds === null) return null;
-        if (gameIds.length === 0) return [new Map(), new Set()];
-        query = query.in('game_id', gameIds);
-    }
+    // Narrow to the relevant games if a park filter is active
+    const rows = gameIds !== undefined
+        ? playerGameStats.filter(r => gameIds.includes(r.game_id))
+        : playerGameStats;
 
-    const { data, error } = await query;
-    const playerGameData = data as PlayerGameData[]; // Type change
-
-    if (error) {
-        console.log(error.message);
-        return null;
-    }
-
-    // Hashes all player ids to their database schemas
+    // Group all per-game rows by player
     const playerIdToDatabaseEntries = new Map<number, PlayerGameData[]>();
-    for (const row of playerGameData) {
+    for (const row of rows) {
         playerIdToDatabaseEntries.has(row.player_id)
             ? playerIdToDatabaseEntries.set(row.player_id, [...playerIdToDatabaseEntries.get(row.player_id)!, row])
-            : playerIdToDatabaseEntries.set(row.player_id, [row]) 
+            : playerIdToDatabaseEntries.set(row.player_id, [row]);
     }
 
-    // For every player, populates an aggregated `PlayerDatabaseSchema` for them
+    // Aggregate each player's per-game rows into a single career-total row
     const playerIdToAllStats = new Map<number, PlayerGameData>();
 
     for (const [playerId, entries] of playerIdToDatabaseEntries.entries()) {
@@ -46,10 +37,12 @@ async function fetchAllPlayerStatistics(
 
         const pitched_outs = sum('pitched_outs');
 
+        // innings_pitched is stored as a decimal where the tenths digit = extra outs
+        // (e.g. 1.2 means 1 full inning + 2 outs, NOT 1.2 innings)
         playerIdToAllStats.set(playerId, {
-            id: -1,                 // Does not matter for these aggregated stats
+            id: -1,
             player_id: playerId,
-            game_id: -1,            // Does not matter for these aggregated stats
+            game_id: -1,
             plate_appearances: sum('plate_appearances'),
             at_bats: sum('at_bats'),
             games_played: sum('games_played'),
@@ -65,7 +58,6 @@ async function fetchAllPlayerStatistics(
             strikeouts_swinging: sum('strikeouts_swinging'),
             strikeouts_looking: sum('strikeouts_looking'),
             strikeouts: sum('strikeouts'),
-
             pitched_outs,
             innings_pitched: Math.floor(pitched_outs / 3) + (pitched_outs % 3) / 10,
             pitched_strikeouts_swinging: sum('pitched_strikeouts_swinging'),
@@ -78,29 +70,22 @@ async function fetchAllPlayerStatistics(
             games_pitched: sum('games_pitched'),
             win: sum('win'),
             loss: sum('loss'),
-            batters_faced: sum('batters_faced')
-        })
+            batters_faced: sum('batters_faced'),
+        });
     }
 
-    // For each player without any parameter, sets default 0s
+    // Players with no rows in the filtered set get zeroed-out defaults
     const playerIdsWithNoStats = new Set<number>();
 
     for (const batter of batterIds) {
         if (!playerIdToAllStats.has(batter.id)) {
-            // Sets stats to 0
-            playerIdToAllStats.set(batter.id, 
-                {
-                    ...defaultPlayerGameData,
-                    player_id: batter.id
-                }
-            );
-
-            // Populates playerIdsWithNoStats
+            playerIdToAllStats.set(batter.id, {
+                ...defaultPlayerGameData,
+                player_id: batter.id,
+            });
             playerIdsWithNoStats.add(batter.id);
         }
     }
-    
+
     return [playerIdToAllStats, playerIdsWithNoStats];
 }
-
-export default fetchAllPlayerStatistics

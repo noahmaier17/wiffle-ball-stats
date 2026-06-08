@@ -1,55 +1,40 @@
-import { supabase } from "../supabase-client";
-import { computeAtBatDeltas } from "./computeAtBatDeltas";
-import { defaultPlayerGameData, type Park, type Player, type PlayerGameData } from "../types";
-import fetchGameIdsByPark from "./fetchGameIdsByPark";
+import { computeAtBatDeltas } from './computeAtBatDeltas';
+import { defaultPlayerGameData, type Player, type PlayerGameData } from '../types';
+import type { StatsAtBatLogRow } from '../contexts/StatsDataContext';
 
-type FetchPitchersVersusBatterProps = {
+// Filter out flagged cached at-bat log rows (they are already flagged) and computes
+// pitching stats for each batter against the given set of batters.
+// Returns in the shape: [map of player_id to PlayerGameData (pitching stats only), set of player IDs with zero stats]
+
+type ComputePitchersVersusBatterProps = {
     batters: Player[];
     pitchers: Player[];
-    selectedParks?: Set<Park>;
-}
+    // When provided, only includes at-bat rows whose log_id is in this set (park filtering).
+    // If undefined, all parks are included.
+    logIds?: number[];
+};
 
-async function fetchPitchersVersusBatter(
-    { batters, pitchers, selectedParks }: FetchPitchersVersusBatterProps
-): Promise<[Map<number, PlayerGameData>, Set<number>] | null> {
+export function computePitchersVersusBatter(
+    atBatLogs: StatsAtBatLogRow[],
+    { batters, pitchers, logIds }: ComputePitchersVersusBatterProps
+): [Map<number, PlayerGameData>, Set<number>] {
     if (batters.length === 0) return [new Map(), new Set()];
 
-    let query = supabase
-        .from('at_bat_logs')
-        .select('pitcher_id, outcome_sign, rbis, recorded_outs')
-        .in('batter_id', batters.map(b => b.id))
-        .in('pitcher_id', pitchers.map(p => p.id))
-        .not('flagged_batter_row', 'is', true)
-        .not('flagged_pitcher_row', 'is', true);
+    const batterIdSet = new Set(batters.map(b => b.id));
+    const pitcherIdSet = new Set(pitchers.map(p => p.id));
+    const logIdSet = logIds ? new Set(logIds) : null;
 
-    if (selectedParks) {
-        // Resolves selected parks to game IDs
-        const gameIds = await fetchGameIdsByPark(selectedParks);
-        if (gameIds === null) return null;
-        if (gameIds.length === 0) return [new Map(), new Set()];
+    // Apply all filters at once: batter, pitcher, flagged pitcher row, and optional park.
+    const filtered = atBatLogs.filter(r =>
+        batterIdSet.has(r.batter_id) &&
+        pitcherIdSet.has(r.pitcher_id) &&
+        r.flagged_pitcher_row !== true &&
+        (logIdSet === null || logIdSet.has(r.log_id))
+    );
 
-        // Resolves game IDs to at_bat_logs log IDs
-        const { data: logRows, error: logError } = await supabase
-            .from('game_logs')
-            .select('id')
-            .in('game_id', gameIds);
-        if (logError) return null;
-
-        const logIds = logRows.map(r => r.id);
-        if (logIds.length === 0) return [new Map(), new Set()];
-
-        query = query.in('log_id', logIds);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-        console.log(error.message);
-        return null;
-    }
-
-    const rowsByPitcher = new Map<number, typeof data>();
-    for (const row of data) {
+    // Group filtered rows by pitcher for aggregation
+    const rowsByPitcher = new Map<number, StatsAtBatLogRow[]>();
+    for (const row of filtered) {
         rowsByPitcher.has(row.pitcher_id)
             ? rowsByPitcher.get(row.pitcher_id)!.push(row)
             : rowsByPitcher.set(row.pitcher_id, [row]);
@@ -67,6 +52,7 @@ async function fetchPitchersVersusBatter(
             continue;
         }
 
+        // Accumulate pitching deltas from computeAtBatDeltas for each at-bat
         const accumulated: Record<string, number> = {};
         for (const row of rows) {
             const { pitcherDelta } = computeAtBatDeltas(row.outcome_sign, row.rbis, row.recorded_outs);
@@ -81,6 +67,7 @@ async function fetchPitchersVersusBatter(
             ...defaultPlayerGameData,
             player_id: pitcher.id,
             pitched_outs,
+            // innings_pitched decimal: tenths digit = extra outs (e.g. 1.2 = 1 inning + 2 outs)
             innings_pitched: Math.floor(pitched_outs / 3) + (pitched_outs % 3) / 10,
             pitched_strikeouts: accumulated.pitched_strikeouts ?? 0,
             pitched_strikeouts_swinging: accumulated.pitched_strikeouts_swinging ?? 0,
@@ -94,5 +81,3 @@ async function fetchPitchersVersusBatter(
 
     return [pitcherIdToAllStats, pitcherIdsWithNoStats];
 }
-
-export default fetchPitchersVersusBatter;

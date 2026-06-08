@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { playerName, type Player, type PlayerGameData, type statViewTypes } from "../../types";
-import fetchAllPlayerStatistics from "../../utils/fetchAllPlayerStatistics";
+import { useStatsData } from "../../contexts/StatsDataContext";
+import { computeAllPlayerStatistics } from "../../utils/computeAllPlayerStatistics";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
@@ -15,26 +16,21 @@ type PlayerStatisticsProps = {
 
 function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     const [stats, setStats] = useState<PlayerGameData | null>(null);
-
     const [viewType, setViewType] = useState<statViewTypes>('default');
 
-    // const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
-    
-    // Fet5ches the stats for this player
+    // Pull cached data from StatsDataContext — no direct DB calls or local polling here.
+    // playerGameStats updates automatically every 30 seconds from the context.
+    const { playerGameStats, isLoading } = useStatsData();
+
+    // Recompute this player's stats whenever the context data refreshes
     useEffect(() => {
-        const fetchStats = () => {
-            fetchAllPlayerStatistics({ batterIds: [user] }).then(data => {
-                if (data) setStats(data[0].get(user.id) ?? null);
-            });
-        };
+        if (isLoading) return;
+        const [statsMap] = computeAllPlayerStatistics(playerGameStats, { batterIds: [user] });
+        setStats(statsMap.get(user.id) ?? null);
+    }, [playerGameStats, user.id, isLoading]);
 
-        fetchStats();
-        const interval = setInterval(fetchStats, 5000);
-        return () => clearInterval(interval);
-    }, [user.id]);
-
-    // Shows loading if not yet fetched
-    if (!stats) return <h3>Loading...</h3>;
+    // Shows loading if context hasn't delivered data yet
+    if (isLoading || !stats) return <h3>Loading...</h3>;
 
     return (
         <div>
