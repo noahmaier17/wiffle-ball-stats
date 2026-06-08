@@ -2,8 +2,11 @@
 export const PARKS = ["wiffco_field", "bowman_field"] as const;
 export const PARK_DISPLAY_NAMES: Record<string, string> = {
     wiffco_field: "Wiffco Field",
-    bowman_field: "Bowman Field",
+    bowman_field: "Bowman Creek",
 };
+
+// Fielder counts
+export const FIELDER_COUNTS = [2, 3] as const;
 
 // At Bat Outcome Signs
 export const AT_BAT_OUTCOME_LAYOUT = [

@@ -9,7 +9,7 @@ import type { StatsAtBatLogRow } from '../contexts/StatsDataContext';
 type ComputePitchersVersusBatterProps = {
     batters: Player[];
     pitchers: Player[];
-    // When provided, only includes at-bat rows whose log_id is in this set (park filtering).
+    // When provided, only includes at-bat rows whose log_id is in this set (park and fielder count filtering).
     // If undefined, all parks are included.
     logIds?: number[];
 };

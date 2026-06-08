@@ -5,7 +5,7 @@ import { defaultPlayerGameData, type Player, type PlayerGameData } from '../type
 
 type ComputeAllPlayerStatisticsProps = {
     batterIds: Player[];
-    // When provided, only includes rows for these game IDs (used for park filtering).
+    // When provided, only includes rows for these game IDs (used for park and fielder count filtering).
     // If undefined, all games are included.
     gameIds?: number[];
 };

@@ -22,6 +22,7 @@ export type StatsAtBatLogRow = {
 export type StatsGameRow = {
     id: number;
     field: string;
+    number_of_fielders: number;
 };
 
 // Minimal game_log row. Only columns we need for stats are selected.
@@ -69,7 +70,7 @@ export function StatsDataProvider({ children }: { children: React.ReactNode }) {
             supabase
                 .from('at_bat_logs')
                 .select('log_id, batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, flagged_batter_row, flagged_pitcher_row'),
-            supabase.from('games').select('id, field'),
+            supabase.from('games').select('id, field, number_of_fielders'),
             supabase.from('game_logs').select('id, game_id'),
         ]);
 

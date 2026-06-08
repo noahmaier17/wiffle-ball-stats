@@ -129,33 +129,30 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
 
+    // Filters for the statistics
     const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3]));
 
     // If null, we are showing stats against all pitchers / batters
     const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     const [selectedBatterId, setSelectedBatterId] = useState<number | null>(null);
 
     // Recompute all displayed stats whenever the cached data or any filter changes.
-    // This runs in-memory — no DB calls — so filter changes are instant.
     useEffect(() => {
         // Don't compute until the initial data load has finished
         if (isLoading) return;
 
-        // Resolve park filter to game IDs and log IDs.
-        // When all parks are selected, skip filtering entirely (gameIds = undefined means "no filter").
-        const gameIds: number[] | undefined = (selectedParks.size === PARKS.length)
-            ? undefined
-            : games.filter(g => selectedParks.has(g.field as Park)).map(g => g.id);
+        // We must apply all filters (park and fielders) and get our gameIds
+        const gameIds = games
+            .filter(g => selectedParks.has(g.field as Park))
+            .filter(g => selectedFielderCounts.has(g.number_of_fielders))
+            .map(g => g.id)
 
-        // Map game IDs → log IDs so we can filter at_bat_logs by park.
-        // at_bat_logs.log_id links to game_logs.id which carries game_id.
-        let logIds: number[] | undefined;
-        if (gameIds !== undefined) {
-            const gameIdSet = new Set(gameIds);
-            logIds = gameLogs.filter(gl => gameIdSet.has(gl.game_id)).map(gl => gl.id);
-        }
+        // Maps game IDs to log IDs so we can filter at_bat_logs by our set of filters.
+        const gameIdSet = new Set(gameIds);
+        const logIds = gameLogs.filter(gl => gameIdSet.has(gl.game_id)).map(gl => gl.id);
 
-        // Aggregate per-game player_game_stats into career totals (optionally scoped to parks)
+        // Aggregate per-game player_game_stats into career totals
         const allData = computeAllPlayerStatistics(playerGameStats, { batterIds: players, gameIds });
         setAllStats(Array.from(allData[0].values()));
 
@@ -186,7 +183,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             setSelectedPitcherStats(Array.from(selectedStatsData[0].values()));
             setPitcherIdsWithoutStats(selectedStatsData[1]);
         }
-    }, [playerGameStats, atBatLogs, games, gameLogs, selectedPitcherId, selectedBatterId, selectedParks, players, isLoading]);
+    }, [playerGameStats, atBatLogs, games, gameLogs, selectedPitcherId, selectedBatterId, selectedParks, selectedFielderCounts, players, isLoading]);
 
     // Handles sorting of tables
     const handleBatterSort = (col: string) => {
@@ -278,6 +275,8 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             <ParkAndFielderFilters
                 selectedParks={selectedParks}
                 setSelectedParks={setSelectedParks}
+                selectedFielderCounts={selectedFielderCounts}
+                setSelectedFielderCounts={setSelectedFielderCounts}
             />
             <h3>Batting {selectedPitcherId && ` facing ${players.filter(p => p.id === selectedPitcherId).map(p => playerNameShort(p))}`}</h3>
             <HandleStatisticsVersusPositionToggle
