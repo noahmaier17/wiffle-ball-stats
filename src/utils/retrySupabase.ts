@@ -5,6 +5,8 @@ const RETRY_DELAYS = [500, 1000, 2000, 4000, 8000, 10000, 10000, 10000, 10000];
 // TEST ONLY — set window.__retryTestFailures = N in the browser console to force N failures before succeeding
 declare global { interface Window { __retryTestFailures?: number } }
 
+// Re-queries the DB on writes to help fight network drops.
+
 export async function retrySupabase<T>(
     fn: () => PromiseLike<{ data: T | null; error: any }>,
     queryType: string

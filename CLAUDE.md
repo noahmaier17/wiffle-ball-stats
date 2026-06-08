@@ -24,7 +24,7 @@ Shows the batting and pitching statistics for every individual player who played
 | hits | int2 | Number of hits as the batter |
 | singles  | int2 | Number of singles |
 | pitched_outs | int2 | Number of outs that occured while pitching; used to calculate innings pitched |
-| plate_apperances | int2 | Number of plate appearances |
+| plate_appearances | int2 | Number of plate appearances |
 | inside_the_park_home_runs | int2 | Number of IPHR |
 | strikeouts_looking | int2 | Number of strikeouts looking |
 | strikeouts_swinging | int2 | Number of strikeouts swinging |
