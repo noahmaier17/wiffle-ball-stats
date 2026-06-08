@@ -36,36 +36,43 @@ function ParkAndFielderFilters(
         })
     }
 
-    return (<div>
-        <div>
-            Parks:&nbsp;
-            {PARKS.map(park => (
-                <label key={park}>
-                    <input
-                        type="checkbox"
-                        checked={selectedParks.has(park)}
-                        onChange={() => togglePark(park)}
-                    />
-                {PARK_DISPLAY_NAMES[park]}</label>
-            ))}
-        </div><div>
-            Fielder Counts:&nbsp;
-            {FIELDER_COUNTS.map(count => (
-                <label
-                    key={count}
-                    title={count !== 3 ? 'Unofficial' : undefined}
-                    style={count !== 3 ? { color: '#999' } : undefined}
-                >
-                    <input
-                        type="checkbox"
-                        checked={selectedFielderCounts.has(count)}
-                        onChange={() => toggleFielderCount(count)}
-                    />
-                {count}
-                </label>
-            ))}
+    const setOfficial = () => {
+        setSelectedParks(new Set(PARKS));
+        setSelectedFielderCounts(new Set([3]));
+    };
+
+    return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+            <div>
+                Parks:&nbsp;
+                {PARKS.map(park => (
+                    <label key={park}>
+                        <input
+                            type="checkbox"
+                            checked={selectedParks.has(park)}
+                            onChange={() => togglePark(park)}
+                        />
+                    {PARK_DISPLAY_NAMES[park]}</label>
+                ))}
+            </div>
+            <div>
+                Fielder Counts:&nbsp;
+                {FIELDER_COUNTS.map(count => (
+                    <label
+                        key={count}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={selectedFielderCounts.has(count)}
+                            onChange={() => toggleFielderCount(count)}
+                        />
+                    {count}
+                    </label>
+                ))}
+            </div>
+            <button onClick={setOfficial}>Set Official Settings</button>
         </div>
-    </div>)
+    )
 }
 
 export default ParkAndFielderFilters

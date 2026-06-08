@@ -121,6 +121,14 @@ body {
   border-bottom: 1px solid #e8e8e8;
 }
 
+.filter-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-left: 1rem;
+  padding-top: 0.1rem;
+}
+
 textarea {
   width: 100%;
   min-height: 80px;

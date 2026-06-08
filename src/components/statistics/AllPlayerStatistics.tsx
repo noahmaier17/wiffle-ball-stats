@@ -11,8 +11,10 @@ import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 import HandleStatisticsVersusPositionToggle from "./HandleStatisticsVersusPitcherToggle";
-import { PARKS } from "../../constants";
+import { PARK_DISPLAY_NAMES, PARKS } from "../../constants";
 import ParkAndFielderFilters from "./ParkAndFielderFilters";
+import GameFilter from "./GameFilter";
+import FilterPanel from "./FilterPanel";
 
 const BATTING_COUNT_COLS = new Set([
     'win', 'loss',
@@ -132,6 +134,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     // Filters for the statistics
     const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
     const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3]));
+    const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // If null, we are showing stats against all pitchers / batters
     const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
@@ -142,10 +145,11 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
         // Don't compute until the initial data load has finished
         if (isLoading) return;
 
-        // We must apply all filters (park and fielders) and get our gameIds
+        // We must apply all filters (park, fielders, specific games) and get our gameIds
         const gameIds = games
             .filter(g => selectedParks.has(g.field as Park))
             .filter(g => selectedFielderCounts.has(g.number_of_fielders))
+            .filter(g => selectedGameIds === null || selectedGameIds.has(g.id))
             .map(g => g.id)
 
         // Maps game IDs to log IDs so we can filter at_bat_logs by our set of filters.
@@ -183,7 +187,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             setSelectedPitcherStats(Array.from(selectedStatsData[0].values()));
             setPitcherIdsWithoutStats(selectedStatsData[1]);
         }
-    }, [playerGameStats, atBatLogs, games, gameLogs, selectedPitcherId, selectedBatterId, selectedParks, selectedFielderCounts, players, isLoading]);
+    }, [playerGameStats, atBatLogs, games, gameLogs, selectedPitcherId, selectedBatterId, selectedParks, selectedFielderCounts, selectedGameIds, players, isLoading]);
 
     // Handles sorting of tables
     const handleBatterSort = (col: string) => {
@@ -264,20 +268,44 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             />
         ));
 
+    const viewTypeLabel: Record<typeof viewType, string> = {
+        default: 'Default', by_game: 'By Game', by_PA_and_BF: 'By PA/BF', by_AB_and_IP: 'By AB/IP',
+    };
+    const parkSummary = selectedParks.size === 0
+        ? 'No Parks'
+        : selectedParks.size === PARKS.length
+        ? 'All Parks'
+        : Array.from(selectedParks).map(p => PARK_DISPLAY_NAMES[p] ?? p).join(' & ');
+    const fielderCounts = [...selectedFielderCounts].sort((a, b) => a - b);
+    const fielderSummary = fielderCounts.length === 0
+        ? 'No Fielders'
+        : fielderCounts.length === 1
+        ? `${fielderCounts[0]} Fielders`
+        : `${fielderCounts[0]}-${fielderCounts[fielderCounts.length - 1]} Fielders`;
+    const gameSummary = selectedGameIds === null ? 'All Games' : `${selectedGameIds.size} Game${selectedGameIds.size === 1 ? '' : 's'}`;
+    const filterSummary = `${viewTypeLabel[viewType]} · ${parkSummary} · ${fielderSummary} · ${gameSummary}`;
+
     return (
         <div>
             <button onClick={onBack}>← Back</button>
             <h1>All Player Statistics</h1>
-            <HandleStatisticsViewToggle
-                viewType={viewType}
-                setViewType={setViewType}
-            />
-            <ParkAndFielderFilters
-                selectedParks={selectedParks}
-                setSelectedParks={setSelectedParks}
-                selectedFielderCounts={selectedFielderCounts}
-                setSelectedFielderCounts={setSelectedFielderCounts}
-            />
+            <FilterPanel summary={filterSummary}>
+                <HandleStatisticsViewToggle
+                    viewType={viewType}
+                    setViewType={setViewType}
+                />
+                <ParkAndFielderFilters
+                    selectedParks={selectedParks}
+                    setSelectedParks={setSelectedParks}
+                    selectedFielderCounts={selectedFielderCounts}
+                    setSelectedFielderCounts={setSelectedFielderCounts}
+                />
+                <GameFilter
+                    games={games}
+                    selectedGameIds={selectedGameIds}
+                    setSelectedGameIds={setSelectedGameIds}
+                />
+            </FilterPanel>
             <h3>Batting {selectedPitcherId && ` facing ${players.filter(p => p.id === selectedPitcherId).map(p => playerNameShort(p))}`}</h3>
             <HandleStatisticsVersusPositionToggle
                 allPitcherIds={pitcherPlayers}
