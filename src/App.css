@@ -91,10 +91,20 @@ body {
   border-collapse: collapse;
 }
 
-.stats-table.sticky-first-col th:first-child,
-.stats-table.sticky-first-col td:first-child {
+.stats-table.sticky-first-two-col th:first-child,
+.stats-table.sticky-first-two-col td:first-child {
   position: sticky;
   left: 0;
+  background: white;
+  z-index: 1;
+  white-space: nowrap;
+  min-width: 30px;
+}
+
+.stats-table.sticky-first-two-col th:nth-child(2),
+.stats-table.sticky-first-two-col td:nth-child(2) {
+  position: sticky;
+  left: 30px;
   background: white;
   z-index: 1;
   white-space: nowrap;

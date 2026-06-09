@@ -4,9 +4,10 @@ type PitcherStatisticsRowProps = {
     viewType: statViewTypes;
     pde: PlayerGameData;
     player?: Player;
+    index?: number;
 };
 
-function PitcherStatisticsRow({ viewType, pde, player }: PitcherStatisticsRowProps) {
+function PitcherStatisticsRow({ viewType, pde, player, index }: PitcherStatisticsRowProps) {
     const displayInningsPitched = () => {
         return (viewType === 'by_game')
             ? ((pde.games_pitched === 0) ? '--' : ((pde.pitched_outs / pde.games_pitched) / 3).toFixed(2))
@@ -28,7 +29,7 @@ function PitcherStatisticsRow({ viewType, pde, player }: PitcherStatisticsRowPro
 
     return (
         <tr>
-            {player && <td>{playerNameShort(player)}</td>}
+            {player && <td>{index !== undefined && `${index + 1}: `}{playerNameShort(player)}</td>}
             <td>{pde.games_pitched}</td>
             <td>{displayInningsPitched()}</td>
             <td>{display(pde.batters_faced, { isBattersFaced: true })}</td>

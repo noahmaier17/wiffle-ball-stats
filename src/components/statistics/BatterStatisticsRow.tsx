@@ -3,10 +3,11 @@ import { playerNameShort, type Player, type PlayerGameData, type statViewTypes }
 type BatterStatisticsRowProps = {
     pde: PlayerGameData;
     player?: Player;
-    viewType: statViewTypes
+    viewType: statViewTypes;
+    index?: number;
 };
 
-function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps) {
+function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsRowProps) {
     const safeDiv = (number: number) => {
         return (Number.isFinite(number))
             ? number
@@ -58,7 +59,7 @@ function BatterStatisticsRow({ pde, player, viewType }: BatterStatisticsRowProps
 
     return (
         <tr>
-            {player && <td>{playerNameShort(player)}</td>}
+            {player && <td>{index !== undefined && `${index + 1}: `}{playerNameShort(player)}</td>}
             <td>{pdeWithZeroes.games_played}</td>
             <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>

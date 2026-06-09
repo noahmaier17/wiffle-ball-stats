@@ -189,12 +189,13 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     // Creates JSX for every batter from our selected data
     const battingJSX = sortedBatterStats
         .filter(stats => !batterIdsWithoutStats?.has(stats.player_id))
-        .map(stats => (
+        .map((stats, index) => (
             <BatterStatisticsRow
                 key={stats.player_id}
                 pde={stats}
                 player={players.find(p => p.id === stats.player_id)!}
                 viewType={viewType}
+                index={index}
             />
         ));
 
@@ -205,12 +206,13 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     // Creates JSX for every pitcher that has played in at least 1 game from our selected data
     const pitchingJSX = sortedPitcherStats
         .filter(stats => !pitcherIdsWithoutStats?.has(stats.player_id) && (selectedBatterId !== null || stats.games_pitched > 0))
-        .map(stats => (
+        .map((stats, index) => (
             <PitcherStatisticsRow
                 key={stats.player_id}
                 viewType={viewType}
                 pde={stats}
                 player={players.find(p => p.id === stats.player_id)!}
+                index={index}
             />
         ));
 
