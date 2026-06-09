@@ -19,7 +19,10 @@ function App() {
         return m ? parseInt(m[1]) : null;
     });
     const [showStatistics, setShowStatistics] = useState(
-        () => window.location.hash === '#statistics'
+        () => window.location.hash === '#statistics' || window.location.hash.startsWith('#statistics/')
+    );
+    const [initialPlayerSlug] = useState<string | null>(
+        () => window.location.hash.match(/^#statistics\/(.+)$/)?.[1] ?? null
     );
     const [players, setPlayers] = useState<Player[]>([]);
     const [playersLoading, setPlayersLoading] = useState(true);
@@ -97,7 +100,9 @@ function App() {
         } else if (spectateGameId !== null) {
             history.replaceState(null, '', `#spectate/${spectateGameId}`);
         } else if (showStatistics) {
-            history.replaceState(null, '', '#statistics');
+            if (!window.location.hash.startsWith('#statistics/')) {
+                history.replaceState(null, '', '#statistics');
+            }
         } else if (!loadingFromHash) {
             history.replaceState(null, '', location.pathname);
         }
@@ -110,7 +115,7 @@ function App() {
         // StatsDataProvider is scoped to the stats page so polling only runs while stats are visible
         if (showStatistics) return (
             <StatsDataProvider>
-                <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} />
+                <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} initialPlayerSlug={initialPlayerSlug} />
             </StatsDataProvider>
         );
         return (
