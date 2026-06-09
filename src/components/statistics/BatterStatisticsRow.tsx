@@ -59,7 +59,8 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
 
     return (
         <tr>
-            {player && <td>{index !== undefined && `${index + 1}: `}{playerNameShort(player)}</td>}
+            {index !== undefined && <td>{`${index + 1}`}</td>}
+            {player && <td>{playerNameShort(player)}</td>}
             <td>{pdeWithZeroes.games_played}</td>
             <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>

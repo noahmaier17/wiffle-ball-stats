@@ -29,7 +29,8 @@ function PitcherStatisticsRow({ viewType, pde, player, index }: PitcherStatistic
 
     return (
         <tr>
-            {player && <td>{index !== undefined && `${index + 1}: `}{playerNameShort(player)}</td>}
+            {index !== undefined && <td>{`${index + 1}`}</td>}
+            {player && <td>{playerNameShort(player)}</td>}
             <td>{pde.games_pitched}</td>
             <td>{displayInningsPitched()}</td>
             <td>{display(pde.batters_faced, { isBattersFaced: true })}</td>

@@ -248,7 +248,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             />
             <br/>
             <div className="table-scroll-container">
-                <table className="stats-table sticky-first-col">
+                <table className="stats-table sticky-first-two-col">
                     <thead>
                         <BatterStatisticsTableHeader
                             setSortedColumn={handleBatterSort}
@@ -256,6 +256,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                             sortDirection={batterSortDirection}
                             showName={true}
                             viewType={viewType}
+                            includeIndex={true}
                         />
                     </thead>
                     <tbody>{battingJSX}</tbody>
@@ -271,7 +272,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             />
             <br/>
             <div className="table-scroll-container">
-                <table className="stats-table sticky-first-col">
+                <table className="stats-table sticky-first-two-col">
                     <thead>
                         <PitcherStatisticsTableHeader
                             viewType={viewType}
@@ -279,6 +280,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                             sortedColumn={sortedPitcherColumn}
                             sortDirection={pitcherSortDirection}
                             showName={true}
+                            includeIndex={true}
                         />
                     </thead>
                     <tbody>{pitchingJSX}</tbody>

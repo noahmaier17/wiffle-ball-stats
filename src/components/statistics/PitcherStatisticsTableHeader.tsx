@@ -8,6 +8,7 @@ type BattePitcherStatisticsTableHeaderProps = {
     sortedColumn?: string | null;
     sortDirection?: 'asc' | 'desc';
     showName?: boolean;
+    includeIndex?: boolean;
 }
 
 function PitcherStatisticsTableHeader({
@@ -15,7 +16,8 @@ function PitcherStatisticsTableHeader({
     setSortedColumn, 
     sortedColumn, 
     sortDirection = 'desc', 
-    showName = false
+    showName = false,
+    includeIndex = false
 }: BattePitcherStatisticsTableHeaderProps) {
     const indicator = (col: string) => sortedColumn === col ? (sortDirection === 'desc' ? ' ▼' : ' ▲') : '';
     const th = (label: ReactNode, col: string) => (
@@ -36,6 +38,7 @@ function PitcherStatisticsTableHeader({
 
     return (
         <tr>
+            {includeIndex && <td></td>}
             {showName && (
                 <th onClick={setSortedColumn ? () => setSortedColumn('name') : undefined} style={setSortedColumn ? { cursor: 'pointer' } : undefined}>
                     Name{indicator('name')}

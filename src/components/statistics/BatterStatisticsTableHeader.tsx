@@ -8,6 +8,7 @@ type BatterStatisticsTableHeaderProps = {
     sortedColumn?: string | null;
     sortDirection?: 'asc' | 'desc';
     showName?: boolean;
+    includeIndex?: boolean;
 }
 
 function BatterStatisticsTableHeader({ 
@@ -15,7 +16,8 @@ function BatterStatisticsTableHeader({
     setSortedColumn, 
     sortedColumn, 
     sortDirection = 'desc', 
-    showName = false 
+    showName = false,
+    includeIndex = false
 }: BatterStatisticsTableHeaderProps) {
     const indicator = (col: string) => sortedColumn === col ? (sortDirection === 'desc' ? ' ▼' : ' ▲') : '';
     const th = (label: ReactNode, col: string) => (
@@ -37,6 +39,7 @@ function BatterStatisticsTableHeader({
  
     return (
         <tr>
+            {includeIndex && <td></td>}
             {showName && (
                 <th onClick={setSortedColumn ? () => setSortedColumn('name') : undefined} style={setSortedColumn ? { cursor: 'pointer' } : undefined}>
                     Name{indicator('name')}
