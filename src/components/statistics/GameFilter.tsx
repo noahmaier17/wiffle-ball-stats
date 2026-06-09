@@ -100,7 +100,7 @@ function GameFilter({ games, selectedGameIds, setSelectedGameIds }: GameFilterPr
                             onClick={() => toggleExpanded(date)}
                             style={{ cursor: 'pointer', userSelect: 'none' }}
                         >
-                            <span style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                            <span>{isExpanded ? '▾' : '▸'}</span>
                             {' '}{formatDate(date)} · {formatDateMeta(dateGames)}
                         </span>
                         {isExpanded && (

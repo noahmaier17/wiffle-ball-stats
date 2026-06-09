@@ -1,12 +1,13 @@
 import { outcomeSignToJSXElement, playerNameShort, type AtBatLog } from "../../types"
 
 type LogRowProps = {
-    atBat: AtBatLog
+    atBat: AtBatLog,
+    showOpponent?: boolean,
 }
 
-function LogRow({ atBat }: LogRowProps) {
+function LogRow({ atBat, showOpponent }: LogRowProps) {
     return (<>
-        <span>{playerNameShort(atBat.batter)}: {outcomeSignToJSXElement(atBat.outcomeSign)}</span>
+        <span>{playerNameShort(atBat.batter)}{showOpponent ? ` facing ${playerNameShort(atBat.pitcher)}` : ''}: {outcomeSignToJSXElement(atBat.outcomeSign)}</span>
         <span>{(atBat.rbis > 0) ? ", " + atBat.rbis + " RBI" : ""}</span>
         <span>{(atBat.extraComments !== "" ? "; " : "")}</span>
         {atBat.recordedOuts > 0 && <span>{" (" + atBat.recordedOuts + " out" + (atBat.recordedOuts > 1 ? "s" : "") + ") "}</span>}

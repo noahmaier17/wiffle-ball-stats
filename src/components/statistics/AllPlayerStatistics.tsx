@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { calculateERA, calculateWHIP, playerName, playerNameShort, type Park, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import { usePlayers } from "../../contexts/PlayersContext";
 import { useStatsData } from "../../contexts/StatsDataContext";
-import { computeAllPlayerStatistics } from "../../utils/computeAllPlayerStatistics";
-import { computeBattersVersusPitcher } from "../../utils/computeBattersVersusPitcher";
-import { computePitchersVersusBatter } from "../../utils/computePitchersVersusBatter";
+import { useComputedStats } from "../../hooks/useComputedStats";
 import BatterStatisticsRow from "./BatterStatisticsRow";
 import BatterStatisticsTableHeader from "./BatterStatisticsTableHeader";
 import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 import HandleStatisticsVersusPositionToggle from "./HandleStatisticsVersusPitcherToggle";
-import { PARK_DISPLAY_NAMES, PARKS } from "../../constants";
+import { PARKS } from "../../constants";
+import { buildFilterSummary } from "../../utils/buildFilterSummary";
 import ParkAndFielderFilters from "./ParkAndFielderFilters";
 import GameFilter from "./GameFilter";
 import FilterPanel from "./FilterPanel";
@@ -109,19 +108,11 @@ type AllPlayerStatisticsProps = {
 }
 
 function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
+    // Fetches list of players
     const players = usePlayers();
 
-    // Pull cached data from StatsDataContext — no direct DB calls here
-    const { playerGameStats, atBatLogs, games, gameLogs, isLoading } = useStatsData();
-
-    // Aggregated stats across all games (or filtered games)
-    const [allStats, setAllStats] = useState<PlayerGameData[] | null>(null);
-    // Stats with the versus-pitcher / versus-batter filter applied
-    const [selectedBatterStats, setSelectedBatterStats] = useState<PlayerGameData[] | null>(null);
-    const [selectedPitcherStats, setSelectedPitcherStats] = useState<PlayerGameData[] | null>(null);
-    // Players whose stats are all zeros in the current filter (hidden from table)
-    const [batterIdsWithoutStats, setBatterIdsWithoutStats] = useState<Set<number> | null>(null);
-    const [pitcherIdsWithoutStats, setPitcherIdsWithoutStats] = useState<Set<number> | null>(null);
+    // Pull cached data from StatsDataContext
+    const { games, isLoading } = useStatsData();
 
     const [sortedBatterColumn, setSortedBatterColumn] = useState<string | null>(null);
     const [batterSortDirection, setBatterSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -140,54 +131,9 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     const [selectedBatterId, setSelectedBatterId] = useState<number | null>(null);
 
-    // Recompute all displayed stats whenever the cached data or any filter changes.
-    useEffect(() => {
-        // Don't compute until the initial data load has finished
-        if (isLoading) return;
-
-        // We must apply all filters (park, fielders, specific games) and get our gameIds
-        const gameIds = games
-            .filter(g => selectedParks.has(g.field as Park))
-            .filter(g => selectedFielderCounts.has(g.number_of_fielders))
-            .filter(g => selectedGameIds === null || selectedGameIds.has(g.id))
-            .map(g => g.id)
-
-        // Maps game IDs to log IDs so we can filter at_bat_logs by our set of filters.
-        const gameIdSet = new Set(gameIds);
-        const logIds = gameLogs.filter(gl => gameIdSet.has(gl.game_id)).map(gl => gl.id);
-
-        // Aggregate per-game player_game_stats into career totals
-        const allData = computeAllPlayerStatistics(playerGameStats, { batterIds: players, gameIds });
-        setAllStats(Array.from(allData[0].values()));
-
-        // Batting table: either all batters' totals, or batters' stats vs a specific pitcher
-        if (selectedPitcherId === null) {
-            setSelectedBatterStats(Array.from(allData[0].values()));
-            setBatterIdsWithoutStats(allData[1]);
-        } else {
-            const selectedStatsData = computeBattersVersusPitcher(atBatLogs, {
-                batters: players,
-                pitchers: players.filter(p => p.id === selectedPitcherId),
-                logIds,
-            });
-            setSelectedBatterStats(Array.from(selectedStatsData[0].values()));
-            setBatterIdsWithoutStats(selectedStatsData[1]);
-        }
-
-        // Pitching table: either all pitchers' totals, or pitchers' stats vs a specific batter
-        if (selectedBatterId === null) {
-            setSelectedPitcherStats(Array.from(allData[0].values()));
-            setPitcherIdsWithoutStats(allData[1]);
-        } else {
-            const selectedStatsData = computePitchersVersusBatter(atBatLogs, {
-                batters: players.filter(p => p.id === selectedBatterId),
-                pitchers: players,
-                logIds,
-            });
-            setSelectedPitcherStats(Array.from(selectedStatsData[0].values()));
-            setPitcherIdsWithoutStats(selectedStatsData[1]);
-        }
-    }, [playerGameStats, atBatLogs, games, gameLogs, selectedPitcherId, selectedBatterId, selectedParks, selectedFielderCounts, selectedGameIds, players, isLoading]);
+    const { allStats, selectedBatterStats, batterIdsWithoutStats, selectedPitcherStats, pitcherIdsWithoutStats } = useComputedStats({
+        selectedParks, selectedFielderCounts, selectedGameIds, selectedPitcherId, selectedBatterId,
+    });
 
     // Handles sorting of tables
     const handleBatterSort = (col: string) => {
@@ -268,22 +214,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
             />
         ));
 
-    const viewTypeLabel: Record<typeof viewType, string> = {
-        default: 'Default', by_game: 'By Game', by_PA_and_BF: 'By PA/BF', by_AB_and_IP: 'By AB/IP',
-    };
-    const parkSummary = selectedParks.size === 0
-        ? 'No Parks'
-        : selectedParks.size === PARKS.length
-        ? 'All Parks'
-        : Array.from(selectedParks).map(p => PARK_DISPLAY_NAMES[p] ?? p).join(' & ');
-    const fielderCounts = [...selectedFielderCounts].sort((a, b) => a - b);
-    const fielderSummary = fielderCounts.length === 0
-        ? 'No Fielders'
-        : fielderCounts.length === 1
-        ? `${fielderCounts[0]} Fielders`
-        : `${fielderCounts[0]}-${fielderCounts[fielderCounts.length - 1]} Fielders`;
-    const gameSummary = selectedGameIds === null ? 'All Games' : `${selectedGameIds.size} Game${selectedGameIds.size === 1 ? '' : 's'}`;
-    const filterSummary = `${viewTypeLabel[viewType]} · ${parkSummary} · ${fielderSummary} · ${gameSummary}`;
+    const filterSummary = buildFilterSummary(viewType, selectedParks, selectedFielderCounts, selectedGameIds);
 
     return (
         <div>

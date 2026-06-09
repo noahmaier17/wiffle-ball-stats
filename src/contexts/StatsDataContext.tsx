@@ -16,6 +16,7 @@ export type StatsAtBatLogRow = {
     // flagged_pitcher_row is filtered in computePitchersVersusBatter.
     flagged_batter_row: boolean | null;
     flagged_pitcher_row: boolean | null;
+    extra_comments: string;
 };
 
 // Minimal game row. Only columns we need for stats are selected.
@@ -72,7 +73,7 @@ export function StatsDataProvider({ children }: { children: React.ReactNode }) {
             // Fetch all at-bat rows including flag columns.
             supabase
                 .from('at_bat_logs')
-                .select('log_id, batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, flagged_batter_row, flagged_pitcher_row'),
+                .select('log_id, batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, flagged_batter_row, flagged_pitcher_row, extra_comments'),
             supabase.from('games').select('id, field, number_of_fielders, date, home_score, away_score'),
             supabase.from('game_logs').select('id, game_id'),
         ]);
