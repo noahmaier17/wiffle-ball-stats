@@ -3,6 +3,7 @@ import { playerName, type Player } from '../../types';
 import { usePlayers } from '../../contexts/PlayersContext';
 import PlayerStatistics from './PlayerStatistics';
 import AllPlayerStatistics from './AllPlayerStatistics';
+import PlayerStatsChart from './PlayerStatsChart';
 
 const playerToSlug = (p: Player) => `${p.firstName}_${p.lastName}`.toLowerCase();
 
@@ -15,6 +16,7 @@ function PlayerStatisticsSelection({ onBack, initialPlayerSlug }: PlayerStatisti
     const players = usePlayers();
     const [selectedUser, setSelectedUser] = useState<Player | null>(null);
     const [showAllUsers, setShowAllUsers] = useState<boolean>(false);
+    const [showChart, setShowChart] = useState<boolean>(false);
     const initialResolved = useRef(false);
 
     // Resolve the initial slug once players are available
@@ -40,6 +42,7 @@ function PlayerStatisticsSelection({ onBack, initialPlayerSlug }: PlayerStatisti
 
     if (selectedUser) return <PlayerStatistics user={selectedUser} onBack={handleBackFromPlayer} />
     if (showAllUsers) return <AllPlayerStatistics onBack={() => setShowAllUsers(false)} />
+    if (showChart) return <PlayerStatsChart onBack={() => setShowChart(false)} />
 
     return (
         <div>
@@ -47,7 +50,8 @@ function PlayerStatisticsSelection({ onBack, initialPlayerSlug }: PlayerStatisti
             <h1>Player Statistics</h1>
 
             <div>
-                <button key={"all button"} onClick={() => setShowAllUsers(true)} className="radio-group">Show All</button>
+                <button key={"all button"} onClick={() => setShowAllUsers(true)} className="radio-group">All Player Statistics</button>
+                <button key={"graph button"} onClick={() => setShowChart(true)} className="radio-group">Graph Statistics Viewer</button>
                 <hr></hr>
                 {players.map(p => (
                     <button key={p.id} onClick={() => handleSelectPlayer(p)} className="radio-group">

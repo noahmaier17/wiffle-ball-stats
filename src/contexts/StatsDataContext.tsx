@@ -56,7 +56,7 @@ const StatsDataContext = createContext<StatsDataContextType>({
 });
 
 // Refresh interval.
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 10_000;
 
 export function StatsDataProvider({ children }: { children: React.ReactNode }) {
     const [playerGameStats, setPlayerGameStats] = useState<PlayerGameData[]>([]);
