@@ -27,6 +27,7 @@ export const AT_BAT_OUTCOME_LAYOUT = [
 ] as const
 export const REACHED_BASE_SIGNS = new Set(['1B', '2B', '3B', 'HR', 'IPHR', 'BB', 'FC']);
 export const BASE_HIT_SIGNS = new Set(['1B', '2B', '3B']);
+export const HIT_SIGNS = new Set([...BASE_HIT_SIGNS, 'HR', 'IPHR']);
 export const OUT_IN_PLAY_SIGNS = new Set(['Out']);
 export const STRIKEOUT_SIGNS = new Set(['K', 'reverse-K']);
 

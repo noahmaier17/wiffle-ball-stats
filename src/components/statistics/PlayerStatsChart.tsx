@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Customized } from 'recharts';
 import { useStatsData } from '../../contexts/StatsDataContext';
 import { usePlayers } from '../../contexts/PlayersContext';
 import { playerName } from '../../types';
 import type { StatsAtBatLogRow } from '../../contexts/StatsDataContext';
-import { REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
+import { HIT_SIGNS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
 
 // List of options for the X axis
 const X_STAT_OPTIONS = [
@@ -14,17 +14,32 @@ const X_STAT_OPTIONS = [
 
 // List of options for the Y axis
 const Y_STAT_OPTIONS = [
-    { key: 'hr',          label: 'Home Runs' },
-    { key: 'hits',        label: 'Hits' },
-    { key: 'doubles',     label: 'Doubles' },
-    { key: 'triples',     label: 'Triples' },
-    { key: 'strikeouts',  label: 'Strikeouts' },
-    { key: 'walks',       label: 'Walks' },
+    { key: 'hr',          label: 'HR' },
+    { key: 'iphr',        label: 'IPHR' },
+    { key: 'hits',        label: 'H' },
+    { key: 'singles',     label: '1B' },
+    { key: 'doubles',     label: '2B' },
+    { key: 'triples',     label: '3B' },
+    { key: 'strikeouts',  label: 'SO' },
+    { key: 'outs',        label: 'OUT' },
+    { key: 'walks',       label: 'BB' },
+    { key: 'rbis',        label: 'RBI' },
+    { key: 'fc',          label: 'FC' },
+    { key: 'tb',          label: 'TB' },
+    { key: 'ba',          label: 'BA' },
+    { key: 'obp',         label: 'OBP' },
+    { key: 'slg',         label: 'SLG' },
+    { key: 'ops',         label: 'OPS' }
 ] as const;
 
 // Corresponding types of the axes
 type XStatKey = typeof X_STAT_OPTIONS[number]['key'];
 type YStatKey = typeof Y_STAT_OPTIONS[number]['key'];
+
+// Stats that use decimal ticks (not rounded to integers on the y-axis)
+const DECIMAL_Y_STATS = new Set<YStatKey>(['ba', 'obp', 'slg', 'ops']);
+// Subset of DECIMAL_Y_STATS whose y-axis domain is capped at 1.0
+const UNIT_Y_STATS = new Set<YStatKey>(['ba', 'obp']);
 
 // One data point per plate appearance or at-bat depending on xStat.
 // x = cumulative x-axis count, y = cumulative y-axis stat value.
@@ -42,11 +57,29 @@ function buildPlayerChartData(
         .filter(r => r.batter_id === playerId && !r.flagged_batter_row)
         .sort((a, b) => a.log_id - b.log_id);
 
+    // Short function to calculate total bases
+    const calculateTB = (log: StatsAtBatLogRow) => {
+        switch (log.outcome_sign) {
+            case '1B': return 1;
+            case '2B': return 2;
+            case '3B': return 3;
+            case 'HR': return 4;
+            case 'IPHR': return 4;
+            default: return 0;
+        }
+    }
+
     const points: ChartPoint[] = [];
     let cumulativeX = 0;
-    let cumulativeY = 0;
+    let cumulativeY = 0;  // Some stats accumulate Y values, some simply set it
+    let skipStat = false; // For when we want to skip a stat for whatever reason
+    // Other cumulative values for calculating more complex stats
+    let cumulative1 = 0;
+    let cumulative2 = 0;
 
     for (const log of playerLogs) {
+        skipStat = false;
+
         // With at_bats, we increase X on anything except a walk
         if (xStat === 'at_bats') {
             if (log.outcome_sign !== 'BB') cumulativeX++;
@@ -57,22 +90,58 @@ function buildPlayerChartData(
         }
 
         // With home runs, if our outcome is a HR or IPHR, we increase Y
-        if (yStat === 'hr') {
-            if (log.outcome_sign === 'HR' || log.outcome_sign === 'IPHR') cumulativeY++;
-        } else if (yStat === 'hits') {
-            if (REACHED_BASE_SIGNS.has(log.outcome_sign)) cumulativeY++;
-        } else if (yStat === 'doubles') {
-            if (log.outcome_sign === '2B') cumulativeY++;
-        } else if (yStat === 'triples') {
-            if (log.outcome_sign === '3B') cumulativeY++;
-        } else if (yStat === 'strikeouts') {
-            if (STRIKEOUT_SIGNS.has(log.outcome_sign)) cumulativeY++;
-        } else if (yStat === 'walks') {
-            if (log.outcome_sign === 'BB') cumulativeY++;
+        if (yStat === 'hr' && (log.outcome_sign === 'HR' || log.outcome_sign === 'IPHR')) cumulativeY++;
+        if (yStat === 'iphr' && (log.outcome_sign === 'IPHR')) cumulativeY++;
+        if (yStat === 'hits' && (REACHED_BASE_SIGNS.has(log.outcome_sign))) cumulativeY++;
+        if (yStat === 'singles' && (log.outcome_sign === '1B')) cumulativeY++;
+        if (yStat === 'doubles' && (log.outcome_sign === '2B')) cumulativeY++;
+        if (yStat === 'triples' && (log.outcome_sign === '3B')) cumulativeY++;
+        if (yStat === 'strikeouts' && (STRIKEOUT_SIGNS.has(log.outcome_sign))) cumulativeY++;
+        if (yStat === 'outs' && (log.outcome_sign === 'Out')) cumulativeY++;
+        if (yStat === 'walks' && (log.outcome_sign === 'BB')) cumulativeY++;
+        if (yStat === 'rbis') cumulativeY += log.rbis;
+        if (yStat === 'fc' && (log.outcome_sign === 'FC')) cumulativeY++;
+        if (yStat === 'tb') cumulativeY += calculateTB(log);
+        if (yStat === 'ba') {
+            // Calculates cumulative hits
+            if (HIT_SIGNS.has(log.outcome_sign)) cumulative1++;
+            // Calculates cumulative at bats
+            if (log.outcome_sign !== 'BB') cumulative2++;
+            skipStat = (cumulative2 === 0)
+            cumulativeY = cumulative1 / cumulative2;
+        }
+        if (yStat === 'obp') {
+            // Calculates cumulative getting on base
+            if (HIT_SIGNS.has(log.outcome_sign) || log.outcome_sign === 'BB') cumulative1++;
+            // Calculates cumulative plate appearances
+            cumulative2++;
+            cumulativeY = cumulative1 / cumulative2;
+        }
+        if (yStat === 'slg') {
+            // Calculates total bases
+            cumulative1 += calculateTB(log);
+            // Calculates cumulative at bats
+            if (log.outcome_sign !== 'BB') cumulative2++;
+            skipStat = (cumulative2 === 0)
+            cumulativeY = cumulative1 / cumulative2;
+        }
+        if (yStat === 'ops') {
+            // First, OBP
+            // Calculates cumulative getting on base
+            if (HIT_SIGNS.has(log.outcome_sign) || log.outcome_sign === 'BB') cumulative1++;
+            // Calculates cumulative plate appearances
+            cumulative2++;
+            cumulativeY = cumulative1 / cumulative2;
+            // Second, SLG
+            // Calculates total bases
+            cumulative1 += calculateTB(log);
+            // Calculates cumulative at bats
+            if (log.outcome_sign !== 'BB') cumulative2++;
+            cumulativeY = cumulative1 / cumulative2;
         }
 
         // Adds this point for this player
-        points.push({ x: cumulativeX, y: cumulativeY });
+        if (!skipStat) points.push({ x: cumulativeX, y: cumulativeY });
     }
 
     // If cumulativeX or cumulativeY is 0, this player recorded no stats
@@ -196,7 +265,12 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                 different total number of at-bats (different x-axis length).
             */}
             <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart margin={{ top: 10, right: 30, bottom: 30, left: 30 }}>
+            <ComposedChart margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
+                <Customized component={({ width }: any) => (
+                    <text x={width / 2} y={16} textAnchor="middle" fill="#555" fontSize={14}>
+                        {yLabel} vs {xLabel}
+                    </text>
+                )} />
                 <XAxis
                     dataKey="x"
                     type="number"
@@ -205,7 +279,9 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                 <YAxis
                     dataKey="yJitter"
                     label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10 }}
-                    allowDecimals={false}
+                    allowDecimals={DECIMAL_Y_STATS.has(selectedYStat)}
+                    domain={[-(visibleCount - 1) / 2 * JITTER_STEP, UNIT_Y_STATS.has(selectedYStat) ? 1 : 'auto']}
+                    tickFormatter={(v) => String(DECIMAL_Y_STATS.has(selectedYStat) ? Math.round(v * 1000) / 1000 : Math.round(v))}
                 />
                 {/*
                     Legend items are interactive: clicking a name hides/shows that player's
@@ -213,7 +289,8 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                     live on the span so they share one target (no double-toggle).
                 */}
                 <Legend
-                    verticalAlign="top"
+                    verticalAlign="bottom"
+                    wrapperStyle={{ paddingTop: '20px' }}
                     formatter={(value) => (
                         <span
                             onMouseEnter={() => setFocusedPlayer(value)}
