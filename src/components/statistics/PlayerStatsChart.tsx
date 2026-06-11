@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Customized } from 'recharts';
 import { useStatsData } from '../../contexts/StatsDataContext';
 import { usePlayers } from '../../contexts/PlayersContext';
-import { playerName } from '../../types';
+import { playerName, type Park, type statViewTypes } from '../../types';
 import type { StatsAtBatLogRow } from '../../contexts/StatsDataContext';
-import { HIT_SIGNS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
+import { HIT_SIGNS, PARKS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
+import FilterPanel from './FilterPanel';
+import HandleStatisticsViewToggle from './HandleStatisticsViewToggle';
+import ParkAndFielderFilters from './ParkAndFielderFilters';
+import GameFilter from './GameFilter';
 
 // List of options for the X axis
 const X_STAT_OPTIONS = [
@@ -12,8 +16,8 @@ const X_STAT_OPTIONS = [
     { key: 'plate_appearances', label: 'Plate Appearances' },
 ] as const;
 
-// List of options for the Y axis
-const Y_STAT_OPTIONS = [
+// List of options for the Y axis for batters
+const Y_STAT_OPTIONS_BATTER = [
     { key: 'hr',          label: 'HR' },
     { key: 'iphr',        label: 'IPHR' },
     { key: 'hits',        label: 'H' },
@@ -31,10 +35,29 @@ const Y_STAT_OPTIONS = [
     { key: 'slg',         label: 'SLG' },
     { key: 'ops',         label: 'OPS' }
 ] as const;
+// List of options for the Y axis for pitchers
+const Y_STAT_OPTIONS_PITCHER = [
+    { key: 'outs_pitched',      label: 'OUT' },
+    { key: 'bf',                label: 'BF' },
+    { key: 'hits_pitched',      label: 'H' },
+    { key: 'walks_pitched',     label: 'BB' },
+    { key: 'strikeouts_pitched',label: 'SO' },
+    { key: 'era',               label: 'ERA' },
+    { key: 'whip',              label: 'WHIP' }
+] as const;
+// List of all options combined
+const Y_STAT_OPTIONS = [...Y_STAT_OPTIONS_BATTER, ...Y_STAT_OPTIONS_PITCHER] as const;
 
 // Corresponding types of the axes
 type XStatKey = typeof X_STAT_OPTIONS[number]['key'];
-type YStatKey = typeof Y_STAT_OPTIONS[number]['key'];
+type YStatBatter = typeof Y_STAT_OPTIONS_BATTER[number]['key'];
+type YStatPitcher = typeof Y_STAT_OPTIONS_PITCHER[number]['key'];
+type YStatKey = YStatBatter | YStatPitcher;
+
+const BATTER_Y_STAT_KEYS = new Set(Y_STAT_OPTIONS_BATTER.map(o => o.key));
+function isBatterStat(yStat: YStatKey): yStat is YStatBatter {
+    return BATTER_Y_STAT_KEYS.has(yStat as YStatBatter);
+}
 
 // Stats that use decimal ticks (not rounded to integers on the y-axis)
 const DECIMAL_Y_STATS = new Set<YStatKey>(['ba', 'obp', 'slg', 'ops']);
@@ -53,9 +76,13 @@ function buildPlayerChartData(
     xStat: XStatKey,
     yStat: YStatKey,
 ): [ChartPoint[], boolean] {
-    const playerLogs = atBatLogs
-        .filter(r => r.batter_id === playerId && !r.flagged_batter_row)
-        .sort((a, b) => a.log_id - b.log_id);
+    const playerLogs = (isBatterStat(yStat))
+        ? atBatLogs
+            .filter(r => r.batter_id === playerId && !r.flagged_batter_row)
+            .sort((a, b) => a.log_id - b.log_id)
+        : atBatLogs
+            .filter(r => r.pitcher_id === playerId && !r.flagged_batter_row)
+            .sort((a, b) => a.log_id - b.log_id)
 
     // Short function to calculate total bases
     const calculateTB = (log: StatsAtBatLogRow) => {
@@ -140,6 +167,12 @@ function buildPlayerChartData(
             cumulativeY = cumulative1 / cumulative2;
         }
 
+        if (yStat === 'outs_pitched' && (log.outcome_sign === 'Out')) cumulativeY++;
+        if (yStat === 'bf') cumulativeY++;
+        if (yStat === 'hits_pitched' && (REACHED_BASE_SIGNS.has(log.outcome_sign))) cumulativeY++;
+        if (yStat === 'walks_pitched' && (log.outcome_sign === 'BB')) cumulativeY++;
+        if (yStat === 'strikeouts_pitched' && (STRIKEOUT_SIGNS.has(log.outcome_sign))) cumulativeY++;
+
         // Adds this point for this player
         if (!skipStat) points.push({ x: cumulativeX, y: cumulativeY });
     }
@@ -158,7 +191,12 @@ const JITTER_STEP = 0; // 0.06; // vertical gap between overlapping lines
 
 function PlayerStatsChart({ onBack }: { onBack: () => void }) {
     // Gets all our important statistics information
-    const { atBatLogs, isLoading } = useStatsData();
+    const { atBatLogs, games, gameLogs, isLoading } = useStatsData();
+
+    const [viewType, setViewType] = useState<statViewTypes>('default');
+    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3]));
+    const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // Gets all the players
     const players = usePlayers();
@@ -182,10 +220,21 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
     //     });
     // };
 
+    // Filter atBatLogs to only logs belonging to games that match the selected parks, fielder counts, and game IDs
+    const gameIdSet = new Set(
+        games
+            .filter(g => selectedParks.has(g.field as Park))
+            .filter(g => selectedFielderCounts.has(g.number_of_fielders))
+            .filter(g => selectedGameIds === null || selectedGameIds.has(g.id))
+            .map(g => g.id)
+    );
+    const logIdSet = new Set(gameLogs.filter(gl => gameIdSet.has(gl.game_id)).map(gl => gl.id));
+    const filteredAtBatLogs = atBatLogs.filter(log => logIdSet.has(log.log_id));
+
     // Pass 1: build raw points, skipping players with no stats
     const rawDataMap = players.reduce<Map<number, ChartPoint[]>>(
         (map, p) => {
-            const [points, noStats] = buildPlayerChartData(atBatLogs, p.id, selectedXStat, selectedYStat);
+            const [points, noStats] = buildPlayerChartData(filteredAtBatLogs, p.id, selectedXStat, selectedYStat);
             if (noStats) return map;
             map.set(p.id, points);
             return map;
@@ -223,9 +272,27 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
             <button onClick={onBack}>← Back</button>
             <h1>Graph Statistics Viewer</h1>
 
+            <FilterPanel viewType={viewType} selectedParks={selectedParks} selectedFielderCounts={selectedFielderCounts} selectedGameIds={selectedGameIds}>
+                <HandleStatisticsViewToggle
+                    viewType={viewType}
+                    setViewType={setViewType}
+                />
+                <ParkAndFielderFilters
+                    selectedParks={selectedParks}
+                    setSelectedParks={setSelectedParks}
+                    selectedFielderCounts={selectedFielderCounts}
+                    setSelectedFielderCounts={setSelectedFielderCounts}
+                />
+                <GameFilter
+                    games={games}
+                    selectedGameIds={selectedGameIds}
+                    setSelectedGameIds={setSelectedGameIds}
+                />
+            </FilterPanel>
+            
             <div>
                 <p>X Axis</p>
-                <div className="radio-group">
+                <div>
                     {X_STAT_OPTIONS.map(o => (
                         <label key={o.key}>
                             <input
@@ -243,8 +310,24 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
 
             <div>
                 <p>Y Axis</p>
-                <div className="radio-group">
-                    {Y_STAT_OPTIONS.map(o => (
+                <div>
+                    Batting:
+                    {Y_STAT_OPTIONS_BATTER.map(o => (
+                        <label key={o.key}>
+                            <input
+                                type="radio"
+                                name="y-stat"
+                                value={o.key}
+                                checked={selectedYStat === o.key}
+                                onChange={() => setSelectedYStat(o.key)}
+                            />
+                            {o.label}
+                        </label>
+                    ))}
+                </div>
+                <div>
+                    Pitching:
+                    {Y_STAT_OPTIONS_PITCHER.map(o => (
                         <label key={o.key}>
                             <input
                                 type="radio"

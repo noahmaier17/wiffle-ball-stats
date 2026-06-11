@@ -10,7 +10,6 @@ import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 import PlayersPlayByPlay from "./PlayersPlayByPlay";
 import { PARKS } from "../../constants";
-import { buildFilterSummary } from "../../utils/buildFilterSummary";
 import FilterPanel from "./FilterPanel";
 import ParkAndFielderFilters from "./ParkAndFielderFilters";
 import GameFilter from "./GameFilter";
@@ -68,7 +67,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
         <div>
             <button onClick={onBack}>← Back</button>
             <h1>{playerName(user)} Statistics</h1>
-            <FilterPanel summary={buildFilterSummary(viewType, selectedParks, selectedFielderCounts, selectedGameIds)}>
+            <FilterPanel viewType={viewType} selectedParks={selectedParks} selectedFielderCounts={selectedFielderCounts} selectedGameIds={selectedGameIds}>
                 <HandleStatisticsViewToggle
                     viewType={viewType}
                     setViewType={setViewType}
