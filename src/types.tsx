@@ -60,19 +60,21 @@ export type PlayerGameData = {
     pitched_outs: number,
     batters_faced: number
 }
-export const calculateERA = (pde: PlayerGameData) => {
-    const era = (pde.runs_allowed * 3) / pde.innings_pitched;
-
-    return (Number.isFinite(era))
-        ? era
-        : 0
+export const NON_FINITE_FMT3_VALUE = '.---'
+export function fmt3(n: number): string {
+    if (!Number.isFinite(n)) return NON_FINITE_FMT3_VALUE;
+    return n.toFixed(3).replace(/^0/, '');
 }
-export const calculateWHIP = (pde: PlayerGameData) => {
-    const whip = (pde.pitched_walks + pde.hits_allowed) / pde.innings_pitched;
-
-    return (Number.isFinite(whip))
-        ? whip
-        : 0
+export const NON_FINITE_FMT2_VALUE = '.--'
+export function fmt2(n: number): string {
+    if (!Number.isFinite(n)) return NON_FINITE_FMT2_VALUE;
+    return n.toFixed(2).replace(/^0/, '');
+}
+export const calculateERA = (pde: PlayerGameData): string => {
+    return fmt2((pde.runs_allowed * 3) / pde.innings_pitched);
+}
+export const calculateWHIP = (pde: PlayerGameData): string => {
+    return fmt2((pde.pitched_walks + pde.hits_allowed) / pde.innings_pitched);
 }
 export const defaultPlayerGameData: PlayerGameData = {
     id: 0, player_id: 0, game_id: 0,

@@ -1,4 +1,4 @@
-import { playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import { fmt3, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 
 type BatterStatisticsRowProps = {
     pde: PlayerGameData;
@@ -8,12 +8,6 @@ type BatterStatisticsRowProps = {
 };
 
 function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsRowProps) {
-    const safeDiv = (number: number) => {
-        return (Number.isFinite(number))
-            ? number
-            : 0
-    }
-
     const display = (
         value: number,
         {
@@ -29,9 +23,9 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
         return (viewType === 'by_game')
             ? (pdeWithZeroes.games_played === 0 ? '--' : (value / pdeWithZeroes.games_played).toFixed(2))
             : (viewType === 'by_PA_and_BF' && !isGameGranularityStatistic && !isPlateAppearances)
-                ? (pdeWithZeroes.plate_appearances === 0 ? '--' : (value / pdeWithZeroes.plate_appearances).toFixed(3))
+                ? (pdeWithZeroes.plate_appearances === 0 ? '--' : fmt3(value / pdeWithZeroes.plate_appearances))
                 : (viewType === 'by_AB_and_IP' && !isGameGranularityStatistic && !isAtBats)
-                    ? (pdeWithZeroes.at_bats === 0 ? '--' : (value / pdeWithZeroes.at_bats).toFixed(3))
+                    ? (pdeWithZeroes.at_bats === 0 ? '--' : fmt3(value / pdeWithZeroes.at_bats))
                     : value
     }
 
@@ -43,19 +37,19 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
     )) as PlayerGameData;
 
     // Calculates other statistics
-    const battingAverage = safeDiv(pdeWithZeroes.hits / pdeWithZeroes.at_bats).toFixed(3);
-    const onBasePercentage = safeDiv((pdeWithZeroes.hits + pdeWithZeroes.walks) / pdeWithZeroes.plate_appearances).toFixed(3);
+    const battingAverage = fmt3(pdeWithZeroes.hits / pdeWithZeroes.at_bats);
+    const onBasePercentage = fmt3((pdeWithZeroes.hits + pdeWithZeroes.walks) / pdeWithZeroes.plate_appearances);
     const totalBases = (
         pdeWithZeroes.singles * 1 +
         pdeWithZeroes.doubles * 2 +
         pdeWithZeroes.triples * 3 +
         pdeWithZeroes.home_runs * 4
     );
-    const sluggingPercentage = safeDiv(totalBases / pdeWithZeroes.at_bats).toFixed(3);
-    const onBasePlusSlugging = safeDiv(
+    const sluggingPercentage = fmt3(totalBases / pdeWithZeroes.at_bats);
+    const onBasePlusSlugging = fmt3(
         ((pdeWithZeroes.hits + pdeWithZeroes.walks) / pdeWithZeroes.plate_appearances)
         + (totalBases / pdeWithZeroes.at_bats)
-    ).toFixed(3);
+    );
 
     return (
         <tr>

@@ -1,4 +1,4 @@
-import { calculateERA, calculateWHIP, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import { calculateERA, calculateWHIP, fmt3, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 
 type PitcherStatisticsRowProps = {
     viewType: statViewTypes;
@@ -12,7 +12,7 @@ function PitcherStatisticsRow({ viewType, pde, player, index }: PitcherStatistic
         return (viewType === 'by_game')
             ? ((pde.games_pitched === 0) ? '--' : ((pde.pitched_outs / pde.games_pitched) / 3).toFixed(2))
             : (viewType === 'by_PA_and_BF')
-                ? ((pde.batters_faced === 0) ? '--' : ((pde.pitched_outs / pde.batters_faced) / 3).toFixed(3))
+                ? ((pde.batters_faced === 0) ? '--' : fmt3((pde.pitched_outs / pde.batters_faced) / 3))
                 : (pde.innings_pitched).toFixed(1)
     }
 
@@ -20,9 +20,9 @@ function PitcherStatisticsRow({ viewType, pde, player, index }: PitcherStatistic
         return (viewType === 'by_game')
             ? ((pde.games_pitched === 0) ? '--' : (value / pde.games_pitched).toFixed(2))
             : (viewType === 'by_AB_and_IP')
-                ? ((pde.pitched_outs === 0) ? '--' : (3 * value / pde.pitched_outs).toFixed(3))
+                ? ((pde.pitched_outs === 0) ? '--' : fmt3(3 * value / pde.pitched_outs))
                 : (viewType === 'by_PA_and_BF' && !isBattersFaced)
-                    ? ((pde.batters_faced === 0) ? '--' : (value / pde.batters_faced).toFixed(3))
+                    ? ((pde.batters_faced === 0) ? '--' : fmt3(value / pde.batters_faced))
                     : value
 
     }
@@ -41,8 +41,8 @@ function PitcherStatisticsRow({ viewType, pde, player, index }: PitcherStatistic
             <td>{display(pde.pitched_strikeouts_swinging)}</td>
             <td>{display(pde.pitched_strikeouts_looking)}</td>
             <td>{display(pde.pitched_strikeouts)}</td>
-            <td>{calculateERA(pde).toFixed(2)}</td>
-            <td>{calculateWHIP(pde).toFixed(2)}</td>
+            <td>{calculateERA(pde)}</td>
+            <td>{calculateWHIP(pde)}</td>
         </tr>
     );
 }

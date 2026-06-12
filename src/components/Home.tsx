@@ -9,6 +9,7 @@ type HomeProps = {
     onStartGame: (gameData: GameData) => void;
     onSpectateGame: (gameId: number) => void;
     onViewStatistics: () => void;
+    onOpenChat: () => void;
     isAuthenticated: boolean;
 };
 
@@ -26,12 +27,13 @@ type HomeProps = {
  * 4. Packaging the finalized lineups and game configuration, and passing them to the parent component
  *    via the `onStartGame` prop to initiate the game state (transitioning to the `AtBat` screen).
  */
-function Home({ 
-    players, 
-    loading, 
-    onStartGame, 
-    onSpectateGame, 
-    onViewStatistics, 
+function Home({
+    players,
+    loading,
+    onStartGame,
+    onSpectateGame,
+    onViewStatistics,
+    onOpenChat,
     isAuthenticated
 }: HomeProps) {
     const [showPopup, setShowPopup] = useState(false);
@@ -716,6 +718,21 @@ function Home({
                     }}
                 >
                     View Statistics
+                </button>
+                <button
+                    onClick={onOpenChat}
+                    style={{
+                        padding: '12px 24px',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer',
+                        backgroundColor: '#f97316',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    Chat
                 </button>
             </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { calculateERA, calculateWHIP, playerName, playerNameShort, type Park, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import { calculateERA, calculateWHIP, NON_FINITE_FMT2_VALUE, playerName, playerNameShort, type Park, type Player, type PlayerGameData, type statViewTypes } from "../../types";
 import { usePlayers } from "../../contexts/PlayersContext";
 import { useStatsData } from "../../contexts/StatsDataContext";
 import { useComputedStats } from "../../hooks/useComputedStats";
@@ -56,8 +56,8 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
         case 'batters_faced': return stats.batters_faced;
         case 'innings_pitched': return stats.innings_pitched;
         case 'games_pitched': return stats.games_pitched;
-        case 'earned_runs': return calculateERA(stats);
-        case 'walks_plus_hits_per_inning_pitched': return calculateWHIP(stats);
+        case 'earned_runs': return calculateERA(stats) === NON_FINITE_FMT2_VALUE ? -1 : parseFloat(calculateERA(stats));
+        case 'walks_plus_hits_per_inning_pitched': return calculateWHIP(stats) === NON_FINITE_FMT2_VALUE ? -1 : parseFloat(calculateWHIP(stats));
         case 'hits_allowed': return stats.hits_allowed;
         case 'runs_allowed': return stats.runs_allowed;
         case 'pitched_walks': return stats.pitched_walks;

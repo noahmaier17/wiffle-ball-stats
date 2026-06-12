@@ -4,6 +4,7 @@ import Home from './components/Home.tsx';
 import GameLogger from './components/GameLogger.tsx';
 import Spectate from './components/Spectate.tsx';
 import PlayerStatisticsSelection from './components/statistics/PlayerStatisticsSelection.tsx';
+import Chat from './components/Chat.tsx';
 import type { GameData, Player } from './types';
 import { supabase } from "./supabase-client.ts";
 import PlayersContext from './contexts/PlayersContext.tsx';
@@ -20,6 +21,9 @@ function App() {
     });
     const [showStatistics, setShowStatistics] = useState(
         () => window.location.hash === '#statistics' || window.location.hash.startsWith('#statistics/')
+    );
+    const [showChat, setShowChat] = useState(
+        () => window.location.hash === '#chat'
     );
     const [initialPlayerSlug] = useState<string | null>(
         () => window.location.hash.match(/^#statistics\/(.+)$/)?.[1] ?? null
@@ -99,6 +103,8 @@ function App() {
             history.replaceState(null, '', `#game/${gameState.gameId}`);
         } else if (spectateGameId !== null) {
             history.replaceState(null, '', `#spectate/${spectateGameId}`);
+        } else if (showChat) {
+            history.replaceState(null, '', '#chat');
         } else if (showStatistics) {
             if (!window.location.hash.startsWith('#statistics/')) {
                 history.replaceState(null, '', '#statistics');
@@ -106,13 +112,17 @@ function App() {
         } else if (!loadingFromHash) {
             history.replaceState(null, '', location.pathname);
         }
-    }, [gameState, spectateGameId, showStatistics, loadingFromHash]);
+    }, [gameState, spectateGameId, showChat, showStatistics, loadingFromHash]);
 
     const content = (() => {
         if (loadingFromHash) return <div style={{ padding: '2rem' }}>Loading game...</div>;
         if (gameState) return <GameLogger gameData={gameState} setGameState={setGameState} />;
         if (spectateGameId !== null) return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
-        // StatsDataProvider is scoped to the stats page so polling only runs while stats are visible
+        if (showChat) return (
+            <StatsDataProvider>
+                <Chat onBack={() => setShowChat(false)} />
+            </StatsDataProvider>
+        );
         if (showStatistics) return (
             <StatsDataProvider>
                 <PlayerStatisticsSelection onBack={() => setShowStatistics(false)} initialPlayerSlug={initialPlayerSlug} />
@@ -125,6 +135,7 @@ function App() {
                 onStartGame={setGameState}
                 onSpectateGame={setSpectateGameId}
                 onViewStatistics={() => setShowStatistics(true)}
+                onOpenChat={() => setShowChat(true)}
                 isAuthenticated={!!session}
             />
         );
