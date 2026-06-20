@@ -241,7 +241,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
 
         // Potentially changes our UI view if we switched sides
         if (switchSides && !gameJustEnded) {
-            goToNextView({ ...gameData, awayTeamBatting: !awayBatting });
+            setLogType('pitching_change');
         }
 
         // Handles database queries

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../supabase-client';
 import type { Player, GameData } from '../types';
+import { PARKS, PARK_DISPLAY_NAMES } from '../constants';
 import Select from 'react-select';
 
 type HomeProps = {
@@ -45,6 +46,8 @@ function Home({
     const [homeAlltimeDefensePlayers, setHomeAlltimeDefensePlayers] = useState<Player[]>([]);
     const [awayPitcher, setAwayPitcher] = useState<Player | null>(null);
     const [homePitcher, setHomePitcher] = useState<Player | null>(null);
+
+    const [selectedPark, setSelectedPark] = useState<string>(PARKS[0]);
 
     const [lineupError, setLineupError] = useState<string | null>(null);
     const [isAddingAway, setIsAddingAway] = useState(false);
@@ -187,10 +190,45 @@ function Home({
         setLineupError(null);
 
         try {
+            const awayTotal = awayTeamLineup.length + awayAlltimeDefensePlayers.length;
+            const homeTotal = homeTeamLineup.length + homeAlltimeDefensePlayers.length;
+            const numberOfFielders = Math.min(awayTotal, homeTotal) < 4 ? 2 : 3;
+
+            const initialGameState = {
+                awayTeamBatting: true,
+                inning: 1,
+                numberOfOuts: 0,
+                awayRuns: 0,
+                homeRuns: 0,
+                currAwayTeamBatter: 0,
+                currHomeTeamBatter: 0,
+                numberOnBase: 0,
+                earnedRunsQueue: [] as number[],
+            };
+
             // 1. Create a new game row
             const { data: gameData, error: gameError } = await supabase
                 .from('games')
-                .insert([{ date: new Date().toISOString().split('T')[0] }])
+                .insert([{
+                    date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date()),
+                    field: selectedPark,
+                    number_of_fielders: numberOfFielders,
+                    away_team_lineup_ids: awayTeamLineup.map(p => p.id),
+                    home_team_lineup_ids: homeTeamLineup.map(p => p.id),
+                    away_alltime_defense_ids: awayAlltimeDefensePlayers.map(p => p.id),
+                    home_alltime_defense_ids: homeAlltimeDefensePlayers.map(p => p.id),
+                    away_pitcher_id: awayPitcher?.id ?? null,
+                    home_pitcher_id: homePitcher?.id ?? null,
+                    away_team_is_batting: initialGameState.awayTeamBatting,
+                    inning: initialGameState.inning,
+                    number_of_outs: initialGameState.numberOfOuts,
+                    away_score: initialGameState.awayRuns,
+                    home_score: initialGameState.homeRuns,
+                    current_away_team_batter_index: initialGameState.currAwayTeamBatter,
+                    current_home_team_batter_index: initialGameState.currHomeTeamBatter,
+                    number_on_base: initialGameState.numberOnBase,
+                    earned_runs_queue: initialGameState.earnedRunsQueue,
+                }])
                 .select()
                 .single();
 
@@ -221,21 +259,8 @@ function Home({
                 homeAlltimeDefensePlayers,
                 awayPitcher,
                 homePitcher,
-
-                awayTeamBatting: true,
-                inning: 1,
-                numberOfOuts: 0,
-
-                awayRuns: 0,
-                homeRuns: 0,
-
-                currAwayTeamBatter: 0,
-                currHomeTeamBatter: 0,
-
                 isGameOver: false,
-
-                numberOnBase: 0,
-                earnedRunsQueue: []
+                ...initialGameState,
             });
         } catch (error: any) {
             console.error("Error creating game:", error);
@@ -794,6 +819,17 @@ function Home({
                         )}
 
                         <form onSubmit={handleStartGameSubmit}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Field</label>
+                                <select
+                                    value={selectedPark}
+                                    onChange={e => setSelectedPark(e.target.value)}
+                                    style={{ backgroundColor: '#374151', color: 'white', border: '1px solid #4b5563', borderRadius: '6px', padding: '8px 12px', fontSize: '1rem' }}
+                                >
+                                    {PARKS.map(p => <option key={p} value={p}>{PARK_DISPLAY_NAMES[p]}</option>)}
+                                </select>
+                            </div>
+
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', marginTop: '20px' }}>
 
                                 {renderTeamSection('Away Team', 'away', awayTeamLineup, awayPitcher, setAwayPitcher)}
@@ -964,6 +1000,7 @@ function Home({
                                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#374151')}
                                     >
                                         <span style={{ fontWeight: 'bold' }}>
+                                            {window.debugLog && <span style={{ color: '#9ca3af', marginRight: '0.4em', fontSize: '0.8em', fontWeight: 'normal' }}>[{game.id}]</span>}
                                             {game.date}{game.time ? ' — ' + formatGameTime(game.date, game.time) : ''}
                                         </span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

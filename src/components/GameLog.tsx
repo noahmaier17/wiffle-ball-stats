@@ -30,7 +30,8 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                             <span>{entry.oldPitcher ? playerNameShort(entry.oldPitcher) : `the ${entry.teamChangingPitchers.charAt(0).toUpperCase() + entry.teamChangingPitchers.slice(1)} team`}</span> 
                         </li>
                     case 'additional_information':
-                        return <div key={index}>{seq(entry)}<em>{entry.info}</em></div>
+                        if (entry.typeOfInfo === 'logging_issue' && !window.debugLog) return null;
+                        return <div key={index} style={entry.typeOfInfo === 'logging_issue' ? { color: '#ef4444' } : undefined}>{seq(entry)}<em>{entry.info}</em></div>
                     case 'inning_switch':
                         return <div key={index}>{seq(entry)}<br /><strong>Switching sides</strong></div>
                     case 'edit_gamestate':

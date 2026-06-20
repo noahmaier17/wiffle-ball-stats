@@ -154,6 +154,10 @@ export type PitchingChangeLog = {
     newPitcher: Player;
 }
 
+// If we have a game log stream that is incomplete or inconsistent, we use `gamestate_replay_issue`
+//  The user cannot log such a log; it is only used when replaying game state
+// If a user logged a logging issue, we use `logging_issue` 
+// Otherwise, we use `other`
 export type TypeOfInfo = 'gamestate_replay_issue' | 'logging_issue' | 'other'
 export type AdditionalInformationLog = {
     type: 'additional_information';

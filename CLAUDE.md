@@ -86,7 +86,6 @@ As of writing this, the only instance these flags are used is `flagged_pitcher_r
 | flagged_batter_row | bool | `True` if this log is problematically logged for the batter |
 | flagged_pitcher_row | bool | `True` if this log is problematically logged for the pitcher |
 
-
 ### Table: `edit_gamestate_logs`
 
 Logs when the gamestate is edited for whatever reason. Most often, gamestate is edited do to some logging error that needs real-time correction. 
@@ -95,4 +94,61 @@ Logs when the gamestate is edited for whatever reason. Most often, gamestate is 
 |--------|------|-------|
 | log_id | int8 | Foreign key; connected to `id` of `game_logs` |
 | info | text | Descriptor of why the game state was edited |
-| new_game_data | jsonb | 
+| new_game_data | jsonb | Game state information as JSON |
+
+### Table: `additional_information_logs`
+
+Logs of additional information. Can either be errors or just cool extra notes. 
+
+| Column | Type | Notes |
+|--------|------|-------|
+| log_id | int8 | Foreign key; connected to `id` of `game_logs` |
+| info | text | The additional information |
+| type_of_into | text | Any of the values in `TypeOfInfo`, found in `types.tsx` |
+
+### Table: `players`
+
+Players within the league. Some players have no recorded stats.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | int8 | Primary key |
+| created_at | timestamptz | When this entry was created |
+| first_name | text | Player first name |
+| last_name | text | Player last name |
+
+### Table: `games`
+
+Information about the game being played.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | int8 | Primary key |
+| date | date | The date of the game |
+| home_score | int2 | Home team score |
+| away_score | int2 | Away team score |
+| notes | text | A general notes field for explaining additional aspects of the game |
+| field | Park | The park; see `PARKS` in `types.tsx` |
+| logs | _jsonb | Deprecated; the logs of the game as JSON |
+| away_pitcher_id | int8 | Foreign key; id of a `player` who is currently pitching for the away team |
+| home_pitcher_id | int8 | Foreign key; id of a `player` who is currently pitching for the home team |
+| away_team_lineup_ids | _int8 | List of foreign keys; ids of `player` entries who are batting for the away team, ordered in batting order |
+| home_team_lineup_ids | _int8 | List of foreign keys; ids of `player` entries who are batting for the home team, ordered in batting order |
+| away_team_is_batting | bool | If the away team is currently batting |
+| inning | int2 | The current inning |
+| number_of_outs | int2 | Current number of outs |
+| current_away_team_batter_index | int2 | Index of `away_team_lineup_ids` who is up |
+| current_home_team_batter_index | int2 | Index of `home_team_lineup_ids` who is up |
+| time | time | Time of this database entry |
+| game_over | bool | True if the game is over |
+| is_test | bool | If this is a test game |
+| number_on_base | int2 | Number of batters currently on base |
+| earned_runs_queue | jsonb | List representing pitchers who have a runner on base |
+| away_alltime_defense_ids | _int2 | List of foreign keys; ids of `player` entries who are on alltime defense for the away team |
+| home_alltime_defense_ids | _int2 | List of foreign keys; ids of `player` entries who are on alltime defense for the home team |
+| finish_time | timestamptz | The time when the game concluded |
+| number_of_fielders | int2 | The number of outfielders in this game; either 2 or 3 |
+
+Before making any decisions, always read the `types.tsx` and `contants.ts` file. 
+
+Codex will review your output once you are done.

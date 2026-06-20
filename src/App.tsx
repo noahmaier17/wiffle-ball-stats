@@ -117,7 +117,10 @@ function App() {
     const content = (() => {
         if (loadingFromHash) return <div style={{ padding: '2rem' }}>Loading game...</div>;
         if (gameState) return <GameLogger gameData={gameState} setGameState={setGameState} />;
-        if (spectateGameId !== null) return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
+        if (spectateGameId !== null) {
+            if (playersLoading) return <div style={{ padding: '2rem' }}>Loading...</div>;
+            return <Spectate gameId={spectateGameId} onBack={() => setSpectateGameId(null)} />;
+        }
         if (showChat) return (
             <StatsDataProvider>
                 <Chat onBack={() => setShowChat(false)} />
