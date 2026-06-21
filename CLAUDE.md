@@ -19,7 +19,10 @@ Shows the batting and pitching statistics for every individual player who played
 | runs_allowed | int2 | Number of runs allowed |
 | innings_pitched | int2 | Number of innings pitched; displayed in the style of baseball IP statistics, where 1 pitched out means 0.1 IP |
 | pitched_strikeouts | int2 | Number of pitched strikeouts; counts pitched strikeouts swinging and pitched strikeouts looking |
+| pitched_strikeouts_swinging | int2 | Number of pitched strikeouts swinging |
+| pitched_strikeouts_looking | int2 | Number of pitched strikeouts looking |
 | pitched_walks | int2 | Number of pitched walks |
+| batters_faced | int2 | Number of batters faced as the pitcher |
 | hits_allowed | int2 | Number of hits allowed as the pitcher |
 | hits | int2 | Number of hits as the batter |
 | singles  | int2 | Number of singles |

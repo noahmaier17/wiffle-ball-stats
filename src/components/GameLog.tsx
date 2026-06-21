@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { playerNameShort, type AtBatLog, type GameLogEntry } from '../types';
 import LogRow from './gameplayLogging/LogRow';
 
@@ -9,12 +10,17 @@ type GameLogProps = {
 };
 
 function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps) {
+    const [showOpponent, setShowOpponent] = useState<boolean>(false);
+
     const seq = (entry: GameLogEntry) => {
         const s = (entry as any)._seq;
         return window.debugLog && s !== undefined ? <span style={{ color: '#9ca3af', marginRight: '0.4em', fontSize: '0.8em' }}>[{s}]</span> : null;
     };
 
-    return (
+    return (<div>
+        <button onClick={() => setShowOpponent(v => !v)}>
+            Toggle Showing Pitcher
+        </button>
         <ul>
             {log.map((entry, index) => {
                 switch (entry.type) {
@@ -22,7 +28,7 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                         return <li key={index} style={index === editingIndex ? { backgroundColor: '#bfdbfe', borderRadius: '4px', padding: '2px 4px' } : undefined}>
                             {seq(entry)}
                             {onEditAtBat && <><button disabled={editingActive} onClick={() => onEditAtBat(index, entry)}>Edit</button>{" "}</>}
-                            <LogRow atBat={entry}/>
+                            <LogRow atBat={entry} showOpponent={showOpponent}/>
                         </li>
                     case 'pitching_change':
                         return <li key={index}>
@@ -39,7 +45,7 @@ function GameLog({ log, onEditAtBat, editingActive, editingIndex }: GameLogProps
                 }
             })}
         </ul>
-    );
+    </div>);
 }
 
 export default GameLog;
