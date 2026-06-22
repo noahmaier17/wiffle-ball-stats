@@ -674,9 +674,9 @@ function Home({
     return (
         <div className="home-container" style={{ padding: '2rem', textAlign: 'center' }}>
             <h1>Wiffle Ball Stats</h1>
-            <p>Welcome to the Wiffle Ball Stat Tracker!</p>
+            <p>Welcome to the Wiffle Ball Statistics Logger and Tracker!</p>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
                 <button
                     onClick={startGame}
                     disabled={loading || !isAuthenticated}
@@ -761,6 +761,31 @@ function Home({
                 </button>
             </div>
 
+            <br></br>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <img 
+                    src="/wiffle-ball-images/Dylan batting Cryson pitching.jpeg" 
+                    alt="Cryson pitching to Dylan" 
+                    className="w-full sm:flex-1 object-cover rounded-lg brightness-130" 
+                />
+                <img 
+                    src="/wiffle-ball-images/Noah single.jpeg" 
+                    alt="Noah hitting a single" 
+                    className="w-full sm:flex-1 object-cover rounded-lg brightness-105" 
+                />
+                <img 
+                    src="/wiffle-ball-images/Dylan HR.jpeg" 
+                    alt="Dylan touching home plate after hitting a HR" 
+                    className="w-full sm:flex-1 object-cover rounded-lg brightness-130" 
+                />
+                <img 
+                    src="/wiffle-ball-images/Roan thumbs up.jpeg" 
+                    alt="Roan giving a thumbs up to the camera through the fence" 
+                    className="w-full sm:flex-1 object-cover rounded-lg  brightness-110" 
+                />
+            </div>
+            
             <div style={{ marginTop: '14px', fontSize: '0.875rem', color: '#9ca3af' }}>
                 {isAuthenticated ? (
                     <span>

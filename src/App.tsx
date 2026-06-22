@@ -144,11 +144,12 @@ function App() {
         );
     })();
 
-    return (
+
+    return (<div>
         <PlayersContext.Provider value={players}>
             {content}
         </PlayersContext.Provider>
-    );
+    </div>);
 }
 
 export default App
