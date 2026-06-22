@@ -114,9 +114,10 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
                 </table>
             </div>
 
-            <PlayersPlayByPlay player={user} forBatting={true} atBatLogsByGame={atBatLogsByGame}/>
-
-            <PlayersPlayByPlay player={user} forBatting={false} atBatLogsByGame={atBatLogsByGame}/>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <PlayersPlayByPlay player={user} forBatting={true} atBatLogsByGame={atBatLogsByGame}/>
+                <PlayersPlayByPlay player={user} forBatting={false} atBatLogsByGame={atBatLogsByGame}/>
+            </div>
         </div>
     );
 }

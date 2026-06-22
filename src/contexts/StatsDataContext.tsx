@@ -5,7 +5,7 @@ import type { PlayerGameData } from '../types';
 // Raw row shapes returned by Supabase for each table we cache.
 // Only the columns we need for stats are selected.
 export type StatsAtBatLogRow = {
-    log_id: number;      // Foreign key to game_logs.id, used to resolve park filters
+    log_id: number;      // Foreign key to game_logs.id
     batter_id: number;
     pitcher_id: number;
     outcome_sign: string;
