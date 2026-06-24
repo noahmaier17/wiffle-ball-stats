@@ -775,9 +775,9 @@ function Home({
                     className="w-full sm:flex-1 object-cover rounded-lg brightness-105" 
                 />
                 <img 
-                    src="/wiffle-ball-images/Dylan HR.jpeg" 
-                    alt="Dylan touching home plate after hitting a HR" 
-                    className="w-full sm:flex-1 object-cover rounded-lg brightness-130" 
+                    src="/wiffle-ball-images/Group walking.jpeg" 
+                    alt="Group walking home after wiffle ball game" 
+                    className="w-full sm:flex-1 object-cover rounded-lg brightness-140" 
                 />
                 <img 
                     src="/wiffle-ball-images/Roan thumbs up.jpeg" 
