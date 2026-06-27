@@ -26,10 +26,9 @@ function PlayersPlayByPlay({
     // We need to filter all games where this player was not playing, and store game information as well
     const filteredGameIdToLogs = [...atBatLogsByGame.entries()].sort((a, b) => a[0] - b[0]).reduce((accumulator, [gameId, log]) => {
         // We fetch on batter_id or pitcher_id depending on forBatting
-        const filteredLogs = ((forBatting)
+        const filteredLogs = (forBatting)
             ? log.filter(l => l.batter_id === player.id)
-            : log.filter(l => l.pitcher_id === player.id))
-            .reverse()
+            : log.filter(l => l.pitcher_id === player.id)
         
         // IFF we do not have logs, we add nothing to the accumulator
         if (filteredLogs.length === 0) return accumulator;
