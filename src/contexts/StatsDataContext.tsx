@@ -69,13 +69,14 @@ export function StatsDataProvider({ children }: { children: React.ReactNode }) {
     // Fires all 4 queries in parallel.
     const fetchAll = async () => {
         const [statsRes, atBatRes, gamesRes, gameLogsRes] = await Promise.all([
-            supabase.from('player_game_stats').select('*'),
+            supabase.from('player_game_stats').select('*').limit(10000),
             // Fetch all at-bat rows including flag columns.
             supabase
                 .from('at_bat_logs')
-                .select('log_id, batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, flagged_batter_row, flagged_pitcher_row, extra_comments'),
+                .select('log_id, batter_id, pitcher_id, outcome_sign, rbis, recorded_outs, flagged_batter_row, flagged_pitcher_row, extra_comments')
+                .limit(10000),
             supabase.from('games').select('id, field, number_of_fielders, date, home_score, away_score'),
-            supabase.from('game_logs').select('id, game_id'),
+            supabase.from('game_logs').select('id, game_id').limit(10000),
         ]);
 
         // Only update state for tables that succeeded; leave stale data in place on error
