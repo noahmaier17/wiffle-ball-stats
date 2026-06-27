@@ -38,7 +38,7 @@ function ParkAndFielderFilters(
 
     const setOfficial = () => {
         setSelectedParks(new Set(PARKS));
-        setSelectedFielderCounts(new Set([3]));
+        setSelectedFielderCounts(new Set([3, 4]));
     };
 
     return (
