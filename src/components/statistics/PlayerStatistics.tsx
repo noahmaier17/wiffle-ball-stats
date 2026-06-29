@@ -32,7 +32,7 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
 
     // Filters for the statistics
     const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
-    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3]));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3, 4]));
     const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // If null, we are showing stats against all pitchers / batters

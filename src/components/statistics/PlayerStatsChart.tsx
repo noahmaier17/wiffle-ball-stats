@@ -195,7 +195,7 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
     const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
-    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3]));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3, 4]));
     const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // Gets all the players
