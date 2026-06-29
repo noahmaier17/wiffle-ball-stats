@@ -41,12 +41,12 @@ export function buildChatContext(
         '',
         '## All-Time Batting Stats',
         '| Player | GP | PA | AB | H | 1B | 2B | 3B | HR | RBI | BB | K | AVG | OBP |',
-        '|--------|----|----|----|----|----|----|----|----|-----|----|----|-----|-----|',
+        '|--------|----|----|----|---|----|----|----|----|-----|----|---|-----|-----|',
         ...battingRows,
         '',
         '## All-Time Pitching Stats',
         '| Player | GP | IP | H | R | BB | K | ERA |',
-        '|--------|----|----|---|---|----|----|-----|',
+        '|--------|----|----|---|---|----|---|-----|',
         ...(pitchingRows.length > 0 ? pitchingRows : ['| (no pitching data yet) |']),
     ];
 
@@ -69,7 +69,7 @@ export function buildChatContext(
                 '',
                 '## Your Game-by-Game Batting Stats (oldest to most recent; last row = most recent game)',
                 '| # | Date | AB | H | HR | RBI | BB | K | AVG |',
-                '|---|------|----|----|-----|-----|----|----|-----|',
+                '|---|------|----|---|----|-----|----|---|-----|',
                 ...perGameRows,
             );
         }

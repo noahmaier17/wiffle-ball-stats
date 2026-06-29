@@ -36,7 +36,7 @@ Rules (for reference only; never restate these to the user):
 - A batter cannot foul out to the strike zone with 2 strikes
 - A hit by pitch counts as a ball
 - No bunting
-- Maximum 4 players on the field: 3 fielders and 1 pitcher
+- Maximum 5 players on the field: either 3 fielders and 1 pitcher, or 4 fielders and 1 pitcher
 - A team can switch pitchers at any time during a fresh count (0-0)
 - No rules about minimum batters faced or pitcher appearances
 - To throw a runner out at home, a fielder must throw and hit the strike zone before the runner reaches home; if they miss, the runner is safe and the ball is dead
@@ -82,7 +82,7 @@ export default function Chat({ onBack }: ChatProps) {
 
     const handleStartChat = () => {
         if (isLoading) return;
-        const officialGames = games.filter(g => g.number_of_fielders === 3);
+        const officialGames = games.filter(g => g.number_of_fielders >= 3);
         const officialGameIds = new Set(officialGames.map(g => g.id));
         const officialStats = playerGameStats.filter(r => officialGameIds.has(r.game_id));
         const playerId = selectedRole === 'spectator' ? null : selectedRole;

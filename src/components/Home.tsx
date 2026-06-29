@@ -192,7 +192,8 @@ function Home({
         try {
             const awayTotal = awayTeamLineup.length + awayAlltimeDefensePlayers.length;
             const homeTotal = homeTeamLineup.length + homeAlltimeDefensePlayers.length;
-            const numberOfFielders = Math.min(awayTotal, homeTotal) < 4 ? 2 : 3;
+            const minTotal = Math.min(awayTotal, homeTotal);
+            const numberOfFielders = minTotal < 4 ? 2 : minTotal < 5 ? 3 : 4;
 
             const initialGameState = {
                 awayTeamBatting: true,

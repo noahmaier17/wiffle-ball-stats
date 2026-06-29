@@ -6,7 +6,7 @@ export const PARK_DISPLAY_NAMES: Record<string, string> = {
 };
 
 // Fielder counts
-export const FIELDER_COUNTS = [2, 3] as const;
+export const FIELDER_COUNTS = [2, 3, 4] as const;
 
 // At Bat Outcome Signs
 export const AT_BAT_OUTCOME_LAYOUT = [
