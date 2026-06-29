@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Customized } from 'recharts';
 import { useStatsData } from '../../contexts/StatsDataContext';
 import { usePlayers } from '../../contexts/PlayersContext';
-import { playerName, type Park, type statViewTypes } from '../../types';
-import type { StatsAtBatLogRow } from '../../contexts/StatsDataContext';
+import { playerName, type Park, type statViewTypes, type PlayerGameData } from '../../types';
+import type { StatsAtBatLogRow, StatsGameRow } from '../../contexts/StatsDataContext';
 import { HIT_SIGNS, PARKS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
 import FilterPanel from './FilterPanel';
 import HandleStatisticsViewToggle from './HandleStatisticsViewToggle';
@@ -12,8 +12,10 @@ import GameFilter from './GameFilter';
 
 // List of options for the X axis
 const X_STAT_OPTIONS = [
-    { key: 'at_bats',          label: 'At Bats' },
-    { key: 'plate_appearances', label: 'Plate Appearances' },
+    { key: 'at_bats',          label: 'At Bats',          group: 'career' },
+    { key: 'plate_appearances', label: 'Plate Appearances', group: 'career' },
+    { key: 'game',             label: 'Games',             group: 'career' },
+    { key: 'league_game',      label: 'Games',             group: 'league' },
 ] as const;
 
 // List of options for the Y axis for batters
@@ -63,6 +65,8 @@ function isBatterStat(yStat: YStatKey): yStat is YStatBatter {
 const DECIMAL_Y_STATS = new Set<YStatKey>(['ba', 'obp', 'slg', 'ops']);
 // Subset of DECIMAL_Y_STATS whose y-axis domain is capped at 1.0
 const UNIT_Y_STATS = new Set<YStatKey>(['ba', 'obp']);
+// Stats that require per-game data and are only valid on game-based X axes
+const GAME_ONLY_Y_STATS = new Set<YStatKey>(['era', 'whip']);
 
 // One data point per plate appearance or at-bat depending on xStat.
 // x = cumulative x-axis count, y = cumulative y-axis stat value.
@@ -181,6 +185,150 @@ function buildPlayerChartData(
     return [points, (cumulativeX === 0 || cumulativeY === 0)];
 }
 
+type GameStatAccumulators = {
+    cumulativeY: number; skipStat: boolean;
+    cumHits: number; cumAB: number; cumPA: number; cumTB: number;
+    cumPitchedOuts: number; cumRunsAllowed: number;
+    cumPitchedWalks: number; cumHitsAllowed: number;
+};
+
+function defaultGameStatAccumulators(): GameStatAccumulators {
+    return {
+        cumulativeY: 0, skipStat: false,
+        cumHits: 0, cumAB: 0, cumPA: 0, cumTB: 0,
+        cumPitchedOuts: 0, cumRunsAllowed: 0, cumPitchedWalks: 0, cumHitsAllowed: 0,
+    };
+}
+
+function applyGameRowToAccumulators(
+    row: PlayerGameData,
+    yStat: YStatKey,
+    acc: GameStatAccumulators,
+): void {
+    acc.skipStat = false;
+    const rowTB = row.singles + 2 * row.doubles + 3 * row.triples
+                + 4 * row.home_runs + 4 * row.inside_the_park_home_runs;
+
+    if (yStat === 'hr') acc.cumulativeY += row.home_runs + row.inside_the_park_home_runs;
+    if (yStat === 'iphr') acc.cumulativeY += row.inside_the_park_home_runs;
+    if (yStat === 'hits') acc.cumulativeY += row.hits;
+    if (yStat === 'singles') acc.cumulativeY += row.singles;
+    if (yStat === 'doubles') acc.cumulativeY += row.doubles;
+    if (yStat === 'triples') acc.cumulativeY += row.triples;
+    if (yStat === 'strikeouts') acc.cumulativeY += row.strikeouts;
+    if (yStat === 'outs') acc.cumulativeY += row.at_bats - row.hits - row.strikeouts - row.fielders_choice;
+    if (yStat === 'walks') acc.cumulativeY += row.walks;
+    if (yStat === 'rbis') acc.cumulativeY += row.runs_batted_in;
+    if (yStat === 'fc') acc.cumulativeY += row.fielders_choice;
+    if (yStat === 'tb') acc.cumulativeY += rowTB;
+    if (yStat === 'ba') {
+        acc.cumHits += row.hits; acc.cumAB += row.at_bats;
+        acc.skipStat = acc.cumAB === 0;
+        acc.cumulativeY = acc.cumHits / acc.cumAB;
+    }
+    if (yStat === 'obp') {
+        acc.cumHits += row.hits + row.walks; acc.cumPA += row.plate_appearances;
+        acc.skipStat = acc.cumPA === 0;
+        acc.cumulativeY = acc.cumHits / acc.cumPA;
+    }
+    if (yStat === 'slg') {
+        acc.cumTB += rowTB; acc.cumAB += row.at_bats;
+        acc.skipStat = acc.cumAB === 0;
+        acc.cumulativeY = acc.cumTB / acc.cumAB;
+    }
+    if (yStat === 'ops') {
+        acc.cumHits += row.hits + row.walks; acc.cumPA += row.plate_appearances;
+        acc.cumTB += rowTB; acc.cumAB += row.at_bats;
+        acc.skipStat = acc.cumPA === 0 && acc.cumAB === 0;
+        const obp = acc.cumPA > 0 ? acc.cumHits / acc.cumPA : 0;
+        const slg = acc.cumAB > 0 ? acc.cumTB  / acc.cumAB : 0;
+        acc.cumulativeY = obp + slg;
+    }
+    if (yStat === 'outs_pitched') acc.cumulativeY += row.pitched_outs;
+    if (yStat === 'bf') acc.cumulativeY += row.batters_faced;
+    if (yStat === 'hits_pitched') acc.cumulativeY += row.hits_allowed;
+    if (yStat === 'walks_pitched') acc.cumulativeY += row.pitched_walks;
+    if (yStat === 'strikeouts_pitched') acc.cumulativeY += row.pitched_strikeouts;
+    if (yStat === 'era') {
+        acc.cumPitchedOuts += row.pitched_outs; acc.cumRunsAllowed += row.runs_allowed;
+        acc.skipStat = acc.cumPitchedOuts === 0;
+        acc.cumulativeY = (acc.cumRunsAllowed * 27) / acc.cumPitchedOuts;
+    }
+    if (yStat === 'whip') {
+        acc.cumPitchedOuts += row.pitched_outs;
+        acc.cumPitchedWalks += row.pitched_walks;
+        acc.cumHitsAllowed += row.hits_allowed;
+        acc.skipStat = acc.cumPitchedOuts === 0;
+        acc.cumulativeY = (acc.cumPitchedWalks + acc.cumHitsAllowed) * 3 / acc.cumPitchedOuts;
+    }
+}
+
+function buildPlayerChartDataByGame(
+    playerGameStats: PlayerGameData[],
+    gameIdSet: Set<number>,
+    playerId: number,
+    yStat: YStatKey,
+): [ChartPoint[], boolean] {
+    const playerRows = playerGameStats
+        .filter(r => r.player_id === playerId && gameIdSet.has(r.game_id))
+        .filter(r => isBatterStat(yStat) || r.games_pitched > 0)
+        .sort((a, b) => a.game_id - b.game_id);
+
+    if (playerRows.length === 0) return [[], true];
+
+    const points: ChartPoint[] = [];
+    let gameNumber = 0;
+    const acc = defaultGameStatAccumulators();
+
+    for (const row of playerRows) {
+        gameNumber++;
+        applyGameRowToAccumulators(row, yStat, acc);
+        if (!acc.skipStat) points.push({ x: gameNumber, y: acc.cumulativeY });
+    }
+
+    if (points.length > 0) {
+        points.push({ x: gameNumber + 1, y: points[points.length - 1].y });
+    }
+
+    return [points, points.length === 0 || acc.cumulativeY === 0];
+}
+
+function buildPlayerChartDataByLeagueGame(
+    playerGameStats: PlayerGameData[],
+    filteredGamesSorted: StatsGameRow[],
+    playerId: number,
+    yStat: YStatKey,
+): [ChartPoint[], boolean] {
+    const playerStatsByGameId = new Map(
+        playerGameStats
+            .filter(r => r.player_id === playerId)
+            .filter(r => isBatterStat(yStat) || r.games_pitched > 0)
+            .map(r => [r.game_id, r])
+    );
+
+    if (filteredGamesSorted.length === 0) return [[], true];
+
+    const points: ChartPoint[] = [];
+    let leagueGameNumber = 0;
+    let lastLeagueGameNumber = 0;
+    const acc = defaultGameStatAccumulators();
+
+    for (const game of filteredGamesSorted) {
+        leagueGameNumber++;
+        const row = playerStatsByGameId.get(game.id);
+        if (!row) continue;
+        lastLeagueGameNumber = leagueGameNumber;
+        applyGameRowToAccumulators(row, yStat, acc);
+        if (!acc.skipStat) points.push({ x: leagueGameNumber, y: acc.cumulativeY });
+    }
+
+    if (points.length > 0) {
+        points.push({ x: lastLeagueGameNumber + 1, y: points[points.length - 1].y });
+    }
+
+    return [points, points.length === 0 || acc.cumulativeY === 0];
+}
+
 const LINE_COLORS = [
     '#8884d8', '#82ca9d', '#ffc658', '#ff7300',
     '#0088fe', '#00C49F', '#FFBB28', '#FF8042', '#a4de6c', '#d0ed57',
@@ -189,9 +337,15 @@ const LINE_COLORS = [
 const LINE_DASHES = ['0', '6 3', '2 2', '8 4 2 4', '10 4', '4 2 1 2'];
 const JITTER_STEP = 0; // 0.06; // vertical gap between overlapping lines
 
+const formatDateShort = (dateStr: string) => {
+    const [, month, day] = dateStr.split('-');
+    return `${parseInt(month)}/${parseInt(day)}`;
+};
+
+
 function PlayerStatsChart({ onBack }: { onBack: () => void }) {
     // Gets all our important statistics information
-    const { atBatLogs, games, gameLogs, isLoading } = useStatsData();
+    const { atBatLogs, games, gameLogs, isLoading, playerGameStats } = useStatsData();
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
     const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
@@ -228,13 +382,19 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
             .filter(g => selectedGameIds === null || selectedGameIds.has(g.id))
             .map(g => g.id)
     );
+    const filteredGamesSorted = games.filter(g => gameIdSet.has(g.id)).sort((a, b) => a.id - b.id);
     const logIdSet = new Set(gameLogs.filter(gl => gameIdSet.has(gl.game_id)).map(gl => gl.id));
     const filteredAtBatLogs = atBatLogs.filter(log => logIdSet.has(log.log_id));
 
     // Pass 1: build raw points, skipping players with no stats
     const rawDataMap = players.reduce<Map<number, ChartPoint[]>>(
         (map, p) => {
-            const [points, noStats] = buildPlayerChartData(filteredAtBatLogs, p.id, selectedXStat, selectedYStat);
+            const [points, noStats] =
+                selectedXStat === 'game'
+                    ? buildPlayerChartDataByGame(playerGameStats, gameIdSet, p.id, selectedYStat)
+                : selectedXStat === 'league_game'
+                    ? buildPlayerChartDataByLeagueGame(playerGameStats, filteredGamesSorted, p.id, selectedYStat)
+                : buildPlayerChartData(filteredAtBatLogs, p.id, selectedXStat, selectedYStat);
             if (noStats) return map;
             map.set(p.id, points);
             return map;
@@ -293,7 +453,23 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
             <div>
                 <p>X Axis</p>
                 <div>
-                    {X_STAT_OPTIONS.map(o => (
+                    Career:
+                    {X_STAT_OPTIONS.filter(o => o.group === 'career').map(o => (
+                        <label key={o.key}>
+                            <input
+                                type="radio"
+                                name="x-stat"
+                                value={o.key}
+                                checked={selectedXStat === o.key}
+                                onChange={() => setSelectedXStat(o.key)}
+                            />
+                            {o.label}
+                        </label>
+                    ))}
+                </div>
+                <div>
+                    League:
+                    {X_STAT_OPTIONS.filter(o => o.group === 'league').map(o => (
                         <label key={o.key}>
                             <input
                                 type="radio"
@@ -327,18 +503,22 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                 </div>
                 <div>
                     Pitching:
-                    {Y_STAT_OPTIONS_PITCHER.map(o => (
-                        <label key={o.key}>
-                            <input
-                                type="radio"
-                                name="y-stat"
-                                value={o.key}
-                                checked={selectedYStat === o.key}
-                                onChange={() => setSelectedYStat(o.key)}
-                            />
-                            {o.label}
-                        </label>
-                    ))}
+                    {Y_STAT_OPTIONS_PITCHER.map(o => {
+                        const isDisabled = GAME_ONLY_Y_STATS.has(o.key) && selectedXStat !== 'game' && selectedXStat !== 'league_game';
+                        return (
+                            <label key={o.key} style={isDisabled ? { opacity: 0.4 } : undefined}>
+                                <input
+                                    type="radio"
+                                    name="y-stat"
+                                    value={o.key}
+                                    checked={selectedYStat === o.key}
+                                    onChange={() => setSelectedYStat(o.key)}
+                                    disabled={isDisabled}
+                                />
+                                {o.label}
+                            </label>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -348,7 +528,7 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                 different total number of at-bats (different x-axis length).
             */}
             <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
+            <ComposedChart margin={{ top: selectedXStat === 'league_game' ? 55 : 30, right: 30, bottom: 30, left: 30 }}>
                 <Customized component={({ width }: any) => (
                     <text x={width / 2} y={16} textAnchor="middle" fill="#555" fontSize={14}>
                         {yLabel} vs {xLabel}
@@ -358,6 +538,7 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                     dataKey="x"
                     type="number"
                     label={{ value: xLabel, position: 'insideBottom', offset: -15 }}
+                    allowDecimals={selectedXStat === 'game' || selectedXStat === 'league_game' ? false : undefined}
                 />
                 <YAxis
                     dataKey="yJitter"
@@ -384,6 +565,42 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                         </span>
                     )}
                 />
+                {selectedXStat === 'league_game' && (
+                    <Customized component={(props: any) => {
+                        const scale = Object.values(props.xAxisMap as Record<string, any>)[0]?.scale;
+                        if (!scale) return null;
+                        const top: number = props.offset?.top ?? 55;
+                        return (
+                            <g>
+                                {filteredGamesSorted.map((game, i) => {
+                                    const px: number = scale(i + 1);
+                                    const isNewDay = i === 0 || game.date !== filteredGamesSorted[i - 1].date;
+                                    return (
+                                        <g key={game.id}>
+                                            <line
+                                                x1={px} y1={top}
+                                                x2={px} y2={top + (isNewDay ? 12 : 8)}
+                                                stroke={isNewDay ? '#888' : '#ccc'}
+                                                strokeWidth={1}
+                                            />
+                                            {isNewDay && (
+                                                <text
+                                                    x={px + 3}
+                                                    y={top + 9}
+                                                    fill="#888"
+                                                    fontSize={9}
+                                                    textAnchor="start"
+                                                >
+                                                    {formatDateShort(game.date)}
+                                                </text>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </g>
+                        );
+                    }} />
+                )}
                 {players.filter(p => playerDataMap.has(p.id)).map((p, i) => {
                     const name = playerName(p);
                     // Dim every line except the focused one (if any) for readability
