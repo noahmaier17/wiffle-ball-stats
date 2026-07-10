@@ -48,6 +48,10 @@ export type PlayerGameData = {
     win: number,
     loss: number,
 
+    current_streak: number,
+    longest_win_streak: number,
+    longest_loss_streak: number,
+
     games_pitched: number,
     runs_allowed: number,
     pitched_strikeouts: number,
@@ -81,7 +85,9 @@ export const defaultPlayerGameData: PlayerGameData = {
     games_played: 0, at_bats: 0, doubles: 0, triples: 0,
     home_runs: 0, inside_the_park_home_runs: 0, runs_batted_in: 0,
     walks: 0, fielders_choice: 0, strikeouts: 0, strikeouts_swinging: 0, 
-    strikeouts_looking: 0, win: 0, loss: 0, games_pitched: 0, runs_allowed: 0,
+    strikeouts_looking: 0, win: 0, loss: 0,
+    current_streak: 0, longest_win_streak: 0, longest_loss_streak: 0,
+    games_pitched: 0, runs_allowed: 0,
     pitched_strikeouts: 0, pitched_strikeouts_swinging: 0,
     pitched_strikeouts_looking: 0, pitched_walks: 0, hits_allowed: 0,
     home_runs_allowed: 0, innings_pitched: 0, pitched_outs: 0, hits: 0,

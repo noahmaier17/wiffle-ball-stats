@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Customized } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Customized, ReferenceLine } from 'recharts';
 import { useStatsData } from '../../contexts/StatsDataContext';
 import { usePlayers } from '../../contexts/PlayersContext';
 import { playerName, type Park, type statViewTypes, type PlayerGameData } from '../../types';
 import type { StatsAtBatLogRow, StatsGameRow } from '../../contexts/StatsDataContext';
+import { initStreakState, stepStreak, type StreakState } from '../../utils/calculateStreaks';
 import { HIT_SIGNS, PARKS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
 import FilterPanel from './FilterPanel';
 import HandleStatisticsViewToggle from './HandleStatisticsViewToggle';
@@ -35,7 +36,12 @@ const Y_STAT_OPTIONS_BATTER = [
     { key: 'ba',          label: 'BA' },
     { key: 'obp',         label: 'OBP' },
     { key: 'slg',         label: 'SLG' },
-    { key: 'ops',         label: 'OPS' }
+    { key: 'ops',         label: 'OPS' },
+    { key: 'wins',           label: 'W' },
+    { key: 'losses',         label: 'L' },
+    { key: 'current_streak', label: 'STK' },
+    { key: 'win_streak',     label: 'wSTK' },
+    { key: 'loss_streak',    label: 'lSTK' }
 ] as const;
 // List of options for the Y axis for pitchers
 const Y_STAT_OPTIONS_PITCHER = [
@@ -66,7 +72,12 @@ const DECIMAL_Y_STATS = new Set<YStatKey>(['ba', 'obp', 'slg', 'ops']);
 // Subset of DECIMAL_Y_STATS whose y-axis domain is capped at 1.0
 const UNIT_Y_STATS = new Set<YStatKey>(['ba', 'obp']);
 // Stats that require per-game data and are only valid on game-based X axes
-const GAME_ONLY_Y_STATS = new Set<YStatKey>(['era', 'whip']);
+const GAME_ONLY_Y_STATS = new Set<YStatKey>([
+    'era', 'whip',
+    'wins', 'losses', 'current_streak', 'win_streak', 'loss_streak',
+]);
+// Stats that can go negative and therefore need an auto (not zero-floored) y-axis
+const SIGNED_Y_STATS = new Set<YStatKey>(['current_streak']);
 
 // One data point per plate appearance or at-bat depending on xStat.
 // x = cumulative x-axis count, y = cumulative y-axis stat value.
@@ -190,6 +201,7 @@ type GameStatAccumulators = {
     cumHits: number; cumAB: number; cumPA: number; cumTB: number;
     cumPitchedOuts: number; cumRunsAllowed: number;
     cumPitchedWalks: number; cumHitsAllowed: number;
+    streak: StreakState;
 };
 
 function defaultGameStatAccumulators(): GameStatAccumulators {
@@ -197,6 +209,7 @@ function defaultGameStatAccumulators(): GameStatAccumulators {
         cumulativeY: 0, skipStat: false,
         cumHits: 0, cumAB: 0, cumPA: 0, cumTB: 0,
         cumPitchedOuts: 0, cumRunsAllowed: 0, cumPitchedWalks: 0, cumHitsAllowed: 0,
+        streak: initStreakState(),
     };
 }
 
@@ -243,6 +256,17 @@ function applyGameRowToAccumulators(
         const obp = acc.cumPA > 0 ? acc.cumHits / acc.cumPA : 0;
         const slg = acc.cumAB > 0 ? acc.cumTB  / acc.cumAB : 0;
         acc.cumulativeY = obp + slg;
+    }
+    if (yStat === 'wins') acc.cumulativeY += row.win;
+    if (yStat === 'losses') acc.cumulativeY += row.loss;
+    if (yStat === 'current_streak' || yStat === 'win_streak' || yStat === 'loss_streak') {
+        // games with no decision (left early) plot no point; stepAfter holds the prior value
+        const counted = stepStreak(acc.streak, row.win, row.loss);
+        acc.skipStat = !counted;
+        if (counted) acc.cumulativeY =
+            yStat === 'current_streak' ? acc.streak.current
+          : yStat === 'win_streak'     ? acc.streak.longestWin
+          :                              acc.streak.longestLoss;
     }
     if (yStat === 'outs_pitched') acc.cumulativeY += row.pitched_outs;
     if (yStat === 'bf') acc.cumulativeY += row.batters_faced;
@@ -488,18 +512,22 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                 <p>Y Axis</p>
                 <div>
                     Batting:
-                    {Y_STAT_OPTIONS_BATTER.map(o => (
-                        <label key={o.key}>
-                            <input
-                                type="radio"
-                                name="y-stat"
-                                value={o.key}
-                                checked={selectedYStat === o.key}
-                                onChange={() => setSelectedYStat(o.key)}
-                            />
-                            {o.label}
-                        </label>
-                    ))}
+                    {Y_STAT_OPTIONS_BATTER.map(o => {
+                        const isDisabled = GAME_ONLY_Y_STATS.has(o.key) && selectedXStat !== 'game' && selectedXStat !== 'league_game';
+                        return (
+                            <label key={o.key} style={isDisabled ? { opacity: 0.4 } : undefined}>
+                                <input
+                                    type="radio"
+                                    name="y-stat"
+                                    value={o.key}
+                                    checked={selectedYStat === o.key}
+                                    onChange={() => setSelectedYStat(o.key)}
+                                    disabled={isDisabled}
+                                />
+                                {o.label}
+                            </label>
+                        );
+                    })}
                 </div>
                 <div>
                     Pitching:
@@ -544,9 +572,15 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
                     dataKey="yJitter"
                     label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10 }}
                     allowDecimals={DECIMAL_Y_STATS.has(selectedYStat)}
-                    domain={[-(visibleCount - 1) / 2 * JITTER_STEP, UNIT_Y_STATS.has(selectedYStat) ? 1 : 'auto']}
+                    domain={[
+                        SIGNED_Y_STATS.has(selectedYStat) ? 'auto' : -(visibleCount - 1) / 2 * JITTER_STEP,
+                        UNIT_Y_STATS.has(selectedYStat) ? 1 : 'auto'
+                    ]}
                     tickFormatter={(v) => String(DECIMAL_Y_STATS.has(selectedYStat) ? Math.round(v * 1000) / 1000 : Math.round(v))}
                 />
+                {SIGNED_Y_STATS.has(selectedYStat) && (
+                    <ReferenceLine y={0} stroke="#999" strokeDasharray="3 3" />
+                )}
                 {/*
                     Legend items are interactive: clicking a name hides/shows that player's
                     line, and hovering emphasizes it while dimming the others. Both events

@@ -58,6 +58,9 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
             <td>{pdeWithZeroes.games_played}</td>
             <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>
+            <td>{pdeWithZeroes.current_streak > 0 ? `W${pdeWithZeroes.current_streak}` : pdeWithZeroes.current_streak < 0 ? `L${-pdeWithZeroes.current_streak}` : '—'}</td>
+            <td>{pdeWithZeroes.longest_win_streak}</td>
+            <td>{pdeWithZeroes.longest_loss_streak}</td>
             <td>{display(pdeWithZeroes.plate_appearances, { isPlateAppearances: true })}</td>
             <td>{display(pdeWithZeroes.at_bats, { isAtBats: true })}</td>
             <td>{display(pdeWithZeroes.hits)}</td>

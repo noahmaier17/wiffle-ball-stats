@@ -48,6 +48,9 @@ function BatterStatisticsTableHeader({
             {th('G', 'games_played')}
             {th(display('W'), 'win')}
             {th(display('L'), 'loss')}
+            {th('STK', 'current_streak')}
+            {th('wSTK', 'longest_win_streak')}
+            {th('lSTK', 'longest_loss_streak')}
             {th(display('PA'), 'plate_appearances')}
             {th(display('AB'), 'at_bats')}
             {th(display('H'), 'hits')}

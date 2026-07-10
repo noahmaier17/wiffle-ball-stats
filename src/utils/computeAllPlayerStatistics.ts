@@ -1,4 +1,5 @@
 import { defaultPlayerGameData, type Player, type PlayerGameData } from '../types';
+import { calculateStreaks } from './calculateStreaks';
 
 // Fetches player statistics. 
 // Returns in the shape: [map of player_id to aggregated PlayerGameData, set of player IDs with zero stats]
@@ -36,6 +37,7 @@ export function computeAllPlayerStatistics(
             entries.reduce((acc, curr) => acc + (curr[key] as number), 0);
 
         const pitched_outs = sum('pitched_outs');
+        const streaks = calculateStreaks(entries);
 
         // innings_pitched is stored as a decimal where the tenths digit = extra outs
         // (e.g. 1.2 means 1 full inning + 2 outs, NOT 1.2 innings)
@@ -70,6 +72,9 @@ export function computeAllPlayerStatistics(
             games_pitched: sum('games_pitched'),
             win: sum('win'),
             loss: sum('loss'),
+            current_streak: streaks.current_streak,
+            longest_win_streak: streaks.longest_win_streak,
+            longest_loss_streak: streaks.longest_loss_streak,
             batters_faced: sum('batters_faced'),
         });
     }

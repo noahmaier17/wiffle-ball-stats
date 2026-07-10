@@ -13,6 +13,7 @@ import { PARKS } from "../../constants";
 import ParkAndFielderFilters from "./ParkAndFielderFilters";
 import GameFilter from "./GameFilter";
 import FilterPanel from "./FilterPanel";
+import PlayersPlayByPlay from "./PlayersPlayByPlay";
 
 const BATTING_COUNT_COLS = new Set([
     'win', 'loss',
@@ -52,6 +53,10 @@ function getRawSortValue(stats: PlayerGameData, col: string): number {
 
         case 'win': return stats.win;
         case 'loss': return stats.loss;
+
+        case 'current_streak': return stats.current_streak;
+        case 'longest_win_streak': return stats.longest_win_streak;
+        case 'longest_loss_streak': return stats.longest_loss_streak;
 
         case 'batters_faced': return stats.batters_faced;
         case 'innings_pitched': return stats.innings_pitched;
@@ -130,7 +135,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     const [selectedPitcherId, setSelectedPitcherId] = useState<number | null>(null);
     const [selectedBatterId, setSelectedBatterId] = useState<number | null>(null);
 
-    const { allStats, selectedBatterStats, batterIdsWithoutStats, selectedPitcherStats, pitcherIdsWithoutStats } = useComputedStats({
+    const { allStats, selectedBatterStats, batterIdsWithoutStats, selectedPitcherStats, pitcherIdsWithoutStats, atBatLogsByGame } = useComputedStats({
         selectedParks, selectedFielderCounts, selectedGameIds, selectedPitcherId, selectedBatterId,
     });
 
@@ -157,7 +162,7 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
     }
 
     // Show loading until the context has fetched data and computed our first stats
-    if (isLoading || !allStats || !selectedBatterStats || !selectedPitcherStats) return <h3>Loading...</h3>
+    if (isLoading || !allStats || !selectedBatterStats || !selectedPitcherStats || !atBatLogsByGame) return <h3>Loading...</h3>
 
     // Sorts the batters based on our sorting parameter
     const sortedBatterStats = sortedBatterColumn ? [...selectedBatterStats].sort((a, b) => {
@@ -283,6 +288,8 @@ function AllPlayerStatistics({ onBack }: AllPlayerStatisticsProps) {
                     <tbody>{pitchingJSX}</tbody>
                 </table>
             </div>
+
+            <PlayersPlayByPlay forBatting={true} atBatLogsByGame={atBatLogsByGame} />
         </div>
     );
 }

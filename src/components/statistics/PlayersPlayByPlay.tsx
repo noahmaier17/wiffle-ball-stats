@@ -6,7 +6,8 @@ import LogRow from "../gameplayLogging/LogRow";
 import { useStatsData, type StatsAtBatLogRow, type StatsGameRow } from "../../contexts/StatsDataContext";
 
 type PlayersPlayByPlayProps = {
-    player: Player,
+    // When omitted, every at bat is shown (league-wide "All At Bats" mode)
+    player?: Player,
     forBatting: boolean,
     atBatLogsByGame: Map<number, StatsAtBatLogRow[]>
 
@@ -24,11 +25,13 @@ function PlayersPlayByPlay({
     const [showOpponent, setShowOpponent] = useState(false);
 
     // We need to filter all games where this player was not playing, and store game information as well
-    const filteredGameIdToLogs = [...atBatLogsByGame.entries()].sort((a, b) => a[0] - b[0]).reduce((accumulator, [gameId, log]) => {
-        // We fetch on batter_id or pitcher_id depending on forBatting
-        const filteredLogs = (forBatting)
-            ? log.filter(l => l.batter_id === player.id)
-            : log.filter(l => l.pitcher_id === player.id)
+    const filteredGameIdToLogs = [...atBatLogsByGame.entries()].sort((a, b) => b[0] - a[0]).reduce((accumulator, [gameId, log]) => {
+        // We fetch on batter_id or pitcher_id depending on forBatting.
+        // With no player, every at bat passes (league-wide "All At Bats" mode).
+        const filteredLogs = ((forBatting)
+            ? log.filter(l => !player || l.batter_id === player.id)
+            : log.filter(l => !player || l.pitcher_id === player.id))
+                .reverse()
         
         // IFF we do not have logs, we add nothing to the accumulator
         if (filteredLogs.length === 0) return accumulator;
@@ -46,7 +49,7 @@ function PlayersPlayByPlay({
     return (
         <div>
             <h3>
-                {(forBatting) ? "Batter" : "Pitcher"} Play by Play
+                {!player ? "All At Bats" : `${forBatting ? "Batter" : "Pitcher"} Play by Play`}
                 {forBatting && (
                     <button onClick={() => setShowOpponent(v => !v)} style={{ marginLeft: '0.75rem' }}>
                         Toggle Showing Pitcher

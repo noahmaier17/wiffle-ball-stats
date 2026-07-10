@@ -765,25 +765,25 @@ function Home({
             <br></br>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <img 
-                    src="/wiffle-ball-images/Dylan batting Cryson pitching.jpeg" 
-                    alt="Cryson pitching to Dylan" 
-                    className="w-full sm:flex-1 object-cover rounded-lg brightness-130" 
+                <img
+                    src="/wiffle-ball-images/Dylan batting Cryson pitching.jpeg"
+                    alt="Cryson pitching to Dylan"
+                    className="w-full sm:flex-1 sm:min-w-0 object-cover rounded-lg brightness-130"
                 />
-                <img 
-                    src="/wiffle-ball-images/Noah single.jpeg" 
-                    alt="Noah hitting a single" 
-                    className="w-full sm:flex-1 object-cover rounded-lg brightness-105" 
+                <img
+                    src="/wiffle-ball-images/Noah single.jpeg"
+                    alt="Noah hitting a single"
+                    className="w-full sm:flex-1 sm:min-w-0 object-cover rounded-lg brightness-105"
                 />
-                <img 
-                    src="/wiffle-ball-images/Group walking.jpeg" 
-                    alt="Group walking home after wiffle ball game" 
-                    className="w-full sm:flex-1 object-cover rounded-lg brightness-140" 
+                <img
+                    src="/wiffle-ball-images/Group walking.jpeg"
+                    alt="Group walking home after wiffle ball game"
+                    className="w-full sm:flex-1 sm:min-w-0 object-cover rounded-lg brightness-140"
                 />
-                <img 
-                    src="/wiffle-ball-images/Roan thumbs up.jpeg" 
-                    alt="Roan giving a thumbs up to the camera through the fence" 
-                    className="w-full sm:flex-1 object-cover rounded-lg  brightness-110" 
+                <img
+                    src="/wiffle-ball-images/Roan thumbs up.jpeg"
+                    alt="Roan giving a thumbs up to the camera through the fence"
+                    className="w-full sm:flex-1 sm:min-w-0 object-cover rounded-lg  brightness-110"
                 />
             </div>
             
