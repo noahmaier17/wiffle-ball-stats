@@ -1,4 +1,5 @@
 import { type GameData, ordinalNumber, playerName, type Player } from "../types"
+import { PARK_DISPLAY_NAMES } from "../constants"
 
 type JumbotronProps = {
     gameData: GameData;
@@ -6,6 +7,7 @@ type JumbotronProps = {
 
 function Jumbotron({ gameData }: JumbotronProps) {
     const {
+        field,
         awayTeamBatting, awayPitcher, homePitcher, inning,
         awayTeamLineup, homeTeamLineup,
         awayAlltimeDefensePlayers, homeAlltimeDefensePlayers,
@@ -50,6 +52,7 @@ function Jumbotron({ gameData }: JumbotronProps) {
 
     return <div style={{ paddingBottom: '1rem' }}>
         <h3>
+            {field && <span>{PARK_DISPLAY_NAMES[field] ?? field} — </span>}
             <span>{awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)} Inning with </span>
             <span>{numberOnBase} on Base and </span>
             <span>{numberOfOuts ? numberOfOuts : "No"} Out{numberOfOuts === 1 ? "" : "s"}; {awayRuns} - {homeRuns}</span>

@@ -13,6 +13,7 @@ export function buildGameDataFromRow(game: any, players: Player[]): GameData | n
 
     return {
         gameId: game.id,
+        field: game.field,
         awayTeamLineup: awayLineup,
         homeTeamLineup: homeLineup,
         awayAlltimeDefensePlayers: awayDefensePlayers,

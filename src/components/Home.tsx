@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabase-client';
-import type { Player, GameData } from '../types';
+import type { Player, GameData, Park } from '../types';
 import { PARKS, PARK_DISPLAY_NAMES } from '../constants';
 import Select from 'react-select';
 
@@ -107,6 +107,7 @@ function Home({
 
         onStartGame({
             gameId: game.id,
+            field: game.field,
             awayTeamLineup: awayLineup,
             homeTeamLineup: homeLineup,
             awayAlltimeDefensePlayers: awayDefensePlayers,
@@ -254,6 +255,7 @@ function Home({
             // 3. Start the game locally!
             onStartGame({
                 gameId,
+                field: selectedPark as Park,
                 awayTeamLineup,
                 homeTeamLineup,
                 awayAlltimeDefensePlayers,

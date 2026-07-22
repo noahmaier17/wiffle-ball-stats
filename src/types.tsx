@@ -96,6 +96,7 @@ export const defaultPlayerGameData: PlayerGameData = {
 
 export type GameData = {
     gameId: number;
+    field: Park; // The park this game is played at
     awayTeamLineup: Player[]; // The away team lineup; does not change once set
     homeTeamLineup: Player[]; // The home team lineup; does not change once set
     awayAlltimeDefensePlayers: Player[]; // Pitcher-only players for away team; not in batting order
