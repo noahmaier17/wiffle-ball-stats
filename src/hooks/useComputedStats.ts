@@ -62,6 +62,9 @@ export function useComputedStats({
 
         // Group filtered at-bat logs by game_id
         const logIdToGameId = new Map<number, number>(filteredGameLogs.map(gl => [gl.id, gl.game_id]));
+        // at_bat_logs has no chronological column of its own; game_logs.sequence is the
+        // authoritative order of events within a game, so we key on it to sort each bucket.
+        const logIdToSequence = new Map<number, number>(filteredGameLogs.map(gl => [gl.id, gl.sequence]));
         const logIdSet = new Set(logIds);
         const byGame = new Map<number, StatsAtBatLogRow[]>();
         for (const log of atBatLogs) {
@@ -71,6 +74,11 @@ export function useComputedStats({
             const bucket = byGame.get(gameId);
             if (bucket) bucket.push(log);
             else byGame.set(gameId, [log]);
+        }
+        // at_bat_logs is fetched with no ORDER BY, so sort each game's at-bats into true
+        // chronological order (ascending sequence). Consumers can reverse for a newest-first view.
+        for (const bucket of byGame.values()) {
+            bucket.sort((a, b) => (logIdToSequence.get(a.log_id) ?? 0) - (logIdToSequence.get(b.log_id) ?? 0));
         }
         setAtBatLogsByGame(byGame);
 

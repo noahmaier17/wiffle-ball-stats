@@ -28,6 +28,8 @@ function PlayersPlayByPlay({
     const filteredGameIdToLogs = [...atBatLogsByGame.entries()].sort((a, b) => b[0] - a[0]).reduce((accumulator, [gameId, log]) => {
         // We fetch on batter_id or pitcher_id depending on forBatting.
         // With no player, every at bat passes (league-wide "All At Bats" mode).
+        // Buckets arrive sorted ascending by game_logs.sequence (see useComputedStats),
+        // so reversing the filtered list yields newest-at-bat-first within each game.
         const filteredLogs = ((forBatting)
             ? log.filter(l => !player || l.batter_id === player.id)
             : log.filter(l => !player || l.pitcher_id === player.id))
@@ -49,7 +51,7 @@ function PlayersPlayByPlay({
     return (
         <div>
             <h3>
-                {!player ? "All At Bats" : `${forBatting ? "Batter" : "Pitcher"} Play by Play`}
+                {!player ? "All At Bats (Newest to Oldest)" : `${forBatting ? "Batter" : "Pitcher"} Play by Play (Newest to Oldest)`}
                 {forBatting && (
                     <button onClick={() => setShowOpponent(v => !v)} style={{ marginLeft: '0.75rem' }}>
                         Toggle Showing Pitcher

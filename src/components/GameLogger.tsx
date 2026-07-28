@@ -501,6 +501,57 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
     return (
         <div>
             <button onClick={() => setGameState(null)}>← Back</button>
+
+            {editingLog === null && (
+                <div style={{ paddingBottom: "1em" }}>
+                    <h3>Types of logs: </h3>
+                    <div className="radio-group radio-group--fill">
+                        <label>
+                            <input
+                                type="radio"
+                                name="logType"
+                                value="atbat"
+                                checked={logType === 'atbat'}
+                                disabled={!(gameData.awayTeamBatting ? gameData.homePitcher : gameData.awayPitcher)}
+                                onChange={() => setLogType('atbat')}
+                            />
+                            At Bat
+                        </label>
+                        <label>
+                            <input
+                                type="radio"
+                                name="logType"
+                                value="pitching_change"
+                                checked={logType === 'pitching_change'}
+                                onChange={() => setLogType('pitching_change')}
+                            />
+                            Pitching Change
+                        </label>
+                        <label>
+                            <input
+                                type="radio"
+                                name="logType"
+                                value="additional_information"
+                                checked={logType === 'additional_information'}
+                                onChange={() => setLogType('additional_information')}
+                            />
+                            Additional Information
+                        </label>
+                        <label>
+                            <input
+                                type="radio"
+                                name="logType"
+                                value="edit_gamestate"
+                                checked={logType === 'edit_gamestate'}
+                                onChange={() => setLogType('edit_gamestate')}
+                            />
+                            Edit Gamestate
+                        </label>
+                    </div>
+                    <hr></hr>
+                </div>
+            )}
+
             <Jumbotron
                 gameData={gameData}
             />
@@ -539,55 +590,6 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
                 />
             ) : (
                 <>
-                    <div style={{ paddingBottom: "1em" }}>
-                        <h3>Types of logs: </h3>
-                        <div className="radio-group radio-group--fill">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="atbat"
-                                    checked={logType === 'atbat'}
-                                    disabled={!(gameData.awayTeamBatting ? gameData.homePitcher : gameData.awayPitcher)}
-                                    onChange={() => setLogType('atbat')}
-                                />
-                                At Bat
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="pitching_change"
-                                    checked={logType === 'pitching_change'}
-                                    onChange={() => setLogType('pitching_change')}
-                                />
-                                Pitching Change
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="additional_information"
-                                    checked={logType === 'additional_information'}
-                                    onChange={() => setLogType('additional_information')}
-                                />
-                                Additional Information
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="logType"
-                                    value="edit_gamestate"
-                                    checked={logType === 'edit_gamestate'}
-                                    onChange={() => setLogType('edit_gamestate')}
-                                />
-                                Edit Gamestate
-                            </label>
-                        </div>
-                    </div>
-
-                    <hr></hr>
-
                     {logType === 'atbat' && (
                         <AtBat
                             gameData={gameData}

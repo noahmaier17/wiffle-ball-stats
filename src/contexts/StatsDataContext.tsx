@@ -33,6 +33,7 @@ export type StatsGameRow = {
 export type StatsGameLogRow = {
     id: number;
     game_id: number;
+    sequence: number;   // Position of this log within its game; authoritative chronological order
 };
 
 type StatsDataContextType = {
@@ -99,7 +100,7 @@ export function StatsDataProvider({ children }: { children: React.ReactNode }) {
                 supabase.from('games').select('id, field, number_of_fielders, date, home_score, away_score').range(from, to)
             ),
             fetchAllPages<StatsGameLogRow>((from, to) =>
-                supabase.from('game_logs').select('id, game_id').range(from, to)
+                supabase.from('game_logs').select('id, game_id, sequence').range(from, to)
             ),
         ]);
 
