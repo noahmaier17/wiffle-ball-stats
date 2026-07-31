@@ -760,7 +760,7 @@ function Home({
                         fontWeight: 'bold',
                     }}
                 >
-                    Chat
+                    AI Chat
                 </button>
             </div>
 
