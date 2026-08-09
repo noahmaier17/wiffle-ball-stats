@@ -1,4 +1,8 @@
-import { fmt3, playerNameShort, type Player, type PlayerGameData, type statViewTypes } from "../../types";
+import {
+    calculateBattingAverage, calculateOnBasePercentage, calculateOnBasePlusSlugging,
+    calculateSluggingPercentage, calculateTotalBases, formatStreak, fmt3,
+    playerNameShort, type Player, type PlayerGameData, type statViewTypes
+} from "../../types";
 
 type BatterStatisticsRowProps = {
     pde: PlayerGameData;
@@ -37,19 +41,11 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
     )) as PlayerGameData;
 
     // Calculates other statistics
-    const battingAverage = fmt3(pdeWithZeroes.hits / pdeWithZeroes.at_bats);
-    const onBasePercentage = fmt3((pdeWithZeroes.hits + pdeWithZeroes.walks) / pdeWithZeroes.plate_appearances);
-    const totalBases = (
-        pdeWithZeroes.singles * 1 +
-        pdeWithZeroes.doubles * 2 +
-        pdeWithZeroes.triples * 3 +
-        pdeWithZeroes.home_runs * 4
-    );
-    const sluggingPercentage = fmt3(totalBases / pdeWithZeroes.at_bats);
-    const onBasePlusSlugging = fmt3(
-        ((pdeWithZeroes.hits + pdeWithZeroes.walks) / pdeWithZeroes.plate_appearances)
-        + (totalBases / pdeWithZeroes.at_bats)
-    );
+    const battingAverage = calculateBattingAverage(pdeWithZeroes);
+    const onBasePercentage = calculateOnBasePercentage(pdeWithZeroes);
+    const totalBases = calculateTotalBases(pdeWithZeroes);
+    const sluggingPercentage = calculateSluggingPercentage(pdeWithZeroes);
+    const onBasePlusSlugging = calculateOnBasePlusSlugging(pdeWithZeroes);
 
     return (
         <tr>
@@ -58,7 +54,7 @@ function BatterStatisticsRow({ pde, player, viewType, index }: BatterStatisticsR
             <td>{pdeWithZeroes.games_played}</td>
             <td>{display(pdeWithZeroes.win, { isGameGranularityStatistic: true })}</td>
             <td>{display(pdeWithZeroes.loss, { isGameGranularityStatistic: true })}</td>
-            <td>{pdeWithZeroes.current_streak > 0 ? `W${pdeWithZeroes.current_streak}` : pdeWithZeroes.current_streak < 0 ? `L${-pdeWithZeroes.current_streak}` : '—'}</td>
+            <td>{pdeWithZeroes.current_streak === 0 ? '—' : formatStreak(pdeWithZeroes.current_streak)}</td>
             <td>{pdeWithZeroes.longest_win_streak}</td>
             <td>{pdeWithZeroes.longest_loss_streak}</td>
             <td>{display(pdeWithZeroes.plate_appearances, { isPlateAppearances: true })}</td>

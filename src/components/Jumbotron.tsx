@@ -3,9 +3,10 @@ import { PARK_DISPLAY_NAMES } from "../constants"
 
 type JumbotronProps = {
     gameData: GameData;
+    gameLogging?: boolean;
 }
 
-function Jumbotron({ gameData }: JumbotronProps) {
+function Jumbotron({ gameData, gameLogging = false }: JumbotronProps) {
     const {
         field,
         awayTeamBatting, awayPitcher, homePitcher, inning,
@@ -50,13 +51,18 @@ function Jumbotron({ gameData }: JumbotronProps) {
         </div>
     );
 
-    return <div style={{ paddingBottom: '1rem' }}>
+    const gameState = () => (
         <h3>
+            <span>{awayRuns} - {homeRuns}, </span>
             {field && <span>{PARK_DISPLAY_NAMES[field] ?? field} — </span>}
-            <span>{awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)} Inning with </span>
-            <span>{numberOnBase} on Base and </span>
-            <span>{numberOfOuts ? numberOfOuts : "No"} Out{numberOfOuts === 1 ? "" : "s"}; {awayRuns} - {homeRuns}</span>
+            <span>{awayTeamBatting ? "Top" : "Bottom"} {ordinalNumber(inning)}, </span>
+            <span>{numberOnBase} on Base, </span>
+            <span>{numberOfOuts} Out{numberOfOuts === 1 ? "" : "s"}</span>
         </h3>
+    );
+
+    return <div style={{ paddingBottom: '1rem' }}>
+        {!gameLogging && gameState()}
         <div style={{ marginTop: '0.75em' }}>
             {renderTeam('Away', awayTeamBatting, awayTeamLineup, currAwayTeamBatter, awayAlltimeDefensePlayers)}
             <div style={{ marginTop: '0.75em' }}>
@@ -64,6 +70,7 @@ function Jumbotron({ gameData }: JumbotronProps) {
             </div>
         </div>
         <div style={{ marginTop: '0.75em' }}>On the mound: {currentPitcher ? playerName(currentPitcher) : 'None'}</div>
+        {gameLogging && gameState()}
     </div>;
 }
 

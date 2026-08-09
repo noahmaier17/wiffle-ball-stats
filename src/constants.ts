@@ -1,12 +1,17 @@
 // Parks
-export const PARKS = ["wiffco_field", "bowman_field"] as const;
+export const PARKS = ["wiffco_field", "bowman_field", "biffco_field"] as const;
 export const PARK_DISPLAY_NAMES: Record<string, string> = {
-    wiffco_field: "Wiffco Field",
+    wiffco_field: "WiffCo Field",
     bowman_field: "Bowman Creek",
+    biffco_field: "BiffCo Field"
 };
 
 // Fielder counts
 export const FIELDER_COUNTS = [2, 3, 4] as const;
+
+// Official ruleset: WiffCo Field & Bowman Creek, 3 or 4 fielders
+export const OFFICIAL_PARKS = ["wiffco_field", "bowman_field"] as const;
+export const OFFICIAL_FIELDER_COUNTS = [3, 4] as const;
 
 // At Bat Outcome Signs
 export const AT_BAT_OUTCOME_LAYOUT = [

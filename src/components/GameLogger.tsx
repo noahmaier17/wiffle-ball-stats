@@ -553,7 +553,7 @@ function GameLogger({ gameData, setGameState }: GameLoggerProps) {
             )}
 
             <Jumbotron
-                gameData={gameData}
+                gameData={gameData} gameLogging={true}
             />
 
             <hr></hr>

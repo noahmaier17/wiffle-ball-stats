@@ -5,7 +5,7 @@ import { usePlayers } from '../../contexts/PlayersContext';
 import { playerName, type Park, type statViewTypes, type PlayerGameData } from '../../types';
 import type { StatsAtBatLogRow, StatsGameRow } from '../../contexts/StatsDataContext';
 import { initStreakState, stepStreak, type StreakState } from '../../utils/calculateStreaks';
-import { HIT_SIGNS, PARKS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
+import { HIT_SIGNS, OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS, REACHED_BASE_SIGNS, STRIKEOUT_SIGNS } from '../../constants';
 import FilterPanel from './FilterPanel';
 import HandleStatisticsViewToggle from './HandleStatisticsViewToggle';
 import ParkAndFielderFilters from './ParkAndFielderFilters';
@@ -372,8 +372,8 @@ function PlayerStatsChart({ onBack }: { onBack: () => void }) {
     const { atBatLogs, games, gameLogs, isLoading, playerGameStats } = useStatsData();
 
     const [viewType, setViewType] = useState<statViewTypes>('default');
-    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
-    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3, 4]));
+    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set<Park>(OFFICIAL_PARKS));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set<number>(OFFICIAL_FIELDER_COUNTS));
     const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // Gets all the players

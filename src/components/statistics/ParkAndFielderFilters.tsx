@@ -1,5 +1,5 @@
 import type { Park } from "../../types"
-import { FIELDER_COUNTS, PARKS, PARK_DISPLAY_NAMES } from "../../constants";
+import { FIELDER_COUNTS, OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS, PARKS, PARK_DISPLAY_NAMES } from "../../constants";
 import type { Dispatch, SetStateAction } from "react";
 
 interface ParkAndFielderFiltersProps {
@@ -37,8 +37,8 @@ function ParkAndFielderFilters(
     }
 
     const setOfficial = () => {
-        setSelectedParks(new Set(PARKS));
-        setSelectedFielderCounts(new Set([3, 4]));
+        setSelectedParks(new Set<Park>(OFFICIAL_PARKS));
+        setSelectedFielderCounts(new Set<number>(OFFICIAL_FIELDER_COUNTS));
     };
 
     return (

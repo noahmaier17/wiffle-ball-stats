@@ -5,8 +5,13 @@ import { useStatsData } from '../contexts/StatsDataContext';
 import { buildChatContext } from '../utils/buildChatContext';
 import { playerName } from '../types';
 import type { Player } from '../types';
+import { OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS } from '../constants';
 
 type Message = { role: 'user' | 'assistant'; content: string };
+
+// Official ruleset filter: only these parks and fielder counts count toward the stats the AI sees.
+const OFFICIAL_PARK_SET = new Set<string>(OFFICIAL_PARKS);
+const OFFICIAL_FIELDER_COUNT_SET = new Set<number>(OFFICIAL_FIELDER_COUNTS);
 
 
 function buildSystemPrompt(role: 'spectator' | Player, statsContext: string, gameCount: number): string {
@@ -82,7 +87,9 @@ export default function Chat({ onBack }: ChatProps) {
 
     const handleStartChat = () => {
         if (isLoading) return;
-        const officialGames = games.filter(g => g.number_of_fielders >= 3);
+        const officialGames = games.filter(g =>
+            OFFICIAL_PARK_SET.has(g.field) && OFFICIAL_FIELDER_COUNT_SET.has(g.number_of_fielders)
+        );
         const officialGameIds = new Set(officialGames.map(g => g.id));
         const officialStats = playerGameStats.filter(r => officialGameIds.has(r.game_id));
         const playerId = selectedRole === 'spectator' ? null : selectedRole;

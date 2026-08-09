@@ -80,6 +80,29 @@ export const calculateERA = (pde: PlayerGameData): string => {
 export const calculateWHIP = (pde: PlayerGameData): string => {
     return fmt2((pde.pitched_walks + pde.hits_allowed) / pde.innings_pitched);
 }
+// home_runs already includes inside the park home runs, so IPHR is not added separately
+export const calculateTotalBases = (pde: PlayerGameData): number => {
+    return pde.singles + pde.doubles * 2 + pde.triples * 3 + pde.home_runs * 4;
+}
+export const calculateBattingAverage = (pde: PlayerGameData): string => {
+    return fmt3(pde.hits / pde.at_bats);
+}
+export const calculateOnBasePercentage = (pde: PlayerGameData): string => {
+    return fmt3((pde.hits + pde.walks) / pde.plate_appearances);
+}
+export const calculateSluggingPercentage = (pde: PlayerGameData): string => {
+    return fmt3(calculateTotalBases(pde) / pde.at_bats);
+}
+export const calculateOnBasePlusSlugging = (pde: PlayerGameData): string => {
+    return fmt3(
+        (pde.hits + pde.walks) / pde.plate_appearances
+        + calculateTotalBases(pde) / pde.at_bats
+    );
+}
+// Formats a signed streak: >0 is a win streak, <0 is a loss streak
+export const formatStreak = (streak: number): string => {
+    return (streak > 0) ? `W${streak}` : (streak < 0) ? `L${-streak}` : 'none';
+}
 export const defaultPlayerGameData: PlayerGameData = {
     id: 0, player_id: 0, game_id: 0,
     games_played: 0, at_bats: 0, doubles: 0, triples: 0,

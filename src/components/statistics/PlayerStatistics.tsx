@@ -9,7 +9,7 @@ import PitcherStatisticsTableHeader from "./PitcherStatisticsTableHeader";
 import PitcherStatisticsRow from "./PitcherStatisticsRow";
 import HandleStatisticsViewToggle from "./HandleStatisticsViewToggle";
 import PlayersPlayByPlay from "./PlayersPlayByPlay";
-import { PARKS } from "../../constants";
+import { OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS } from "../../constants";
 import FilterPanel from "./FilterPanel";
 import ParkAndFielderFilters from "./ParkAndFielderFilters";
 import GameFilter from "./GameFilter";
@@ -31,8 +31,8 @@ function PlayerStatistics({ user, onBack }: PlayerStatisticsProps) {
     const [viewType, setViewType] = useState<statViewTypes>('default');
 
     // Filters for the statistics
-    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set(PARKS));
-    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set([3, 4]));
+    const [selectedParks, setSelectedParks] = useState<Set<Park>>(new Set<Park>(OFFICIAL_PARKS));
+    const [selectedFielderCounts, setSelectedFielderCounts] = useState<Set<number>>(new Set<number>(OFFICIAL_FIELDER_COUNTS));
     const [selectedGameIds, setSelectedGameIds] = useState<Set<number> | null>(null);
 
     // If null, we are showing stats against all pitchers / batters
