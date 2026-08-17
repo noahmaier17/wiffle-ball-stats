@@ -1,4 +1,4 @@
-import { defaultPlayerGameData, type Player, type PlayerGameData } from '../types';
+import { defaultPlayerGameData, type Player, type PlayerGameData } from '../stats-core';
 import { calculateStreaks } from './calculateStreaks';
 
 // Fetches player statistics. 

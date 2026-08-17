@@ -1,4 +1,4 @@
-import type { PlayerGameData } from '../types';
+import type { PlayerGameData } from '../stats-core';
 
 // Running streak state, advanced one game at a time by stepStreak.
 // current is signed: >0 win streak, <0 loss streak, 0 = none yet.
