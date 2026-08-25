@@ -1,6 +1,6 @@
-import { getSupabase } from './supabase';
-import { OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS } from '../../src/constants';
-import type { Player, PlayerGameData } from '../../src/stats-core';
+import { getSupabase } from './supabase.js';
+import { OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS } from '../../src/constants.js';
+import type { Player, PlayerGameData } from '../../src/stats-core.js';
 
 // Minimal game row; only the columns the tools need.
 export type LeagueGameRow = {

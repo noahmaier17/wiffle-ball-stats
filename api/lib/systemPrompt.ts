@@ -1,4 +1,4 @@
-import { playerName, type Player } from '../../src/stats-core';
+import { playerName, type Player } from '../../src/stats-core.js';
 
 export function buildSystemPrompt(role: 'spectator' | Player, gameCount: number): string {
     const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });

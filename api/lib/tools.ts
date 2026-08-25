@@ -1,7 +1,7 @@
 import { tool, type StructuredToolInterface } from '@langchain/core/tools';
 import { z } from 'zod';
-import { loadLeagueData } from './leagueData';
-import { computeAllPlayerStatistics } from '../../src/utils/computeAllPlayerStatistics';
+import { loadLeagueData } from './leagueData.js';
+import { computeAllPlayerStatistics } from '../../src/utils/computeAllPlayerStatistics.js';
 import {
     battingAverage,
     calculateBattingAverage,
@@ -20,7 +20,7 @@ import {
     whip,
     type Player,
     type PlayerGameData,
-} from '../../src/stats-core';
+} from '../../src/stats-core.js';
 
 // Stat abbreviations, given to the model in the get_player_stats description so it
 // knows what the returned keys mean.

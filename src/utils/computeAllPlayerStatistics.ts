@@ -1,5 +1,5 @@
-import { defaultPlayerGameData, type Player, type PlayerGameData } from '../stats-core';
-import { calculateStreaks } from './calculateStreaks';
+import { defaultPlayerGameData, type Player, type PlayerGameData } from '../stats-core.js';
+import { calculateStreaks } from './calculateStreaks.js';
 
 // Fetches player statistics. 
 // Returns in the shape: [map of player_id to aggregated PlayerGameData, set of player IDs with zero stats]

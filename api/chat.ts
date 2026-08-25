@@ -1,10 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { AIMessage, HumanMessage, SystemMessage, ToolMessage, type BaseMessage } from '@langchain/core/messages';
-import { allTools, toolsByName } from './lib/tools';
-import { loadLeagueData } from './lib/leagueData';
-import { buildSystemPrompt } from './lib/systemPrompt';
-import type { Player } from '../src/stats-core';
+// Relative imports carry .js extensions because Vercel transpiles each file without
+// bundling, and Node's ESM resolver rejects extensionless specifiers under "type": "module".
+// TypeScript maps the .js back to the .ts source at compile time.
+import { allTools, toolsByName } from './lib/tools.js';
+import { loadLeagueData } from './lib/leagueData.js';
+import { buildSystemPrompt } from './lib/systemPrompt.js';
+import type { Player } from '../src/stats-core.js';
 
 type ClientMessage = { role: 'user' | 'assistant'; content: string };
 
