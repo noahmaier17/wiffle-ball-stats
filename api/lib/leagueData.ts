@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 import { OFFICIAL_FIELDER_COUNTS, OFFICIAL_PARKS } from '../../src/constants';
 import type { Player, PlayerGameData } from '../../src/stats-core';
 
@@ -47,6 +47,8 @@ const OFFICIAL_PARK_SET = new Set<string>(OFFICIAL_PARKS);
 const OFFICIAL_FIELDER_COUNT_SET = new Set<number>(OFFICIAL_FIELDER_COUNTS);
 
 async function fetchLeagueData(): Promise<LeagueData> {
+    const supabase = getSupabase();
+
     const [playerRows, gameRows, statRows] = await Promise.all([
         fetchAllPages<{ id: number; first_name: string; last_name: string }>((from, to) =>
             supabase.from('players').select('id, first_name, last_name').range(from, to)
